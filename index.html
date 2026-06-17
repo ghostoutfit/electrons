@@ -1,36 +1,818 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Electrons</title>
-  <link rel="icon" type="image/png" href="images/favicon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #05040f;
-      color: rgba(255,255,255,0.85);
-      font-family: 'Lexend', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100dvh;
-      width: 100vw;
-      overflow: hidden;
-    }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #a0c8ff;
-      text-shadow: 0 0 12px rgba(100,160,255,0.7), 0 0 40px rgba(100,160,255,0.3);
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photoelectron Spectroscopy</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#07050f;
+  color:#dde0f0;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:24px 20px 40px;
+  gap:0;
+}
+h1 {
+  font-size:18px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:#a0bcff;
+  margin-bottom:3px;
+}
+.subtitle {
+  font-size:12px;
+  color:rgba(160,188,255,0.5);
+  letter-spacing:1px;
+  margin-bottom:22px;
+}
+
+/* ── Beamline ─────────────────────────────── */
+#beamline-wrap {
+  width:100%;
+  max-width:860px;
+  height:140px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:6px;
+}
+.beam-track {
+  position:absolute;
+  left:0; right:0;
+  top:50%; height:2px;
+  background:rgba(255,255,255,0.07);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.ap-box {
+  position:relative;
+  z-index:2;
+  width:130px;
+  height:96px;
+  border-radius:10px;
+  border:2px solid;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  line-height:1.5;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.ap-box img { width:100%; height:100%; object-fit:cover; display:block; }
+.ap-box-label { pointer-events:none; }
+#box-source  { border-color:#ffc840; background:rgba(255,200,64,0.07); color:#ffc840; }
+#box-chamber { border-color:#60c8ff; background:rgba(96,200,255,0.07); color:#60c8ff; transition:border-color 0.15s,background 0.15s; }
+#box-detector{ border-color:#50e090; background:rgba(80,224,144,0.07); color:#50e090; transition:box-shadow 0.3s; }
+#box-chamber.flash-fail {
+  animation:chamberFail 0.5s ease;
+}
+@keyframes chamberFail {
+  0%,100% { border-color:#60c8ff; background:rgba(96,200,255,0.07); }
+  40%      { border-color:#ff4848; background:rgba(255,72,72,0.18); }
+}
+#box-detector.lit {
+  box-shadow:0 0 18px 4px rgba(80,224,144,0.5);
+}
+.chamber-species {
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:none;
+  line-height:1;
+  color:#a0d8ff;
+}
+.chamber-mode-label {
+  font-size:9px;
+  letter-spacing:1px;
+  opacity:0.7;
+  margin-top:3px;
+}
+
+/* Animated particles */
+.pdot {
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+  top:50%;
+  transform:translate(-50%,-50%);
+  display:none;
+  z-index:20;
+}
+#photon-dot {
+  width:20px; height:20px;
+  background:radial-gradient(circle at 40% 40%, #fff8a0, #ffcc00 55%, #ff9900);
+  box-shadow:0 0 14px 5px rgba(255,210,0,0.75);
+}
+#electron-dot {
+  width:14px; height:14px;
+  background:radial-gradient(circle at 38% 38%, #c0e0ff, #4090ff 60%, #2060cc);
+  box-shadow:0 0 10px 3px rgba(80,150,255,0.7);
+}
+
+/* No-ejection label under chamber */
+#no-eject-label {
+  display:none;
+  position:absolute;
+  bottom:4px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:11px;
+  font-weight:700;
+  color:#ff6060;
+  white-space:nowrap;
+  letter-spacing:0.3px;
+  text-align:center;
+}
+
+/* ── Controls ─────────────────────────────── */
+#controls {
+  width:100%;
+  max-width:860px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-bottom:22px;
+}
+.ctrl-row {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.ctrl-lbl {
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(160,188,255,0.55);
+  min-width:76px;
+}
+input[type=range] {
+  flex:1;
+  min-width:160px;
+  max-width:340px;
+  accent-color:#a0c0ff;
+  cursor:pointer;
+  height:5px;
+}
+.slider-val {
+  font-size:15px;
+  font-weight:700;
+  color:#ffd870;
+  min-width:58px;
+}
+.mode-toggle {
+  display:flex;
+  border:1px solid rgba(160,200,255,0.22);
+  border-radius:6px;
+  overflow:hidden;
+}
+.mode-btn {
+  padding:6px 20px;
+  background:transparent;
+  border:none;
+  color:rgba(160,200,255,0.35);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  cursor:pointer;
+  font-family:inherit;
+  transition:all 0.12s;
+}
+.mode-btn.active {
+  background:rgba(160,200,255,0.13);
+  color:#a0bcff;
+}
+.mode-btn:not(.active):hover { color:rgba(160,200,255,0.65); }
+.elem-btns { display:flex; gap:8px; flex-wrap:wrap; }
+.elem-btn {
+  padding:6px 14px;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.13);
+  border-radius:6px;
+  color:rgba(255,255,255,0.35);
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  font-family:inherit;
+  transition:all 0.12s;
+}
+.elem-btn.active {
+  border-color:#a0bcff;
+  color:#a0bcff;
+  background:rgba(160,188,255,0.1);
+}
+.elem-btn:not(.active):hover { color:rgba(255,255,255,0.7); border-color:rgba(255,255,255,0.35); }
+#fireBtn {
+  padding:8px 30px;
+  background:rgba(255,200,64,0.1);
+  border:1.5px solid #ffc840;
+  border-radius:8px;
+  color:#ffc840;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  cursor:pointer;
+  font-family:inherit;
+  transition:all 0.15s;
+}
+#fireBtn:hover:not(:disabled) { background:rgba(255,200,64,0.22); box-shadow:0 0 14px rgba(255,200,0,0.35); }
+#fireBtn:disabled { opacity:0.35; cursor:not-allowed; }
+
+/* ── Energy bar ───────────────────────────── */
+#energy-section {
+  width:100%;
+  max-width:860px;
+  margin-bottom:20px;
+}
+.section-title {
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(160,188,255,0.4);
+  margin-bottom:8px;
+}
+#energy-bar-track {
+  height:38px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:7px;
+  overflow:hidden;
+  display:flex;
+  margin-bottom:10px;
+  position:relative;
+}
+/* total hν-width region, inside the track */
+#energy-bar-hv {
+  height:100%;
+  display:flex;
+  transition:width 0.25s ease;
+  flex-shrink:0;
+}
+#bar-be {
+  height:100%;
+  background:linear-gradient(90deg,#a030d0,#8020b8);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px; font-weight:700; color:rgba(255,255,255,0.9);
+  overflow:hidden; white-space:nowrap;
+  transition:width 0.25s ease;
+}
+#bar-ke {
+  height:100%;
+  background:linear-gradient(90deg,#20b870,#10a058);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px; font-weight:700; color:rgba(255,255,255,0.9);
+  overflow:hidden; white-space:nowrap;
+  transition:width 0.25s ease;
+}
+#bar-no-eject {
+  height:100%;
+  background:linear-gradient(90deg,rgba(255,80,80,0.55),rgba(200,40,40,0.35));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px; font-weight:700; color:rgba(255,160,160,0.9);
+  overflow:hidden; white-space:nowrap;
+  display:none;
+}
+#bar-remainder { flex:1; }
+
+/* bar axis labels */
+#bar-axis {
+  display:flex;
+  justify-content:space-between;
+  padding:0 2px;
+}
+.axis-lbl {
+  font-size:10px;
+  color:rgba(160,188,255,0.35);
+  letter-spacing:0.5px;
+}
+
+/* Readout panel */
+.readout-row {
+  display:flex;
+  gap:32px;
+  flex-wrap:wrap;
+  margin-top:12px;
+  align-items:flex-end;
+}
+.readout-item { display:flex; flex-direction:column; gap:2px; }
+.readout-lbl {
+  font-size:10px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:rgba(160,188,255,0.45);
+}
+.readout-val {
+  font-size:26px; font-weight:700; color:#dde0f0; line-height:1;
+}
+.readout-val .unit { font-size:13px; color:rgba(200,210,255,0.4); margin-left:3px; }
+#readout-hv .readout-val { color:#ffd870; }
+#readout-be .readout-val { color:#c060ff; }
+#readout-ke .readout-val { color:#40d890; }
+
+#status-msg {
+  font-size:13px; font-weight:700;
+  min-height:20px; margin-top:4px;
+  letter-spacing:0.4px;
+  transition:opacity 0.2s;
+}
+#status-msg.no-ejection { color:#ff6060; }
+#status-msg.ejected     { color:#40d890; }
+#status-msg.idle        { color:rgba(160,188,255,0.35); }
+
+/* ── Comparison panel ─────────────────────── */
+#compare-section {
+  width:100%;
+  max-width:860px;
+}
+#compare-bars {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.cmp-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.cmp-sym {
+  width:24px;
+  font-size:13px; font-weight:700;
+  color:rgba(200,212,255,0.4);
+  text-align:right;
+}
+.cmp-row.selected .cmp-sym { color:#a0bcff; }
+.cmp-bar-bg {
+  flex:1;
+  height:22px;
+  background:rgba(255,255,255,0.04);
+  border-radius:4px;
+  overflow:hidden;
+}
+.cmp-bar-fill {
+  height:100%;
+  background:rgba(160,188,255,0.2);
+  border-radius:4px;
+  transition:width 0.35s ease;
+  display:flex;
+  align-items:center;
+  padding:0 8px;
+}
+.cmp-row.selected .cmp-bar-fill { background:rgba(160,188,255,0.5); }
+.cmp-bar-val {
+  font-size:10px; font-weight:700;
+  color:rgba(255,255,255,0.75);
+  white-space:nowrap;
+}
+.cmp-ev {
+  width:46px;
+  font-size:11px; font-weight:700;
+  color:rgba(200,212,255,0.5);
+  text-align:right;
+}
+.cmp-row.selected .cmp-ev { color:#a0bcff; }
+</style>
 </head>
 <body>
-  <h1>Electrons</h1>
+
+<h1>Photoelectron Spectroscopy</h1>
+<p class="subtitle">hν = BE + KE &nbsp;·&nbsp; measure ionization energy and electron affinity</p>
+
+<!-- ── Beamline ── -->
+<div id="beamline-wrap">
+  <div class="beam-track"></div>
+
+  <div id="box-source" class="ap-box">
+    <span class="ap-box-label">UV Light<br>Source</span>
+  </div>
+
+  <div id="box-chamber" class="ap-box">
+    <span class="chamber-species" id="chamber-species">Na</span>
+    <span class="chamber-mode-label" id="chamber-mode-label">NEUTRAL</span>
+  </div>
+
+  <div id="box-detector" class="ap-box">
+    <span class="ap-box-label">Energy<br>Analyzer</span>
+  </div>
+
+  <!-- Animated particles (positioned by JS) -->
+  <div id="photon-dot"   class="pdot"></div>
+  <div id="electron-dot" class="pdot"></div>
+
+  <div id="no-eject-label">⚡ no electron ejected</div>
+</div>
+
+<!-- ── Controls ── -->
+<div id="controls">
+  <div class="ctrl-row">
+    <span class="ctrl-lbl">Photon hν</span>
+    <input type="range" id="hvSlider" min="0" max="20" step="0.1" value="6">
+    <span class="slider-val" id="hvVal">6.00 eV</span>
+  </div>
+  <div class="ctrl-row">
+    <span class="ctrl-lbl">Mode</span>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeNeutral">Neutral → IE</button>
+      <button class="mode-btn"        id="modeAnion">Anion → EA</button>
+    </div>
+    <span class="ctrl-lbl" style="min-width:0;margin-left:8px">Element</span>
+    <div class="elem-btns" id="elemBtns"></div>
+  </div>
+  <div class="ctrl-row">
+    <button id="fireBtn">&#9654; Fire Photon</button>
+  </div>
+</div>
+
+<!-- ── Energy bar + readout ── -->
+<div id="energy-section">
+  <div class="section-title">Energy Budget</div>
+  <div id="energy-bar-track">
+    <div id="energy-bar-hv">
+      <div id="bar-be"></div>
+      <div id="bar-ke"></div>
+      <div id="bar-no-eject"></div>
+    </div>
+    <div id="bar-remainder"></div>
+  </div>
+  <div id="bar-axis">
+    <span class="axis-lbl">0 eV</span>
+    <span class="axis-lbl">10 eV</span>
+    <span class="axis-lbl">20 eV</span>
+  </div>
+
+  <div class="readout-row">
+    <div class="readout-item" id="readout-hv">
+      <span class="readout-lbl">Photon hν</span>
+      <span class="readout-val">—<span class="unit">eV</span></span>
+    </div>
+    <div class="readout-item" id="readout-be">
+      <span class="readout-lbl" id="be-lbl">Binding Energy (IE)</span>
+      <span class="readout-val" id="be-val">—<span class="unit">eV</span></span>
+    </div>
+    <div class="readout-item" id="readout-ke">
+      <span class="readout-lbl">Kinetic Energy (KE)</span>
+      <span class="readout-val" id="ke-val">—<span class="unit">eV</span></span>
+    </div>
+  </div>
+  <div id="status-msg" class="idle">Select an element and fire a photon.</div>
+</div>
+
+<!-- ── Comparison bars ── -->
+<div id="compare-section">
+  <div class="section-title" id="compare-title">Binding Energies — Neutral Mode (IE)</div>
+  <div id="compare-bars"></div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  CONFIG — edit here to change elements, data, or visuals    ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const ELEMENTS = [
+  { sym: 'Na', ie: 5.14,  ea: 0.55 },
+  { sym: 'C',  ie: 11.26, ea: 1.26 },
+  { sym: 'O',  ie: 13.62, ea: 1.46 },
+  { sym: 'Cl', ie: 12.97, ea: 3.61 },
+  { sym: 'F',  ie: 17.42, ea: 3.40 },
+];
+
+// Visual placeholder config.
+// Set imageUrl to a path string to swap in a real image; leave '' for colored box.
+const VISUALS = {
+  source:   { label: 'UV Light\nSource',   color: '#ffc840', imageUrl: '' },
+  chamber:  { label: 'Sample\nChamber',    color: '#60c8ff', imageUrl: '' },
+  detector: { label: 'Energy\nAnalyzer',   color: '#50e090', imageUrl: '' },
+};
+
+// Animation timing (ms)
+const ANIM = { photonDuration: 520, electronDuration: 380 };
+
+// Bar chart max scale (eV) — matches slider max
+const BAR_MAX_EV = 20;
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  STATE                                                       ║
+// ╚══════════════════════════════════════════════════════════════╝
+let currentElem   = 0;   // index into ELEMENTS
+let currentMode   = 'neutral'; // 'neutral' | 'anion'
+let animating     = false;
+let hasFired      = false;
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  HELPERS                                                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+function getBE() {
+  const el = ELEMENTS[currentElem];
+  return currentMode === 'neutral' ? el.ie : el.ea;
+}
+
+function getHV() {
+  return parseFloat(document.getElementById('hvSlider').value);
+}
+
+function fmt(n) { return n.toFixed(2); }
+
+// Easing: smooth in-out
+function ease(t) { return t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; }
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  VISUALS — apply image or placeholder box                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+function applyVisuals() {
+  [['source','box-source'],['chamber','box-chamber'],['detector','box-detector']].forEach(([key,id]) => {
+    const cfg = VISUALS[key];
+    const box = document.getElementById(id);
+    if (!cfg.imageUrl) return; // keep placeholder HTML
+    box.innerHTML = `<img src="${cfg.imageUrl}" alt="${cfg.label}">`;
+  });
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  UI UPDATE — called whenever mode/element/slider changes    ║
+// ╚══════════════════════════════════════════════════════════════╝
+function updateUI() {
+  const hv = getHV();
+  const be = getBE();
+  const el = ELEMENTS[currentElem];
+
+  // Slider display
+  document.getElementById('hvVal').textContent = fmt(hv) + ' eV';
+
+  // Chamber label
+  const charge = currentMode === 'anion' ? '⁻' : '';
+  document.getElementById('chamber-species').textContent = el.sym + charge;
+  document.getElementById('chamber-mode-label').textContent =
+    currentMode === 'neutral' ? 'NEUTRAL' : 'ANION (X⁻)';
+
+  // BE label in readout
+  document.getElementById('be-lbl').textContent =
+    currentMode === 'neutral' ? 'Binding Energy (IE)' : 'Binding Energy (EA)';
+
+  // Readout values (update live so user sees BE always)
+  document.getElementById('readout-hv').querySelector('.readout-val').innerHTML =
+    fmt(hv) + '<span class="unit">eV</span>';
+  document.getElementById('be-val').innerHTML =
+    fmt(be) + '<span class="unit">eV</span>';
+
+  // KE readout: only show after firing, otherwise show live preview
+  const ejected = hv >= be;
+  const ke = ejected ? hv - be : 0;
+  document.getElementById('ke-val').innerHTML =
+    (hasFired ? (ejected ? fmt(ke) : '—') : fmt(ejected ? ke : 0)) +
+    '<span class="unit">eV</span>';
+
+  // Energy bar (live)
+  updateEnergyBar(hv, be, ejected);
+
+  // Comparison bars
+  updateCompareBars();
+
+  // Status message (only meaningful after firing)
+  if (!hasFired) {
+    const statusEl = document.getElementById('status-msg');
+    statusEl.className = 'idle';
+    statusEl.textContent = 'Select an element and fire a photon.';
+  }
+}
+
+function updateEnergyBar(hv, be, ejected) {
+  const hvPct  = (hv / BAR_MAX_EV) * 100;
+  const bePct  = (Math.min(be, hv) / BAR_MAX_EV) * 100;
+  const kePct  = ejected ? ((hv - be) / BAR_MAX_EV) * 100 : 0;
+
+  const hvBar      = document.getElementById('energy-bar-hv');
+  const barBE      = document.getElementById('bar-be');
+  const barKE      = document.getElementById('bar-ke');
+  const barNoEject = document.getElementById('bar-no-eject');
+
+  hvBar.style.width = hvPct + '%';
+
+  if (ejected) {
+    // Normal split: BE + KE
+    const beFrac = hv > 0 ? (be / hv) * 100 : 0;
+    const keFrac = hv > 0 ? ((hv - be) / hv) * 100 : 0;
+    barBE.style.width      = beFrac + '%';
+    barKE.style.width      = keFrac + '%';
+    barBE.textContent      = beFrac > 12 ? 'BE' : '';
+    barKE.textContent      = keFrac > 8  ? 'KE' : '';
+    barNoEject.style.display = 'none';
+    barBE.style.display    = 'flex';
+    barKE.style.display    = 'flex';
+  } else {
+    // Below threshold: hν bar shown in red/dim — full width but labeled "hν < BE"
+    barBE.style.display    = 'none';
+    barKE.style.display    = 'none';
+    barNoEject.style.display = 'flex';
+    barNoEject.style.width = '100%';
+    barNoEject.textContent = hvPct > 12 ? 'hν < BE — no ejection' : '';
+  }
+}
+
+function updateCompareBars() {
+  const container = document.getElementById('compare-bars');
+  container.innerHTML = '';
+  document.getElementById('compare-title').textContent =
+    currentMode === 'neutral'
+      ? 'Binding Energies — Neutral Mode (First IE)'
+      : 'Binding Energies — Anion Mode (EA)';
+
+  const maxVal = Math.max(...ELEMENTS.map(e => currentMode === 'neutral' ? e.ie : e.ea));
+
+  ELEMENTS.forEach((el, i) => {
+    const val  = currentMode === 'neutral' ? el.ie : el.ea;
+    const pct  = (val / BAR_MAX_EV) * 100;
+    const row  = document.createElement('div');
+    row.className = 'cmp-row' + (i === currentElem ? ' selected' : '');
+
+    row.innerHTML = `
+      <span class="cmp-sym">${el.sym}</span>
+      <div class="cmp-bar-bg">
+        <div class="cmp-bar-fill" style="width:${pct}%">
+          <span class="cmp-bar-val">${val > 0 ? '' : ''}</span>
+        </div>
+      </div>
+      <span class="cmp-ev">${fmt(val)} eV</span>
+    `;
+    // Click to select element
+    row.addEventListener('click', () => { currentElem = i; hasFired = false; syncElemButtons(); updateUI(); });
+    container.appendChild(row);
+  });
+}
+
+function syncElemButtons() {
+  document.querySelectorAll('.elem-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === currentElem);
+  });
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ANIMATION                                                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+function animateParticle(dot, x0, x1, y, duration, onDone) {
+  dot.style.display = 'block';
+  dot.style.left    = x0 + 'px';
+  dot.style.top     = y  + 'px';
+
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const x = x0 + (x1 - x0) * ease(t);
+    dot.style.left = x + 'px';
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      dot.style.display = 'none';
+      onDone();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function fire() {
+  if (animating) return;
+  animating = true;
+  hasFired  = true;
+  document.getElementById('fireBtn').disabled = true;
+  document.getElementById('no-eject-label').style.display = 'none';
+
+  const hv = getHV();
+  const be = getBE();
+  const ejected = hv >= be;
+
+  const wrap     = document.getElementById('beamline-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const srcRect  = document.getElementById('box-source').getBoundingClientRect();
+  const chamRect = document.getElementById('box-chamber').getBoundingClientRect();
+  const detRect  = document.getElementById('box-detector').getBoundingClientRect();
+
+  // Positions relative to wrap
+  const srcRight  = srcRect.right  - wrapRect.left;
+  const chamLeft  = chamRect.left  - wrapRect.left + chamRect.width / 2;
+  const chamRight = chamRect.right - wrapRect.left;
+  const detLeft   = detRect.left   - wrapRect.left + detRect.width / 2;
+  const midY      = wrapRect.height / 2;
+
+  const photon   = document.getElementById('photon-dot');
+  const electron = document.getElementById('electron-dot');
+
+  // Phase 1: photon source → chamber
+  animateParticle(photon, srcRight + 4, chamLeft, midY, ANIM.photonDuration, () => {
+    // Impact
+    if (ejected) {
+      // Phase 2: electron chamber → detector
+      animateParticle(electron, chamRight + 4, detLeft, midY, ANIM.electronDuration, () => {
+        // Detector lights up
+        const det = document.getElementById('box-detector');
+        det.classList.add('lit');
+        setTimeout(() => det.classList.remove('lit'), 800);
+
+        // Update readout
+        const ke = hv - be;
+        document.getElementById('ke-val').innerHTML = fmt(ke) + '<span class="unit">eV</span>';
+        const msg = document.getElementById('status-msg');
+        msg.className = 'ejected';
+        msg.textContent = `Electron detected! KE = ${fmt(ke)} eV (= ${fmt(hv)} − ${fmt(be)})`;
+        updateEnergyBar(hv, be, true);
+        done();
+      });
+    } else {
+      // Below threshold: flash chamber red
+      const chamber = document.getElementById('box-chamber');
+      chamber.classList.remove('flash-fail');
+      void chamber.offsetWidth; // reflow to restart animation
+      chamber.classList.add('flash-fail');
+
+      document.getElementById('no-eject-label').style.display = 'block';
+      document.getElementById('ke-val').innerHTML = '—<span class="unit">eV</span>';
+      updateEnergyBar(hv, be, false);
+
+      const msg = document.getElementById('status-msg');
+      msg.className = 'no-ejection';
+      msg.textContent = `No ejection — hν (${fmt(hv)} eV) < BE (${fmt(be)} eV)`;
+      done();
+    }
+  });
+
+  function done() {
+    animating = false;
+    document.getElementById('fireBtn').disabled = false;
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  INIT & EVENT WIRING                                         ║
+// ╚══════════════════════════════════════════════════════════════╝
+function init() {
+  // Build element buttons
+  const btnContainer = document.getElementById('elemBtns');
+  ELEMENTS.forEach((el, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'elem-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = el.sym;
+    btn.addEventListener('click', () => {
+      currentElem = i;
+      hasFired = false;
+      syncElemButtons();
+      updateUI();
+    });
+    btnContainer.appendChild(btn);
+  });
+
+  // Slider
+  document.getElementById('hvSlider').addEventListener('input', () => {
+    hasFired = false;
+    updateUI();
+  });
+
+  // Mode toggle
+  document.getElementById('modeNeutral').addEventListener('click', () => {
+    currentMode = 'neutral';
+    document.getElementById('modeNeutral').classList.add('active');
+    document.getElementById('modeAnion').classList.remove('active');
+    hasFired = false;
+    document.getElementById('no-eject-label').style.display = 'none';
+    updateUI();
+  });
+  document.getElementById('modeAnion').addEventListener('click', () => {
+    currentMode = 'anion';
+    document.getElementById('modeAnion').classList.add('active');
+    document.getElementById('modeNeutral').classList.remove('active');
+    hasFired = false;
+    document.getElementById('no-eject-label').style.display = 'none';
+    updateUI();
+  });
+
+  // Fire button
+  document.getElementById('fireBtn').addEventListener('click', fire);
+
+  // Apply image overrides (no-ops while imageUrl is empty)
+  applyVisuals();
+
+  // Initial render
+  updateUI();
+}
+
+init();
+</script>
 </body>
 </html>
