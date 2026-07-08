@@ -871,7 +871,7 @@
         </div>
         <label class="toggle-label" id="showElectricRow">
           <input type="checkbox" id="showElectric">
-          <span class="field-label-electric">Show electric field</span>
+          <span class="field-label-electric">Show atomic radius</span>
         </label>
 
       </div>
@@ -2314,9 +2314,36 @@ function draw() {
   ctx.scale(viewZoom, viewZoom);
   ctx.translate(-_W / 2, -_H / 2);
 
-  const showElec = document.getElementById('showElectric').checked;
-  const parentMask = [{ cx: animParent.cx, cy: animParent.cy, r: animParent.sphereR + PARTICLE_RADIUS * 3.5 }];
-  if (showElec) drawElectricHeatmap(animParent.particles, 0.5, 1.0, parentMask);
+  const showAtomicRadius = document.getElementById('showElectric').checked;
+  if (showAtomicRadius && electrons.length) {
+    const outerShell = Math.max(...electrons.map(e => e.shell));
+    const outerR = getShellRadius(outerShell);
+    const cx = animParent.cx, cy = animParent.cy;
+    const Z = viewZoom;
+    ctx.save();
+    // Dashed ring
+    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
+    ctx.lineWidth = 1.5 / Z;
+    ctx.setLineDash([8 / Z, 5 / Z]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Radius line
+    ctx.strokeStyle = 'rgba(100,180,255,0.3)';
+    ctx.lineWidth = 1 / Z;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + outerR, cy);
+    ctx.stroke();
+    // Label in world space (font scaled by 1/zoom so it stays constant screen size)
+    const arUnit = (outerR / 100).toFixed(2);
+    ctx.font = `${13 / Z}px Lexend, sans-serif`;
+    ctx.fillStyle = 'rgba(140,200,255,0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`r = ${arUnit} au`, cx + outerR / 2, cy - 10 / Z);
+    ctx.restore();
+  }
   if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
   if (showParticles) drawParticles(animParent.particles, 1);
 
@@ -2375,7 +2402,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 
 document.getElementById('showElectric').addEventListener('change', function() {
-  logAction('Electric field: ' + (this.checked ? 'on' : 'off'));
+  logAction('Atomic radius: ' + (this.checked ? 'on' : 'off'));
   heatmapDirty = true;
   draw();
 });
