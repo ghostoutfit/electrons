@@ -901,6 +901,7 @@
     <div class="dev-row"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
     <div class="dev-row"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="0.5" step="0.005" value="0.12"><span class="dev-val" id="slRadialJitterVal">0.120</span></div>
     <div class="dev-row"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
+    <div class="dev-row"><label>band hw</label><input type="range" id="slBandHW" min="1" max="150" step="1" value="25"><span class="dev-val" id="slBandHWVal">25</span></div>
   </div>
 </div>
 <div id="forceVizPanel">
@@ -1771,6 +1772,7 @@ function getShellRadius(s) {
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
 const SHELL_ANGULAR_DAMP  = 0.994;   // very low damping — keeps orbital momentum
 let SHELL_JITTER          = 0.05;    // random angular kick per frame
+let eShellBandHW          = 25;      // shell band half-width (world units, fixed)
 const SHELL_REPULSE_K     = 0.007;   // same-shell angular repulsion (1/dA — longer range)
 const SHELL_MIN_SEP       = 0.05;    // min angular sep clamp
 const SHELL_MAX_DA        = 0.022;   // max angular speed (rad/frame)
@@ -1818,7 +1820,7 @@ function stepElectronsShells() {
 
     // Radial offset within the band
     const shellR = getShellRadius(e.shell);
-    const hw = shellR * 0.11;
+    const hw = eShellBandHW;
     if (!e.dRadial) e.dRadial = 0;
     e.dRadial += (Math.random() - 0.5) * eRadialJitter;  // stochastic radial kick
     e.dRadial -= e.radialOffset * SHELL_RADIAL_RESTORE; // spring back to center
@@ -1840,7 +1842,7 @@ function drawElectronsShells(ctx) {
   const occupied = new Set(electrons.map(e => e.shell));
   for (const s of occupied) {
     const r = getShellRadius(s);
-    const hw = r * 0.22;                  // half-width of the band
+    const hw = eShellBandHW;              // half-width of the band (world units)
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
     const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
@@ -2495,6 +2497,7 @@ window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
   bind('slShrink', 'slShrinkVal', v => { shellShrink = v; }, v => v.toFixed(2));
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
+  bind('slBandHW', 'slBandHWVal', v => { eShellBandHW = v; }, v => Math.round(v));
   document.getElementById('addElectronBtn').addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     addElectron();
