@@ -1320,8 +1320,14 @@ body:not([data-tab="pes"]) #pes-pane { display: none; }
         </div>
       </div>
     </div>
+
+    <!-- Dev toggle -->
+    <label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
+      <input type="checkbox" id="devToggle" style="accent-color:#eeff00;width:12px;height:12px;">
+      <span style="font-size:9px;letter-spacing:0.08em;color:rgba(238,255,0,0.45);font-weight:600;">dev</span>
+    </label>
   </div>
-  <div id="devSlidersRow" class="toolbar-row" style="gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
+  <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
     <div class="dev-row"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="250000"><span class="dev-val" id="slKVal">250000</span></div>
     <div class="dev-row"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
     <div class="dev-row"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
@@ -2889,6 +2895,9 @@ function _syncDevSliders() {
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
 }
 _syncDevSliders();
+document.getElementById('devToggle').addEventListener('change', function() {
+  _devSlidersRow.style.display = this.checked ? 'flex' : 'none';
+});
 
 document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
