@@ -1580,8 +1580,10 @@ function addElectron() {
     vy:  Math.cos(angle) * vCirc,
     trail: [],
     shell,
-    angle,        // used by Shells tab
-    dAngle: 0,    // angular velocity for Shells tab
+    angle,          // used by Shells tab
+    dAngle: 0.008,  // start with a base orbital drift
+    radialOffset: 0, // radial offset from shell center (world units)
+    dRadial: 0,
   });
   updateElectronCount();
 }
@@ -1764,39 +1766,61 @@ function getShellRadius(s) {
   return natural(s);
 }
 
-// ─── Shells tab: Bohr-model style — electrons locked to shell radii ───────────
-const SHELL_ANGULAR_DAMP  = 0.96;
-const SHELL_JITTER        = 0.003;   // random angular kick per frame
-const SHELL_REPULSE_K     = 0.018;   // same-shell angular repulsion strength
-const SHELL_MIN_SEP       = 0.04;    // min angular separation (rad) for force clamp
-const SHELL_MAX_DA        = 0.018;   // max angular speed (rad/frame) — prevents runaway with many electrons
+// ─── Shells tab: orbital physics with radial band and long-range repulsion ────
+const SHELL_ANGULAR_DAMP  = 0.994;   // very low damping — keeps orbital momentum
+const SHELL_JITTER        = 0.0004;  // tiny random angular kick per frame
+const SHELL_REPULSE_K     = 0.007;   // same-shell angular repulsion (1/dA — longer range)
+const SHELL_MIN_SEP       = 0.05;    // min angular sep clamp
+const SHELL_MAX_DA        = 0.022;   // max angular speed (rad/frame)
+const SHELL_BASE_DA       = 0.007;   // minimum orbital speed — always cruising
+const SHELL_RADIAL_K      = 0.0025;  // radial push from nearby same-shell electrons
+const SHELL_RADIAL_DAMP   = 0.92;    // radial velocity damping
+const SHELL_RADIAL_RESTORE = 0.018;  // restoring spring toward shell center radius
 
 function stepElectronsShells() {
   if (!animParent || !electrons.length) return;
 
-  // Same-shell angular repulsion (1/dAngle²)
+  // Same-shell repulsion: angular (1/dA, longer range) + radial (one in, one out)
   for (let i = 0; i < electrons.length; i++) {
     for (let j = i + 1; j < electrons.length; j++) {
       const ei = electrons[i], ej = electrons[j];
       if (ei.shell !== ej.shell) continue;
       let dA = ei.angle - ej.angle;
-      // Wrap to [-π, π]
       dA = ((dA + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
       const absDA = Math.abs(dA);
       if (absDA < 0.001) continue;
       const sign = dA > 0 ? 1 : -1;
-      const F = SHELL_REPULSE_K / Math.max(absDA * absDA, SHELL_MIN_SEP * SHELL_MIN_SEP);
+      // 1/dA falloff — much longer range than previous 1/dA²
+      const F = SHELL_REPULSE_K / Math.max(absDA, SHELL_MIN_SEP);
       ei.dAngle += sign * F;
       ej.dAngle -= sign * F;
+      // Radial component: close electrons push each other in/out of band
+      const radF = SHELL_RADIAL_K / Math.max(absDA * absDA, SHELL_MIN_SEP * SHELL_MIN_SEP);
+      ei.dRadial = (ei.dRadial || 0) + radF;
+      ej.dRadial = (ej.dRadial || 0) - radF;
     }
   }
 
   for (const e of electrons) {
+    // Enforce minimum orbital speed — always cruising
+    const dir = e.dAngle >= 0 ? 1 : -1;
+    if (Math.abs(e.dAngle) < SHELL_BASE_DA) {
+      e.dAngle += dir * (SHELL_BASE_DA - Math.abs(e.dAngle)) * 0.12;
+    }
+
     e.dAngle += (Math.random() - 0.5) * SHELL_JITTER;
     e.dAngle *= SHELL_ANGULAR_DAMP;
-    if (e.dAngle >  SHELL_MAX_DA) e.dAngle =  SHELL_MAX_DA;
-    if (e.dAngle < -SHELL_MAX_DA) e.dAngle = -SHELL_MAX_DA;
+    e.dAngle = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, e.dAngle));
     e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
+
+    // Radial offset within the band
+    const shellR = getShellRadius(e.shell);
+    const hw = shellR * 0.22;
+    if (!e.dRadial) e.dRadial = 0;
+    e.dRadial -= e.radialOffset * SHELL_RADIAL_RESTORE; // spring back to center
+    e.dRadial *= SHELL_RADIAL_DAMP;
+    e.dRadial = Math.max(-hw * 0.25, Math.min(hw * 0.25, e.dRadial));
+    e.radialOffset = Math.max(-hw * 0.85, Math.min(hw * 0.85, (e.radialOffset || 0) + e.dRadial));
   }
 }
 
@@ -1825,12 +1849,11 @@ function drawElectronsShells(ctx) {
     ctx.fill();
   }
 
-  // Electrons as glow dots on their shell circle
-  // Use cached glow image drawn at world-space size = 14/Z px diameter
+  // Electrons as glow dots within their shell band
   const worldR = 9 / Z;
   ctx.globalAlpha = 1;
   for (const e of electrons) {
-    const r = getShellRadius(e.shell);
+    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
     const ex = cx + Math.cos(e.angle) * r;
     const ey = cy + Math.sin(e.angle) * r;
     ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
@@ -1840,7 +1863,7 @@ function drawElectronsShells(ctx) {
   ctx.fillStyle = 'rgba(255,255,220,0.95)';
   const coreR = 1.5 / Z;
   for (const e of electrons) {
-    const r = getShellRadius(e.shell);
+    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
     ctx.beginPath();
     ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
     ctx.fill();
@@ -1849,7 +1872,7 @@ function drawElectronsShells(ctx) {
   // Highlight selected electron with a ring
   if (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length && arrowMode > 0) {
     const se = electrons[selectedElectronIdx];
-    const sr = getShellRadius(se.shell);
+    const sr = getShellRadius(se.shell) + (se.radialOffset || 0);
     const sex = cx + Math.cos(se.angle) * sr;
     const sey = cy + Math.sin(se.angle) * sr;
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
