@@ -899,6 +899,7 @@
     <div class="dev-row"><label>Trail</label><input type="range" id="slTrail" min="0" max="300" step="5" value="105"><span class="dev-val" id="slTrailVal">105</span></div>
     <div class="dev-row"><label>baseR</label><input type="range" id="slBaseR" min="50" max="2000" step="10" value="200"><span class="dev-val" id="slBaseRVal">200</span></div>
     <div class="dev-row"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
+    <div class="dev-row"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="0.5" step="0.005" value="0.12"><span class="dev-val" id="slRadialJitterVal">0.120</span></div>
   </div>
 </div>
 <div id="forceVizPanel">
@@ -1776,6 +1777,7 @@ const SHELL_BASE_DA       = 0.007;   // minimum orbital speed — always cruisin
 const SHELL_RADIAL_K      = 0.0025;  // radial push from nearby same-shell electrons
 const SHELL_RADIAL_DAMP   = 0.92;    // radial velocity damping
 const SHELL_RADIAL_RESTORE = 0.018;  // restoring spring toward shell center radius
+let eRadialJitter = 0.12;            // stochastic radial kick magnitude
 
 function stepElectronsShells() {
   if (!animParent || !electrons.length) return;
@@ -1815,9 +1817,9 @@ function stepElectronsShells() {
 
     // Radial offset within the band
     const shellR = getShellRadius(e.shell);
-    const hw = shellR * 0.22;
+    const hw = shellR * 0.11;
     if (!e.dRadial) e.dRadial = 0;
-    e.dRadial += (Math.random() - 0.5) * 0.12;          // stochastic radial kick
+    e.dRadial += (Math.random() - 0.5) * eRadialJitter;  // stochastic radial kick
     e.dRadial -= e.radialOffset * SHELL_RADIAL_RESTORE; // spring back to center
     e.dRadial *= SHELL_RADIAL_DAMP;
     e.dRadial = Math.max(-hw * 0.25, Math.min(hw * 0.25, e.dRadial));
@@ -2490,6 +2492,7 @@ window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
   bind('slTrail',  'slTrailVal',  v => { eTrailLen = Math.round(v); for (const e of electrons) { if (e.trail.length > eTrailLen) e.trail.splice(0, e.trail.length - eTrailLen); } }, v => Math.round(v));
   bind('slBaseR',  'slBaseRVal',  v => { shellBaseR  = v; }, v => Math.round(v));
   bind('slShrink', 'slShrinkVal', v => { shellShrink = v; }, v => v.toFixed(2));
+  bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   document.getElementById('addElectronBtn').addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     addElectron();
