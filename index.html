@@ -1808,17 +1808,22 @@ function drawElectronsShells(ctx) {
 
   ctx.save();
 
-  // Dotted yellow circles for each occupied shell
+  // Yellow shaded channel for each occupied shell
   const occupied = new Set(electrons.map(e => e.shell));
-  ctx.strokeStyle = 'rgba(238,255,0,0.5)';
-  ctx.lineWidth = 1.5 / Z;
-  ctx.setLineDash([10 / Z, 7 / Z]);
   for (const s of occupied) {
+    const r = getShellRadius(s);
+    const hw = r * 0.22;                  // half-width of the band
+    const rInner = Math.max(0, r - hw);
+    const rOuter = r + hw;
+    const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
+    grad.addColorStop(0,   'rgba(238,255,0,0)');
+    grad.addColorStop(0.5, 'rgba(238,255,0,0.18)');
+    grad.addColorStop(1,   'rgba(238,255,0,0)');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(cx, cy, getShellRadius(s), 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.setLineDash([]);
 
   // Electrons as glow dots on their shell circle
   // Use cached glow image drawn at world-space size = 14/Z px diameter
