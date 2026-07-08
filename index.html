@@ -843,7 +843,7 @@
               P: <span id="p1Protons" style="color:var(--accent1)">0</span>&nbsp;N: <span id="p1Neutrons">0</span>
             </div>
             <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:3px 5px;text-align:center;font-size:11px;color:var(--text-dim);line-height:1.5;white-space:nowrap;">
-              mass: <span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.0000</span> <span style="font-size:9px;opacity:0.6">u</span>
+              mass: <span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span>
             </div>
           </div>
         </div>
@@ -2345,7 +2345,7 @@ function updateParticleCounters() {
   p1N.textContent = N;
   const mass = Z * MASS_PROTON + N * MASS_NEUTRON + E * MASS_ELECTRON;
   const massEl = document.getElementById('atomMass');
-  if (massEl) massEl.textContent = mass.toFixed(4);
+  if (massEl) massEl.textContent = mass.toFixed(3);
 }
 
 
