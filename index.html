@@ -833,6 +833,7 @@ body[data-tab="pes"] #toolbar .toolbar-row:not(:first-child),
 body[data-tab="pes"] #devSlidersRow { display: none !important; }
 
 body:not([data-tab="pes"]) #pes-pane { display: none; }
+body[data-tab="pes"] { overflow-y: auto; }
 #pes-pane {
   display: flex;
   flex-direction: column;
@@ -1236,7 +1237,7 @@ body:not([data-tab="pes"]) #pes-pane { display: none; }
     <div id="tabBar">
       <button class="tab-btn" data-tab="trails">Trails</button>
       <button class="tab-btn active" data-tab="shells">Shells</button>
-      <button class="tab-btn" id="pesTabBtn">Photoelectric</button>
+      <button class="tab-btn" id="pesTabBtn" onclick="document.body.setAttribute('data-tab','pes');document.querySelectorAll('#tabBar .tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');if(typeof idleParticleRAF!=='undefined'&&idleParticleRAF){cancelAnimationFrame(idleParticleRAF);idleParticleRAF=null;}">Photoelectric</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
@@ -2887,7 +2888,7 @@ document.getElementById('devToggle').addEventListener('change', function() {
 
 document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
-    if (document.body.getAttribute('data-tab') === 'pes') switchToTab('builder');
+    switchToBuilder(btn);
     currentTab = btn.dataset.tab;
     document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
     _syncDevSliders();
@@ -3625,22 +3626,14 @@ function init() {
 init();
 
 // ── Tab switching ──────────────────────────────────────────────────────────
-const _pesTabBtn = document.getElementById('pesTabBtn');
-function switchToTab(name) {
-  document.body.setAttribute('data-tab', name);
-  _pesTabBtn.classList.toggle('active', name === 'pes');
-  if (name === 'builder') {
-    resize();
-    if (!idleParticleRAF) idleParticleLoop();
-  } else {
-    if (idleParticleRAF) { cancelAnimationFrame(idleParticleRAF); idleParticleRAF = null; }
-  }
+function switchToBuilder(activeBtn) {
+  document.body.setAttribute('data-tab', 'builder');
+  document.getElementById('pesTabBtn').classList.remove('active');
+  document.querySelectorAll('#tabBar .tab-btn[data-tab]').forEach(b =>
+    b.classList.toggle('active', b === activeBtn));
+  resize();
+  if (!idleParticleRAF) idleParticleLoop();
 }
-_pesTabBtn.addEventListener('click', () => {
-  // Deactivate atom-builder inner tabs
-  document.querySelectorAll('#tabBar .tab-btn').forEach(b => b.classList.remove('active'));
-  switchToTab('pes');
-});
 </script>
 
 <div id="bugModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(2,1,12,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
