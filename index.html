@@ -1817,6 +1817,7 @@ function stepElectronsShells() {
     const shellR = getShellRadius(e.shell);
     const hw = shellR * 0.22;
     if (!e.dRadial) e.dRadial = 0;
+    e.dRadial += (Math.random() - 0.5) * 0.12;          // stochastic radial kick
     e.dRadial -= e.radialOffset * SHELL_RADIAL_RESTORE; // spring back to center
     e.dRadial *= SHELL_RADIAL_DAMP;
     e.dRadial = Math.max(-hw * 0.25, Math.min(hw * 0.25, e.dRadial));
