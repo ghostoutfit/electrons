@@ -900,6 +900,7 @@
     <div class="dev-row"><label>baseR</label><input type="range" id="slBaseR" min="50" max="2000" step="10" value="200"><span class="dev-val" id="slBaseRVal">200</span></div>
     <div class="dev-row"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
     <div class="dev-row"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="0.5" step="0.005" value="0.12"><span class="dev-val" id="slRadialJitterVal">0.120</span></div>
+    <div class="dev-row"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.005" step="0.0001" value="0.0004"><span class="dev-val" id="slAngularJitterVal">0.0004</span></div>
   </div>
 </div>
 <div id="forceVizPanel">
@@ -1769,7 +1770,7 @@ function getShellRadius(s) {
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
 const SHELL_ANGULAR_DAMP  = 0.994;   // very low damping — keeps orbital momentum
-const SHELL_JITTER        = 0.0004;  // tiny random angular kick per frame
+let SHELL_JITTER          = 0.0004;  // random angular kick per frame
 const SHELL_REPULSE_K     = 0.007;   // same-shell angular repulsion (1/dA — longer range)
 const SHELL_MIN_SEP       = 0.05;    // min angular sep clamp
 const SHELL_MAX_DA        = 0.022;   // max angular speed (rad/frame)
@@ -2493,6 +2494,7 @@ window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
   bind('slBaseR',  'slBaseRVal',  v => { shellBaseR  = v; }, v => Math.round(v));
   bind('slShrink', 'slShrinkVal', v => { shellShrink = v; }, v => v.toFixed(2));
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
+  bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
   document.getElementById('addElectronBtn').addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     addElectron();
