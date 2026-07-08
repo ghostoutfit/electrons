@@ -1820,7 +1820,7 @@ function stepElectronsShells() {
 
     // Radial offset within the band
     const shellR = getShellRadius(e.shell);
-    const hw = eShellBandHW;
+    const hw = eShellBandHW + shellR * 0.5;
     if (!e.dRadial) e.dRadial = 0;
     e.dRadial += (Math.random() - 0.5) * eRadialJitter;  // stochastic radial kick
     e.dRadial -= e.radialOffset * SHELL_RADIAL_RESTORE; // spring back to center
@@ -1842,7 +1842,7 @@ function drawElectronsShells(ctx) {
   const occupied = new Set(electrons.map(e => e.shell));
   for (const s of occupied) {
     const r = getShellRadius(s);
-    const hw = eShellBandHW;              // half-width of the band (world units)
+    const hw = eShellBandHW + r * 0.5;   // fixed base + radius-proportional term
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
     const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
