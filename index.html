@@ -1741,6 +1741,7 @@ function setNucleusFromZ(Z) {
   // Keep shell electrons but clear trails since nucleus changed
   for (const e of electrons) e.trail = [];
   document.getElementById('protonSliderVal').textContent = Z;
+  document.getElementById('protonSlider').value = Z;
   draw();
 }
 
