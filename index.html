@@ -1658,19 +1658,30 @@ function stepElectrons() {
       const dot = e.vx * ndx / nd + e.vy * ndy / nd;
       if (dot < 0) { e.vx -= 2 * dot * ndx / nd; e.vy -= 2 * dot * ndy / nd; }
     }
-    // Soft walls around shell radius: push back if too far in or out
+    // Hard walls: electron stays within its shell band
     const innerWall = e.shell === 0 ? minR : getShellRadius(e.shell - 1);
-    const outerWall = shellMaxR + (getShellRadius(e.shell + 1) - shellMaxR) * 0.5;
-    if (nd > shellMaxR) {
+    const nextShellR = e.shell + 1 < SHELLS.length ? getShellRadius(e.shell + 1) : shellMaxR * 1.5;
+    const outerWall  = shellMaxR + (nextShellR - shellMaxR) * 0.5;
+    if (nd > outerWall) {
+      e.x = cx + ndx * (outerWall / nd);
+      e.y = cy + ndy * (outerWall / nd);
+      const dot = e.vx * ndx / nd + e.vy * ndy / nd;
+      if (dot > 0) { e.vx -= dot * ndx / nd; e.vy -= dot * ndy / nd; }
+    } else if (nd > shellMaxR) {
       const t = Math.min((nd - shellMaxR) / (outerWall - shellMaxR), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 15;
+      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 20;
       e.vx -= wallAcc * (ndx / nd) * eDt;
       e.vy -= wallAcc * (ndy / nd) * eDt;
     }
-    if (nd < shellMaxR && nd > innerWall) {
+    if (nd < innerWall) {
+      e.x = cx + ndx * (innerWall / nd);
+      e.y = cy + ndy * (innerWall / nd);
+      const dot = e.vx * ndx / nd + e.vy * ndy / nd;
+      if (dot < 0) { e.vx -= dot * ndx / nd; e.vy -= dot * ndy / nd; }
+    } else if (nd < shellMaxR && nd > innerWall) {
       const gap = shellMaxR - innerWall;
       const t = Math.min((shellMaxR - nd) / (gap * 0.5), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 8;
+      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 10;
       e.vx += wallAcc * (ndx / nd) * eDt;
       e.vy += wallAcc * (ndy / nd) * eDt;
     }
@@ -1765,22 +1776,12 @@ function getShellRadius(s) {
     return (shellBaseR * n * n) / (Z * shellShrink + 1);
   }
 
-  // Inner shell must clear the nucleus — clamp to 1.4× sphereR
+  // Inner shell must clear the nucleus.
+  // If it does, scale ALL shells up by the same factor so spacing stays even.
   const minR = animParent ? animParent.sphereR * 1.4 : 0;
-  const r0 = Math.max(natural(0), minR);
-
-  if (s === 0) return r0;
-
-  // Shells 1 & 2: if their natural position falls within the clamped zone,
-  // squish them evenly between r0 and shell 3's natural position
-  if (s <= 2) {
-    const rNat = natural(s);
-    if (rNat > r0 * 1.1) return rNat;          // enough room — no squish needed
-    const r3 = Math.max(natural(3), r0 * 1.5); // anchor for squish spread
-    return r0 + (s / 3) * (r3 - r0);
-  }
-
-  return natural(s);
+  const n0   = natural(0);
+  const scale = minR > n0 ? minR / n0 : 1;
+  return natural(s) * scale;
 }
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
