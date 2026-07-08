@@ -1842,7 +1842,7 @@ function drawElectronsShells(ctx) {
   const occupied = new Set(electrons.map(e => e.shell));
   for (const s of occupied) {
     const r = getShellRadius(s);
-    const hw = eShellBandHW + r * 0.5;   // fixed base + radius-proportional term
+    const hw = eShellBandHW + r * 0.1;   // fixed base + radius-proportional term
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
     const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
