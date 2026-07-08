@@ -804,7 +804,8 @@
   <div class="toolbar-row">
     <div id="tabBar">
       <button class="tab-btn" data-tab="trails">Trails</button>
-      <button class="tab-btn active" data-tab="shells">Shells</button>
+      <button class="tab-btn active" data-tab="shells">Shells 1</button>
+      <button class="tab-btn" data-tab="shells2">Shells 2</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
@@ -1893,6 +1894,50 @@ function drawElectronsShells(ctx) {
   ctx.restore();
 }
 
+// ─── Shells 2: classic dotted-ring view ───────────────────────────────────────
+function drawElectronsShells2(ctx) {
+  if (!animParent || !electrons.length) return;
+  if (!_eGlowImg) _buildElectronGlow();
+  const cx = animParent.cx, cy = animParent.cy;
+  const Z = viewZoom;
+
+  ctx.save();
+
+  // Dotted yellow circles for each occupied shell
+  const occupied = new Set(electrons.map(e => e.shell));
+  ctx.strokeStyle = 'rgba(238,255,0,0.5)';
+  ctx.lineWidth = 1.5 / Z;
+  ctx.setLineDash([10 / Z, 7 / Z]);
+  for (const s of occupied) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, getShellRadius(s), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Electrons pinned to exact shell radius
+  const worldR = 9 / Z;
+  ctx.globalAlpha = 1;
+  for (const e of electrons) {
+    const r = getShellRadius(e.shell);
+    const ex = cx + Math.cos(e.angle) * r;
+    const ey = cy + Math.sin(e.angle) * r;
+    ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
+  }
+
+  // Bright white core
+  ctx.fillStyle = 'rgba(255,255,220,0.95)';
+  const coreR = 1.5 / Z;
+  for (const e of electrons) {
+    const r = getShellRadius(e.shell);
+    ctx.beginPath();
+    ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 // ─── Force viz panel ──────────────────────────────────────────────────────────
 const FV_NUC_COLOR  = 'rgba(255,68,204,0.88)';   // magenta — nuclear attraction
 const FV_REP_COLOR  = 'rgba(0,238,255,0.88)';    // cyan    — electron repulsion
@@ -1924,7 +1969,7 @@ function fvArrowOnCtx(c, fromX, fromY, nx, ny, len, color, lw, headLen) {
 
 // Horizontal camera shift so nucleus centers in the space left of the force panel.
 function getCameraShiftX() {
-  if (arrowMode > 0 && currentTab === 'shells') {
+  if (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') {
     const panelW = forceVizPanelEl.offsetWidth || 353;
     return -(panelW + 20) / 2;
   }
@@ -1932,13 +1977,13 @@ function getCameraShiftX() {
 }
 
 function syncForceVizVisibility() {
-  forceVizPanelEl.style.display = (arrowMode > 0 && currentTab === 'shells') ? 'block' : 'none';
-  if (arrowMode > 0 && currentTab === 'shells') drawForceViz();
+  forceVizPanelEl.style.display = (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') ? 'block' : 'none';
+  if (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') drawForceViz();
   draw();
 }
 
 function drawForceViz() {
-  if (arrowMode === 0 || currentTab !== 'shells') return;
+  if (arrowMode === 0 || currentTab !== 'shells' && currentTab !== 'shells2') return;
   const fvc = forceVizCv.getContext('2d');
   const W = forceVizCv.width, H = forceVizCv.height;
   fvc.clearRect(0, 0, W, H);
@@ -2271,6 +2316,7 @@ function draw() {
   if (showParticles) drawParticles(animParent.particles, 1);
 
   if (currentTab === 'trails') drawElectrons(ctx);
+  else if (currentTab === 'shells2') drawElectronsShells2(ctx);
   else drawElectronsShells(ctx);
 
   ctx.restore();
@@ -2387,7 +2433,7 @@ let selectedElectronIdx = -1;
 const _devSlidersRow = document.getElementById('devSlidersRow');
 const _shellsOnlyHide = ['slRepulse', 'slDamp', 'slMinR', 'slMaxR'].map(id => document.getElementById(id)?.closest('.dev-row'));
 function _syncDevSliders() {
-  const isShells = currentTab === 'shells';
+  const isShells = currentTab === 'shells' || currentTab === 'shells2';
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
 }
 _syncDevSliders();
@@ -2628,7 +2674,7 @@ const _axisCol  = LIGHT ? 'rgba(0,0,0,0.55)' : 'rgba(0,200,255,0.35)';
 
 // ─── Canvas click: select electron for force display ─────────────────────────
 canvas.addEventListener('click', e => {
-  if (arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
+  if (arrowMode === 0 || currentTab !== 'shells' && currentTab !== 'shells2' || !animParent || !electrons.length) return;
   const rect = canvas.getBoundingClientRect();
   const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
 
