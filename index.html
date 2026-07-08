@@ -1519,20 +1519,20 @@ let eTrailLen = 105;
 // Shell definitions: capacity (max electrons), maxR (outer soft-wall radius)
 // Shell 0 = innermost (holds 2), shells 1–3 hold 8 each → total 26
 const SHELLS = [
-  { capacity: 2, maxR:    220 },
-  { capacity: 8, maxR:    440 },
-  { capacity: 8, maxR:    880 },
-  { capacity: 8, maxR:   1760 },
-  { capacity: 8, maxR:   3520 },
-  { capacity: 8, maxR:   7040 },
-  { capacity: 8, maxR:  14080 },
-  { capacity: 8, maxR:  28160 },
-  { capacity: 8, maxR:  56320 },
-  { capacity: 8, maxR: 112640 },
-  { capacity: 8, maxR: 225280 },
-  { capacity: 8, maxR: 450560 },
+  { capacity:  2, maxR:    220 },  // shell 0 (K)
+  { capacity:  8, maxR:    440 },  // shell 1 (L)
+  { capacity:  8, maxR:    880 },  // shell 2 (M)
+  { capacity: 18, maxR:   1760 },  // shell 3 (N)
+  { capacity: 18, maxR:   3520 },  // shell 4 (O)
+  { capacity: 32, maxR:   7040 },  // shell 5 (P)
+  { capacity: 32, maxR:  14080 },  // shell 6 (Q)
+  { capacity: 32, maxR:  28160 },
+  { capacity: 32, maxR:  56320 },
+  { capacity: 32, maxR: 112640 },
+  { capacity: 32, maxR: 225280 },
+  { capacity: 32, maxR: 450560 },
 ];
-const E_MAX_TOTAL = SHELLS.reduce((s, sh) => s + sh.capacity, 0); // 90
+const E_MAX_TOTAL = SHELLS.reduce((s, sh) => s + sh.capacity, 0); // 278
 
 function getShellForNewElectron() {
   let filled = 0;
