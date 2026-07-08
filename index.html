@@ -1258,9 +1258,8 @@ body:not([data-tab="pes"]) #pes-pane { display: none; }
     </div>
   </div>
   <div class="toolbar-row">
-    <!-- Far left: GO + CLEAR column -->
+    <!-- Far left: CLEAR column -->
     <div style="display:flex;flex-direction:column;align-self:stretch;gap:6px;padding:10px 0">
-      <button id="goBtn" class="btn" style="flex:1">&#9654; GO</button>
       <button id="clearBtn" class="btn" style="flex:1">Reset</button>
     </div>
 
@@ -2790,14 +2789,6 @@ function updateParticleCounters() {
 
 // ─── Controls ─────────────────────────────────────────────────────────────────
 
-document.getElementById('goBtn').addEventListener('click', () => {
-  // Go button regenerates the nucleus with a new seed
-  logAction('Pressed Go');
-  currentSeed = Math.floor(Math.random() * 1e9);
-  heatmapDirty = true;
-  initNuclei();
-  draw();
-});
 
 
 document.getElementById('zoomSlider').addEventListener('input', function () {
@@ -3305,7 +3296,6 @@ document.getElementById('bugModal').addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('bugModal').style.display === 'flex') closeBugModal();
 });
-</script>
 
 // ── PES JS ──────────────────────────────────────────────────────────────────
 // ╔══════════════════════════════════════════════════════════════╗
