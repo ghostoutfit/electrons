@@ -822,22 +822,22 @@
   border-bottom: 2px solid #7b6fff;
 }
 
-/* ── Push atom-builder toolbar down by tab-bar height ─────────────────────── */
-#toolbar { top: 40px !important; }
-
 /* ── Show/hide panes ─────────────────────────────────────────────────────── */
 body:not([data-tab="builder"]) #canvas,
-body:not([data-tab="builder"]) #toolbar,
 body:not([data-tab="builder"]) #scrubBar,
 body:not([data-tab="builder"]) #bugModal,
 body:not([data-tab="builder"]) #forceVizPanel { display: none !important; }
+
+/* On PES tab: keep toolbar visible (for tab row) but hide everything except tabBar row */
+body[data-tab="pes"] #toolbar .toolbar-row:not(:first-child),
+body[data-tab="pes"] #devSlidersRow { display: none !important; }
 
 body:not([data-tab="pes"]) #pes-pane { display: none; }
 #pes-pane {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 64px 20px 40px;
+  padding: 52px 20px 40px;
   gap: 0;
   min-height: 100vh;
 }
@@ -1226,12 +1226,6 @@ body:not([data-tab="pes"]) #pes-pane { display: none; }
 </head>
 <body data-tab="builder">
 
-<!-- ── Tab bar ── -->
-<div id="tab-bar">
-  <button class="sim-tab-btn active" data-tab="builder">Atom Builder</button>
-  <button class="sim-tab-btn" data-tab="pes">Photoelectron Spectroscopy</button>
-</div>
-
 <canvas id="canvas"></canvas>
 
 
@@ -1242,6 +1236,7 @@ body:not([data-tab="pes"]) #pes-pane { display: none; }
     <div id="tabBar">
       <button class="tab-btn" data-tab="trails">Trails</button>
       <button class="tab-btn active" data-tab="shells">Shells</button>
+      <button class="tab-btn" id="pesTabBtn">Photoelectric</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
@@ -2892,6 +2887,7 @@ document.getElementById('devToggle').addEventListener('change', function() {
 
 document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
+    if (document.body.getAttribute('data-tab') === 'pes') switchToTab('builder');
     currentTab = btn.dataset.tab;
     document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
     _syncDevSliders();
@@ -3629,10 +3625,10 @@ function init() {
 init();
 
 // ── Tab switching ──────────────────────────────────────────────────────────
+const _pesTabBtn = document.getElementById('pesTabBtn');
 function switchToTab(name) {
   document.body.setAttribute('data-tab', name);
-  document.querySelectorAll('#tab-bar .sim-tab-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.tab === name));
+  _pesTabBtn.classList.toggle('active', name === 'pes');
   if (name === 'builder') {
     resize();
     if (!idleParticleRAF) idleParticleLoop();
@@ -3640,8 +3636,11 @@ function switchToTab(name) {
     if (idleParticleRAF) { cancelAnimationFrame(idleParticleRAF); idleParticleRAF = null; }
   }
 }
-document.querySelectorAll('#tab-bar .sim-tab-btn').forEach(b =>
-  b.addEventListener('click', () => switchToTab(b.dataset.tab)));
+_pesTabBtn.addEventListener('click', () => {
+  // Deactivate atom-builder inner tabs
+  document.querySelectorAll('#tabBar .tab-btn').forEach(b => b.classList.remove('active'));
+  switchToTab('pes');
+});
 </script>
 
 <div id="bugModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(2,1,12,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
