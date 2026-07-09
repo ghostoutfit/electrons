@@ -1981,8 +1981,9 @@ function getCameraShiftX() {
 }
 
 function syncForceVizVisibility() {
-  forceVizPanelEl.style.display = (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') ? 'block' : 'none';
-  if (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') drawForceViz();
+  const showFV = arrowMode > 0 && (currentTab === 'shells' || currentTab === 'shells2');
+  forceVizPanelEl.style.display = showFV ? 'block' : 'none';
+  if (showFV) drawForceViz();
   draw();
 }
 
