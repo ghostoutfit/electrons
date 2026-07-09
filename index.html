@@ -1658,20 +1658,20 @@ function stepElectrons() {
       const dot = e.vx * ndx / nd + e.vy * ndy / nd;
       if (dot < 0) { e.vx -= 2 * dot * ndx / nd; e.vy -= 2 * dot * ndy / nd; }
     }
-    // Soft walls: gentle push back toward shell radius
+    // Soft walls around shell radius
     const innerWall = e.shell === 0 ? minR : getShellRadius(e.shell - 1);
     const nextShellR = e.shell + 1 < SHELLS.length ? getShellRadius(e.shell + 1) : shellMaxR * 1.5;
-    const outerWall  = shellMaxR + (nextShellR - shellMaxR) * 0.15;  // tight — only 15% into the gap
+    const outerWall  = shellMaxR + (nextShellR - shellMaxR) * 0.5;
     if (nd > shellMaxR) {
       const t = Math.min((nd - shellMaxR) / (outerWall - shellMaxR), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 40;
+      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 15;
       e.vx -= wallAcc * (ndx / nd) * eDt;
       e.vy -= wallAcc * (ndy / nd) * eDt;
     }
     if (nd < shellMaxR && nd > innerWall) {
       const gap = shellMaxR - innerWall;
       const t = Math.min((shellMaxR - nd) / (gap * 0.5), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 10;
+      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 8;
       e.vx += wallAcc * (ndx / nd) * eDt;
       e.vy += wallAcc * (ndy / nd) * eDt;
     }
