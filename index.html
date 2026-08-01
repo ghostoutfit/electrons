@@ -335,6 +335,36 @@
     position: relative;
   }
   .ctrl-box-pink input[type="range"] { width: 120px; }
+  #elemGrid {
+    display: grid;
+    grid-template-columns: repeat(8, 36px);
+    grid-template-rows: repeat(4, 34px);
+    gap: 2px;
+  }
+  .elem-btn {
+    position: relative;
+    width: 36px;
+    height: 34px;
+    padding: 0;
+    border-radius: 5px;
+    border: 1px solid;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: filter 0.12s;
+    font-family: 'Lexend', sans-serif;
+  }
+  .elem-btn:hover { filter: brightness(1.35); }
+  .elem-btn.active { outline: 2px solid rgba(255,255,255,0.85); outline-offset: 1px; }
+  .elem-btn .el-num { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; opacity: 0.55; }
+  .elem-btn .el-sym { font-size: 15px; font-weight: 700; line-height: 1; margin-top: 6px; }
+  .elem-btn.alkali     { background: rgba(20,70,200,0.25);  border-color: rgba(80,140,255,0.6);  color: #7ab0ff; }
+  .elem-btn.alkaline   { background: rgba(200,40,80,0.2);   border-color: rgba(255,90,130,0.6);  color: #ff9dbf; }
+  .elem-btn.transition { background: rgba(120,50,200,0.2);  border-color: rgba(170,90,255,0.6);  color: #c090ff; }
+  .elem-btn.carbon-gp  { background: rgba(160,130,0,0.2);   border-color: rgba(220,180,0,0.6);   color: #ddb800; }
+  .elem-btn.halogen    { background: rgba(0,160,140,0.2);   border-color: rgba(0,200,180,0.6);   color: #00c8b4; }
+  .elem-btn.noble      { background: rgba(200,40,140,0.2);  border-color: rgba(255,90,180,0.6);  color: #ff90c0; }
   .ctrl-box-label {
     position: absolute;
     bottom: 100%;
@@ -829,11 +859,7 @@
 
 <div id="toolbar">
   <div class="toolbar-row">
-    <div id="tabBar">
-      <button class="tab-btn" data-tab="trails">Trails</button>
-      <button class="tab-btn active" data-tab="shells">Shells 1</button>
-      <button class="tab-btn" data-tab="shells2">Shells 2</button>
-    </div>
+    <div id="tabBar"></div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
         <option value="hi-res">Hi-res</option>
@@ -854,27 +880,15 @@
       <button id="clearBtn" class="btn" style="flex:1">Reset</button>
     </div>
 
-    <!-- Pink box: New button + neutron speed + particle counters + Add fuel material -->
-    <div class="ctrl-box-pink">
+    <!-- Pink box: element picker grid -->
+    <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:7px;">
       <span class="ctrl-box-label ctrl-box-label-pink">PARTICLES</span>
-      <div style="display:flex;flex-direction:column;gap:5px;align-items:stretch;">
-        <div style="display:flex;flex-direction:column;gap:4px;width:100%">
-          <div style="display:flex;align-items:center;gap:4px">
-            <span style="font-size:10px;color:var(--text-dim);white-space:nowrap">Z = <span id="protonSliderVal" style="color:var(--accent1);font-variant-numeric:tabular-nums">16</span></span>
-            <button id="protonDown" style="background:none;border:none;color:var(--accent1);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.8;">◀</button>
-            <input type="range" id="protonSlider" min="0" max="36" step="1" value="16" style="flex:1;accent-color:var(--accent1)">
-            <button id="protonUp" style="background:none;border:none;color:var(--accent1);font-size:14px;cursor:pointer;padding:0 2px;line-height:1;opacity:0.8;">▶</button>
-          </div>
-          <div id="particleCounters" style="display:flex;gap:5px;justify-content:center;flex-direction:column;">
-            <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:3px 5px;text-align:center;font-size:11px;color:var(--text-dim);line-height:1.5;white-space:nowrap;">
-              P: <span id="p1Protons" style="color:var(--accent1)">0</span>&nbsp;N: <span id="p1Neutrons">0</span>
-            </div>
-            <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:3px 5px;text-align:center;font-size:11px;color:var(--text-dim);line-height:1.5;white-space:nowrap;">
-              mass: <span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span>
-            </div>
-          </div>
+      <div id="elemGrid"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:3px 7px;font-size:11px;color:var(--text-dim);line-height:1.6;white-space:nowrap;">
+          P: <span id="p1Protons" style="color:var(--accent1)">0</span>&nbsp; N: <span id="p1Neutrons">0</span>&nbsp; mass: <span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span>
         </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;">
           <span style="font-size:11px;color:rgba(238,255,0,0.6)">e⁻</span>
           <button id="removeElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:24px;height:24px;font-family:inherit;font-size:16px;cursor:pointer;line-height:1;padding:0;">−</button>
           <span id="electronCount" style="color:#eeff00;font-size:13px;min-width:18px;text-align:center;text-shadow:0 0 8px rgba(238,255,0,0.6)">0</span>
@@ -885,6 +899,9 @@
           </label>
         </div>
       </div>
+      <!-- Hidden slider kept in DOM for setNucleusFromZ compatibility -->
+      <input type="range" id="protonSlider" min="0" max="36" step="1" value="16" style="display:none">
+      <span id="protonSliderVal" style="display:none">16</span>
     </div>
 
     <!-- Blue box: stacked sliders + electric field + particles + forces -->
@@ -904,8 +921,9 @@
       </div>
       <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
         <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="awheel-item active" data-pmode="particles" style="display:flex;align-items:center;gap:5px"><canvas id="particlesModeIcon" width="22" height="18" style="display:block;flex-shrink:0;image-rendering:pixelated"></canvas>Particles</button>
-          <button class="awheel-item" data-pmode="outline" style="display:flex;align-items:center;gap:5px"><canvas id="outlineModeIcon" width="22" height="18" style="display:block;flex-shrink:0;image-rendering:pixelated"></canvas>Outline</button>
+          <button class="awheel-item active" data-tab="shells">Shells</button>
+          <button class="awheel-item" data-tab="trails">Trails</button>
+          <button class="awheel-item" data-tab="orbit3d">Orbit</button>
         </div>
         <div id="forceModeRow" style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-fmode="0">Forces off</button>
@@ -921,27 +939,25 @@
     </label>
   </div>
   <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
-    <div class="dev-row"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="250000"><span class="dev-val" id="slKVal">250000</span></div>
-    <div class="dev-row"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
-    <div class="dev-row"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
-    <div class="dev-row"><label>Min r</label><input type="range" id="slMinR" min="5" max="100" step="1" value="30"><span class="dev-val" id="slMinRVal">30</span></div>
-    <div class="dev-row"><label>Max r</label><input type="range" id="slMaxR" min="50" max="800" step="10" value="220"><span class="dev-val" id="slMaxRVal">220</span></div>
-    <div class="dev-row"><label>dt</label><input type="range" id="slDt" min="0.05" max="2.0" step="0.05" value="1.45"><span class="dev-val" id="slDtVal">1.45</span></div>
-    <div class="dev-row"><label>Trail</label><input type="range" id="slTrail" min="0" max="300" step="5" value="105"><span class="dev-val" id="slTrailVal">105</span></div>
+    <div class="dev-row" style="display:none"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="140000"><span class="dev-val" id="slKVal">140000</span></div>
+    <div class="dev-row" style="display:none"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
+    <div class="dev-row" style="display:none"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
+    <div class="dev-row" style="display:none"><label>Min r</label><input type="range" id="slMinR" min="5" max="100" step="1" value="80"><span class="dev-val" id="slMinRVal">80</span></div>
+    <div class="dev-row" style="display:none"><label>Max r</label><input type="range" id="slMaxR" min="5" max="500" step="5" value="90"><span class="dev-val" id="slMaxRVal">90</span></div>
+    <div class="dev-row" style="display:none"><label>dt</label><input type="range" id="slDt" min="0.05" max="2.0" step="0.05" value="1.45"><span class="dev-val" id="slDtVal">1.45</span></div>
+    <div class="dev-row" style="display:none"><label>Trail</label><input type="range" id="slTrail" min="0" max="300" step="5" value="105"><span class="dev-val" id="slTrailVal">105</span></div>
     <div class="dev-row"><label>baseR</label><input type="range" id="slBaseR" min="50" max="2000" step="10" value="200"><span class="dev-val" id="slBaseRVal">200</span></div>
-    <div class="dev-row"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
-    <div class="dev-row"><label>arrow exp</label><input type="range" id="slFvExp" min="0.05" max="0.5" step="0.01" value="0.13"><span class="dev-val" id="slFvExpVal">0.20</span></div>
-    <div class="dev-row"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slRadialJitterVal">1.000</span></div>
-    <div class="dev-row"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
-    <div class="dev-row"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
-    <div class="dev-row"><label>wall k0</label><input type="range" id="slWallK0" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK0Val">15</span></div>
-    <div class="dev-row"><label>wall k1</label><input type="range" id="slWallK1" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK1Val">15</span></div>
-    <div class="dev-row"><label>wall k2</label><input type="range" id="slWallK2" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK2Val">15</span></div>
-    <div class="dev-row"><label>wall k3</label><input type="range" id="slWallK3" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK3Val">15</span></div>
-    <div class="dev-row"><label>wall k4</label><input type="range" id="slWallK4" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK4Val">15</span></div>
-    <div class="dev-row"><label>wall k5</label><input type="range" id="slWallK5" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK5Val">15</span></div>
-    <div class="dev-row"><label>wall k6</label><input type="range" id="slWallK6" min="0" max="200" step="1" value="15"><span class="dev-val" id="slWallK6Val">15</span></div>
+    <div class="dev-row"><label>dot size</label><input type="range" id="slElectronDot" min="0" max="20" step="0.5" value="9"><span class="dev-val" id="slElectronDotVal">9.0</span></div>
+    <div class="dev-row" style="display:none"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
+    <div class="dev-row" style="display:none"><label>arrow exp</label><input type="range" id="slFvExp" min="0.05" max="0.5" step="0.01" value="0.13"><span class="dev-val" id="slFvExpVal">0.20</span></div>
+    <div class="dev-row" style="display:none"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slRadialJitterVal">1.000</span></div>
+    <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
+    <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
+    <div id="shellDevSliders"></div>
   </div>
+</div>
+<div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
+  <div id="orbit3dDevSliders" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"></div>
 </div>
 <div id="forceVizPanel">
   <div class="fp-rh nw" data-dir="nw"></div><div class="fp-rh ne" data-dir="ne"></div>
@@ -1552,12 +1568,18 @@ let _imgParent = null;
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
 let electrons = [];
-let eK = 250000, eRepulse = 50000, eDamp = 1, eMinR = 30, eMaxR = 220, eDt = 1.45;
+let eK = 140000, eRepulse = 50000, eDamp = 1, eMinR = 80, eMaxR = 90, eDt = 1.45;
 let eTrailLen = 105;
-let shellWallK = [15, 15, 15, 15, 15, 15, 15];  // outer wall force per shell (index = shell number)
+const SHELL_COLORS = ['#ff4488', '#00ddff', '#ff8800', '#88ff00'];
+let shellK          = [140000, 11000, 91000, 140000]; // per-shell nuclear k
+let shellWallMult   = [1.0, 0.35, 0.95, 1.0];         // per-shell wall engagement multiplier
+let shellWallK      = [15, 155, 815, 15];              // per-shell wall stiffness
+let shellVMax       = [0.5, 0.25, 0.6, 0.5];          // per-shell V_MAX coefficient (× shellRadius)
+let shellRadialDamp = [0, 0, 0, 0];                    // fraction of radial velocity removed per frame (0 = off, 1 = fully tangential)
+let shellMinR       = [80, 80, 170, 80];               // per-shell inner hard floor clearance beyond nucleus surface
 
 // Shell definitions: capacity (max electrons), maxR (outer soft-wall radius)
-// Shell 0 = innermost (holds 2), shells 1–3 hold 8 each → total 26
+// Shell 2 can hold 18e via d-fill (transition metals); see getShellForNewElectron
 const SHELLS = [
   { capacity:  2, maxR:    220 },  // shell 0 (K)
   { capacity:  8, maxR:    440 },  // shell 1 (L)
@@ -1574,13 +1596,311 @@ const SHELLS = [
 ];
 const E_MAX_TOTAL = SHELLS.reduce((s, sh) => s + sh.capacity, 0); // 278
 
-function getShellForNewElectron() {
-  let filled = 0;
-  for (let s = 0; s < SHELLS.length; s++) {
-    filled += SHELLS[s].capacity;
-    if (electrons.length < filled) return s;
+let electronDotR = 9.0;  // electron dot radius (shells mode); 0 = hidden
+
+// ─── Orbit 3D simulation ──────────────────────────────────────────────────────
+const ORB3D_N = 4;  // max shells supported
+let orb3dRadScale = 1.0;  // orbit-only view scale
+let orb3dDotR = 3.0;      // dot radius at trail head in orbit (0 = hidden)
+
+// Per-shell group state — each shell has independent pair/loner groups
+let orb3dShellCounts = new Array(ORB3D_N).fill(0);  // total electrons per shell (for display)
+let orb3dShellGroups = Array.from({length: ORB3D_N}, () => []);
+// Each group: { count:1|2, phase, wanderPh, radPh, axisPhi, trails:[[],[]] }
+
+// Per-shell tunable parameters
+let orbShellSpeed    = [8.0, 7.0, 6.0, 5.0];
+let orbShellRadAmp   = [0.20, 0.20, 0.10, 0.05];
+let orbShellWander   = [45,   50,   55,   60];
+let orbShellTrailLen = [140,  140,  140,  140];
+
+function _o3Cross(a, b) {
+  return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+}
+function _o3Norm(v) {
+  const m = Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+  return m < 1e-10 ? [1,0,0] : [v[0]/m, v[1]/m, v[2]/m];
+}
+
+function stepOrbit3D() {
+  const occupied = [...new Set(electrons.map(e => e.shell))];
+  for (const s of occupied) {
+    const sp      = orbShellSpeed[s]    ?? 8;
+    const radAmp  = orbShellRadAmp[s]   ?? 0.2;
+    const wandDeg = orbShellWander[s]   ?? 45;
+    const maxLen  = orbShellTrailLen[s] ?? 140;
+    const phStep  = 0.025 * sp;
+    for (const grp of orb3dShellGroups[s]) {
+      grp.wanderPh += 0.0025 * sp;
+      grp.radPh    += 0.018  * sp;
+      grp.axisPhi  += 0.0004 * sp;
+      const r  = 1 + radAmp * Math.sin(grp.radPh);
+      const wr = (wandDeg * Math.PI / 180) * Math.sin(grp.wanderPh);
+      const axis = [
+        Math.sin(wr) * Math.cos(grp.axisPhi),
+        Math.sin(wr) * Math.sin(grp.axisPhi),
+        Math.cos(wr),
+      ];
+      const ref = Math.abs(axis[0]) < 0.9 ? [1,0,0] : [0,1,0];
+      const e1 = _o3Norm(_o3Cross(axis, ref));
+      const e2 = _o3Cross(axis, e1);
+      grp.phase += phStep;
+      for (let ei = 0; ei < grp.count; ei++) {
+        const ph = grp.phase + ei * Math.PI;
+        const c = Math.cos(ph), ss = Math.sin(ph);
+        const trail = grp.trails[ei];
+        trail.push([r*(c*e1[0]+ss*e2[0]), r*(c*e1[1]+ss*e2[1]), r*(c*e1[2]+ss*e2[2])]);
+        if (trail.length > maxLen) trail.splice(0, trail.length - maxLen);
+      }
+    }
   }
-  return SHELLS.length - 1; // overflow into last shell
+}
+
+function drawOrbit3D(ctx) {
+  if (!animParent || !electrons.length) return;
+  const W = canvas.width, H = canvas.height;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const _sbH = document.getElementById('scrubBar').classList.contains('visible')
+    ? document.getElementById('scrubBar').offsetHeight : 0;
+  const cy = (tbH + H - _sbH) / 2;
+  const cx = W * 0.5;
+
+  // Nucleus — same camera transform as Shells/Trails so it appears at (cx, cy)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(viewZoom, viewZoom);
+  ctx.translate(-W / 2, -H / 2);
+  if (showParticles) drawParticles(animParent.particles, 1);
+  else drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
+  ctx.restore();
+
+  // 3D projection — orthographic, screen-space coords centered at (cx, cy)
+  const AZ = 0.60, EL = 0.42;
+  const cosAZ = Math.cos(AZ), sinAZ = Math.sin(AZ), cosEL = Math.cos(EL), sinEL = Math.sin(EL);
+  function proj3D(nx, ny, nz, r3d) {
+    const x = nx*r3d, y = ny*r3d, z = nz*r3d;
+    const rx = x*cosAZ + z*sinAZ, ry = y, rz = -x*sinAZ + z*cosAZ;
+    return [cx + rx, cy - (ry*cosEL - rz*sinEL)];
+  }
+
+  const occupied = [...new Set(electrons.map(e => e.shell))].sort((a,b) => a-b);
+
+  // Shell reference rings
+  ctx.lineWidth = 1;
+  for (const s of occupied) {
+    const r3d = getShellRadius(s) * orb3dRadScale * viewZoom;
+    ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length] + '28';
+    ctx.beginPath();
+    for (let a = 0; a <= 360; a += 5) {
+      const rad = a * Math.PI / 180;
+      const [sx,sy] = proj3D(Math.cos(rad), 0, Math.sin(rad), r3d);
+      a === 0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    for (let a = -90; a <= 90; a += 4) {
+      const rad = a * Math.PI / 180;
+      const [sx,sy] = proj3D(Math.cos(rad), Math.sin(rad), 0, r3d);
+      a === -90 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+  }
+
+  // Trails
+  ctx.lineWidth = 1.5;
+  for (const s of occupied) {
+    const r3d = getShellRadius(s) * orb3dRadScale * viewZoom;
+    const col = SHELL_COLORS[s % SHELL_COLORS.length];
+    for (const grp of orb3dShellGroups[s]) {
+      for (let ei = 0; ei < grp.count; ei++) {
+        const trail = grp.trails[ei];
+        const n = trail.length;
+        for (let i = 1; i < n; i++) {
+          const p0 = trail[i-1], p1 = trail[i];
+          const [sx0,sy0] = proj3D(p0[0],p0[1],p0[2], r3d);
+          const [sx1,sy1] = proj3D(p1[0],p1[1],p1[2], r3d);
+          ctx.globalAlpha = (i / n) * 0.75;
+          ctx.strokeStyle = col;
+          ctx.beginPath(); ctx.moveTo(sx0,sy0); ctx.lineTo(sx1,sy1); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // Dot at trail head
+        if (orb3dDotR > 0 && n > 0) {
+          const tip = trail[n - 1];
+          const [tx, ty] = proj3D(tip[0], tip[1], tip[2], r3d);
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.arc(tx, ty, orb3dDotR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Atomic radius label — same flat horizontal line as Shells tab
+  if (occupied.length) {
+    const outerShell = Math.max(...occupied);
+    const outerR = getShellRadius(outerShell) * orb3dRadScale * viewZoom;
+    const arUnit = (getShellRadius(outerShell) / 100).toFixed(2);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + outerR, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(140,200,255,0.9)';
+    ctx.font = '13px Lexend, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`r = ${arUnit}`, cx + outerR / 2, cy - 10);
+    ctx.restore();
+  }
+}
+
+// ─── Orbit 3D per-shell dev sliders ──────────────────────────────────────────
+const ORB3D_SHELL_SLIDER_DEFS = [
+  { key:'speed',  label:'speed',    min:0.5, max:12,  step:0.1,  fmt:v=>v.toFixed(1),            get:s=>orbShellSpeed[s],    set:(s,v)=>{ orbShellSpeed[s]=v; } },
+  { key:'rad',    label:'radial ±', min:0,   max:0.5, step:0.01, fmt:v=>Math.round(v*100)+'%',  get:s=>orbShellRadAmp[s],   set:(s,v)=>{ orbShellRadAmp[s]=v; } },
+  { key:'wander', label:'wander°',  min:0,   max:89,  step:1,    fmt:v=>Math.round(v)+'°',       get:s=>orbShellWander[s],   set:(s,v)=>{ orbShellWander[s]=v; } },
+  { key:'trail',  label:'trail',    min:20,  max:2000,step:20,   fmt:v=>Math.round(v)+'',        get:s=>orbShellTrailLen[s], set:(s,v)=>{ orbShellTrailLen[s]=v; for(const grp of orb3dShellGroups[s]) for(let ei=0;ei<grp.count;ei++){const t=grp.trails[ei];if(t.length>v)t.splice(0,t.length-v);} } },
+];
+
+function _clearOrb3dShell(s) {
+  orb3dShellCounts[s] = 0;
+  orb3dShellGroups[s] = [];
+}
+
+function _growOrb3dShell(s, newCount) {
+  const groups = orb3dShellGroups[s];
+  while (orb3dShellCounts[s] < newCount) {
+    const lastGrp = groups[groups.length - 1];
+    if (lastGrp && lastGrp.count === 1) {
+      // Promote loner to pair — keep its existing trail
+      lastGrp.count = 2;
+      lastGrp.trails.push([]);
+    } else {
+      // New loner group
+      const gi = groups.length;
+      groups.push({
+        count: 1,
+        phase: 0,
+        wanderPh: gi * 2.1,
+        radPh:    gi * 1.3 + s * 1.1,
+        axisPhi:  gi > 0 ? gi * Math.PI / (gi + 1) : 0,
+        trails: [[]],
+      });
+    }
+    orb3dShellCounts[s]++;
+  }
+}
+
+function _shrinkOrb3dShell(s, newCount) {
+  const groups = orb3dShellGroups[s];
+  while (orb3dShellCounts[s] > newCount) {
+    const lastGrp = groups[groups.length - 1];
+    if (lastGrp.count === 2) {
+      // Demote pair to loner — keep the first trail
+      lastGrp.count = 1;
+      lastGrp.trails.pop();
+    } else {
+      // Remove the loner group entirely
+      groups.pop();
+    }
+    orb3dShellCounts[s]--;
+  }
+}
+
+function syncOrb3dShellSliders() {
+  const container = document.getElementById('orbit3dDevSliders');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Recount electrons per shell and update orbit state incrementally
+  const countPerShell = {};
+  for (const e of electrons) countPerShell[e.shell] = (countPerShell[e.shell] || 0) + 1;
+  for (let s = 0; s < ORB3D_N; s++) {
+    const newCount = countPerShell[s] || 0;
+    const oldCount = orb3dShellCounts[s];
+    if (newCount === oldCount) continue;
+    if (newCount === 0)          _clearOrb3dShell(s);
+    else if (newCount > oldCount) _growOrb3dShell(s, newCount);
+    else                          _shrinkOrb3dShell(s, newCount);
+  }
+
+  // Global controls group
+  const globalGrp = document.createElement('div');
+  globalGrp.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding-right:12px;border-right:1px solid rgba(100,140,255,0.2)';
+
+  function _mkRow(lbl, inp, valSpan) {
+    const row = document.createElement('div'); row.className = 'dev-row';
+    row.append(lbl, inp, valSpan); return row;
+  }
+  function _mkSlider(min, max, step, val, onChange) {
+    const inp = document.createElement('input');
+    inp.type='range'; inp.min=min; inp.max=max; inp.step=step; inp.value=val;
+    inp.addEventListener('input', ()=>onChange(parseFloat(inp.value)));
+    return inp;
+  }
+
+  // radius scale
+  const radVal = document.createElement('span'); radVal.className='dev-val'; radVal.textContent=orb3dRadScale.toFixed(2)+'×';
+  const radLbl = document.createElement('label'); radLbl.textContent='orbit r';
+  const radIn = _mkSlider(0.2, 2.0, 0.05, orb3dRadScale, v=>{ orb3dRadScale=v; radVal.textContent=v.toFixed(2)+'×'; });
+  globalGrp.appendChild(_mkRow(radLbl, radIn, radVal));
+
+  // baseR (shared with shells/trails)
+  const brVal = document.createElement('span'); brVal.className='dev-val'; brVal.textContent=Math.round(shellBaseR);
+  const brLbl = document.createElement('label'); brLbl.textContent='baseR';
+  const brIn = _mkSlider(50, 2000, 10, shellBaseR, v=>{
+    shellBaseR=v; brVal.textContent=Math.round(v);
+    const s2 = document.getElementById('slBaseR'); if(s2){s2.value=v;}
+    const s2v = document.getElementById('slBaseRVal'); if(s2v){s2v.textContent=Math.round(v);}
+  });
+  globalGrp.appendChild(_mkRow(brLbl, brIn, brVal));
+
+  // dot size (orbit trail head)
+  const dotVal = document.createElement('span'); dotVal.className='dev-val'; dotVal.textContent=orb3dDotR.toFixed(1);
+  const dotLbl = document.createElement('label'); dotLbl.textContent='dot size';
+  const dotIn = _mkSlider(0, 12, 0.5, orb3dDotR, v=>{ orb3dDotR=v; dotVal.textContent=v.toFixed(1); });
+  globalGrp.appendChild(_mkRow(dotLbl, dotIn, dotVal));
+
+  container.appendChild(globalGrp);
+
+  // Per-shell groups
+  const occupied = [...new Set(electrons.map(e => e.shell))].sort((a,b)=>a-b);
+  for (const s of occupied) {
+    const col = SHELL_COLORS[s % SHELL_COLORS.length];
+    const grp = document.createElement('div');
+    grp.style.cssText = `display:flex;flex-direction:column;gap:4px;border-left:2px solid ${col}55;padding-left:8px`;
+    const title = document.createElement('div');
+    title.style.cssText = `font-size:10px;color:${col};font-weight:600;letter-spacing:0.05em;opacity:0.85`;
+    title.textContent = `Shell ${s}  (${orb3dShellCounts[s]}e)`;
+    grp.appendChild(title);
+    for (const def of ORB3D_SHELL_SLIDER_DEFS) {
+      const row = document.createElement('div'); row.className = 'dev-row';
+      const lbl = document.createElement('label'); lbl.textContent = def.label;
+      const inp = document.createElement('input');
+      inp.type='range'; inp.min=def.min; inp.max=def.max; inp.step=def.step; inp.value=def.get(s);
+      const val = document.createElement('span'); val.className='dev-val'; val.textContent=def.fmt(def.get(s));
+      inp.addEventListener('input', ()=>{ const v=parseFloat(inp.value); def.set(s,v); val.textContent=def.fmt(v); });
+      row.append(lbl, inp, val);
+      grp.appendChild(row);
+    }
+    container.appendChild(grp);
+  }
+}
+
+function getShellForNewElectron() {
+  const n = electrons.length;
+  if (n < 2)  return 0;  // shell 0: 1s (2e)
+  if (n < 10) return 1;  // shell 1: 2s2p (8e)
+  if (n < 18) return 2;  // shell 2: 3s3p (8e, Ar core)
+  if (n < 20) return 3;  // shell 3: 4s (K, Ca — 2e before d-fill)
+  if (n < 30) return 2;  // shell 2: 3d fill (transition metals — up to 18e total)
+  return 3;              // shell 3: 4p (Ga–Kr — resumes from 3e)
 }
 
 // Offscreen glow image — built once, reused for all electrons
@@ -1615,8 +1935,7 @@ function addElectron() {
   const cx = animParent.cx, cy = animParent.cy;
   const shell = getShellForNewElectron();
   const shellR = getShellRadius(shell);
-  const shellMinR = shell === 0 ? animParent.sphereR + eMinR : getShellRadius(shell - 1);
-  const dist = (shellMinR + shellR) / 2;
+  const dist = shellR; // place at shell ring radius to match shells-mode visual
   const angle = (electrons.length * (2 * Math.PI / 3) + Math.random() * 0.4) % (Math.PI * 2);
   const vCirc = Math.sqrt(eK / dist) * eDt * 30;
   electrons.push({
@@ -1655,30 +1974,16 @@ function updateElectronCount() {
 function stepElectrons() {
   if (!animParent || !electrons.length) return;
   const cx = animParent.cx, cy = animParent.cy;
-  // Electron-electron repulsion — cross-shell pairs repel 3× harder
-  const E_MIN_SEP = 25;
-  for (let i = 0; i < electrons.length; i++) {
-    for (let j = i + 1; j < electrons.length; j++) {
-      const ei = electrons[i], ej = electrons[j];
-      const dx = ei.x - ej.x, dy = ei.y - ej.y;
-      const dist = Math.max(Math.sqrt(dx * dx + dy * dy), E_MIN_SEP);
-      const crossShell = (ei.shell !== ej.shell) ? 3.0 : 1.0;
-      const F = eRepulse * crossShell / (dist * dist);
-      const ax = F * dx / dist * eDt;
-      const ay = F * dy / dist * eDt;
-      ei.vx += ax; ei.vy += ay;
-      ej.vx -= ax; ej.vy -= ay;
-    }
-  }
-  // Min radius = nucleus surface + slider clearance (shared for all shells)
-  const minR = animParent.sphereR + eMinR;
   for (const e of electrons) {
     const shellMaxR = getShellRadius(e.shell);
-    const V_MAX = shellMaxR * 0.5;
+    const V_MAX = shellMaxR * (shellVMax[e.shell] ?? 0.5);
+    const minR = e.shell === 0
+      ? animParent.sphereR + (shellMinR[e.shell] ?? eMinR)
+      : getShellRadius(e.shell - 1);
     const dx = cx - e.x, dy = cy - e.y;
     let dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < minR) dist = minR;
-    const F = eK / (dist * dist);
+    const F = (shellK[e.shell] ?? eK) / (dist * dist);
     const ax = F * dx / dist;
     const ay = F * dy / dist;
     e.vx += ax * eDt;
@@ -1698,22 +2003,35 @@ function stepElectrons() {
       const dot = e.vx * ndx / nd + e.vy * ndy / nd;
       if (dot < 0) { e.vx -= 2 * dot * ndx / nd; e.vy -= 2 * dot * ndy / nd; }
     }
-    // Soft walls around shell radius
+    // Soft walls: shell 0 has inner+outer with quadratic ramp; outer shells outer-only with linear ramp
     const innerWall = e.shell === 0 ? minR : getShellRadius(e.shell - 1);
     const nextShellR = e.shell + 1 < SHELLS.length ? getShellRadius(e.shell + 1) : shellMaxR * 1.5;
-    const outerWall  = shellMaxR + (nextShellR - shellMaxR) * 0.5;
-    if (nd > shellMaxR) {
-      const t = Math.min((nd - shellMaxR) / (outerWall - shellMaxR), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * (shellWallK[e.shell] ?? 15);
+    const outerZone = e.shell === 0 ? (nextShellR - shellMaxR) * 0.5 : shellMaxR * 0.2;
+    const wallStart = shellMaxR * (shellWallMult[e.shell] ?? 1.0);
+    if (nd > wallStart) {
+      const t = Math.min((nd - wallStart) / outerZone, 1);
+      const ramp = e.shell === 0 ? t * t : t;
+      const wallAcc = ((shellK[e.shell] ?? eK) / (shellMaxR * shellMaxR)) * ramp * (shellWallK[e.shell] ?? 15);
       e.vx -= wallAcc * (ndx / nd) * eDt;
       e.vy -= wallAcc * (ndy / nd) * eDt;
     }
-    if (nd < shellMaxR && nd > innerWall) {
+    if (e.shell === 0 && nd < shellMaxR && nd > innerWall) {
       const gap = shellMaxR - innerWall;
       const t = Math.min((shellMaxR - nd) / (gap * 0.5), 1);
-      const wallAcc = (eK / (shellMaxR * shellMaxR)) * t * t * 8;
+      const wallAcc = ((shellK[0] ?? eK) / (shellMaxR * shellMaxR)) * t * t * 8;
       e.vx += wallAcc * (ndx / nd) * eDt;
       e.vy += wallAcc * (ndy / nd) * eDt;
+    }
+    const rd = shellRadialDamp[e.shell] ?? 0;
+    if (rd > 0 && nd > 0) {
+      const vr =  e.vx * ndx / nd + e.vy * ndy / nd;
+      const vt = -e.vx * ndy / nd + e.vy * ndx / nd;
+      const limit = rd * Math.abs(vt);
+      if (Math.abs(vr) > limit) {
+        const excess = vr - Math.sign(vr) * limit;
+        e.vx -= 0.01 * excess * ndx / nd;
+        e.vy -= 0.01 * excess * ndy / nd;
+      }
     }
     e.trail.push({ x: e.x, y: e.y });
     if (e.trail.length > eTrailLen) e.trail.shift();
@@ -1735,6 +2053,7 @@ function drawElectrons(ctx) {
   const screenElectrons = electrons.map(e => ({
     sx: _worldToScreen(ctx, e.x, e.y),
     trail: e.trail.map(p => _worldToScreen(ctx, p.x, p.y)),
+    color: SHELL_COLORS[e.shell % SHELL_COLORS.length],
   }));
 
   ctx.save();
@@ -1747,7 +2066,7 @@ function drawElectrons(ctx) {
     const pts = se.trail;
     const n = pts.length;
     if (n < 2) continue;
-    ctx.strokeStyle = '#eeff00';
+    ctx.strokeStyle = se.color;
     for (let i = 1; i < n; i++) {
       const t = i / (n - 1);
       ctx.globalAlpha = t * t * t * 0.9;
@@ -1883,17 +2202,19 @@ function drawElectronsShells(ctx) {
 
   ctx.save();
 
-  // Yellow shaded channel for each occupied shell
+  // Shaded channel for each occupied shell, colored by SHELL_COLORS
   const occupied = new Set(electrons.map(e => e.shell));
   for (const s of occupied) {
     const r = getShellRadius(s);
-    const hw = eShellBandHW + r * 0.1;   // fixed base + radius-proportional term
+    const hw = eShellBandHW + r * 0.1;
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
+    const hex = SHELL_COLORS[s % SHELL_COLORS.length];
+    const rv = parseInt(hex.slice(1,3),16), gv = parseInt(hex.slice(3,5),16), bv = parseInt(hex.slice(5,7),16);
     const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
-    grad.addColorStop(0,   'rgba(238,255,0,0)');
-    grad.addColorStop(0.5, 'rgba(238,255,0,0.18)');
-    grad.addColorStop(1,   'rgba(238,255,0,0)');
+    grad.addColorStop(0,   `rgba(${rv},${gv},${bv},0)`);
+    grad.addColorStop(0.5, `rgba(${rv},${gv},${bv},0.30)`);
+    grad.addColorStop(1,   `rgba(${rv},${gv},${bv},0)`);
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
@@ -1901,18 +2222,20 @@ function drawElectronsShells(ctx) {
   }
 
   // Electrons as glow dots within their shell band
-  const worldR = 9 / Z;
+  const worldR = electronDotR / Z;
   ctx.globalAlpha = 1;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
-    const ex = cx + Math.cos(e.angle) * r;
-    const ey = cy + Math.sin(e.angle) * r;
-    ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
+  if (electronDotR > 0) {
+    for (const e of electrons) {
+      const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+      const ex = cx + Math.cos(e.angle) * r;
+      const ey = cy + Math.sin(e.angle) * r;
+      ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
+    }
   }
 
   // Bright white core
   ctx.fillStyle = 'rgba(255,255,220,0.95)';
-  const coreR = 1.5 / Z;
+  const coreR = electronDotR / 6 / Z;
   for (const e of electrons) {
     const r = getShellRadius(e.shell) + (e.radialOffset || 0);
     ctx.beginPath();
@@ -1948,47 +2271,22 @@ function drawElectronsShells(ctx) {
   ctx.restore();
 }
 
-// ─── Shells 2: classic dotted-ring view ───────────────────────────────────────
-function drawElectronsShells2(ctx) {
+
+function drawShellRings(ctx) {
   if (!animParent || !electrons.length) return;
-  if (!_eGlowImg) _buildElectronGlow();
   const cx = animParent.cx, cy = animParent.cy;
-  const Z = viewZoom;
-
+  const occupied = [...new Set(electrons.map(e => e.shell))];
   ctx.save();
-
-  // Dotted yellow circles for each occupied shell
-  const occupied = new Set(electrons.map(e => e.shell));
-  ctx.strokeStyle = 'rgba(238,255,0,0.5)';
-  ctx.lineWidth = 1.5 / Z;
-  ctx.setLineDash([10 / Z, 7 / Z]);
+  ctx.setLineDash([6, 10]);
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.35;
   for (const s of occupied) {
+    const r = getShellRadius(s);
+    ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length];
     ctx.beginPath();
-    ctx.arc(cx, cy, getShellRadius(s), 0, Math.PI * 2);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.stroke();
   }
-  ctx.setLineDash([]);
-
-  // Electrons pinned to exact shell radius
-  const worldR = 9 / Z;
-  ctx.globalAlpha = 1;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell);
-    const ex = cx + Math.cos(e.angle) * r;
-    const ey = cy + Math.sin(e.angle) * r;
-    ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
-  }
-
-  // Bright white core
-  ctx.fillStyle = 'rgba(255,255,220,0.95)';
-  const coreR = 1.5 / Z;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell);
-    ctx.beginPath();
-    ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
   ctx.restore();
 }
 
@@ -2023,7 +2321,7 @@ function fvArrowOnCtx(c, fromX, fromY, nx, ny, len, color, lw, headLen) {
 
 // Horizontal camera shift so nucleus centers in the space left of the force panel.
 function getCameraShiftX() {
-  if (arrowMode > 0 && currentTab === 'shells' || currentTab === 'shells2') {
+  if (arrowMode > 0 && currentTab === 'shells') {
     const panelW = forceVizPanelEl.offsetWidth || 424;
     return -(panelW + 20) / 2;
   }
@@ -2044,7 +2342,7 @@ function syncForceVizCanvasSize() {
 }
 
 function syncForceVizVisibility() {
-  const showFV = arrowMode > 0 && (currentTab === 'shells' || currentTab === 'shells2');
+  const showFV = arrowMode > 0 && (currentTab === 'shells');
   forceVizPanelEl.style.display = showFV ? 'block' : 'none';
   if (showFV) { syncForceVizCanvasSize(); drawForceViz(); }
   draw();
@@ -2158,7 +2456,7 @@ function drawForceVizShell() {
 }
 
 function drawForceViz() {
-  if (arrowMode === 0 || currentTab !== 'shells' && currentTab !== 'shells2') return;
+  if (arrowMode === 0 || currentTab !== 'shells') return;
   if (fvShellMode) { drawForceVizShell(); return; }
   const fvc = forceVizCv.getContext('2d');
   const W = forceVizCv.width, H = forceVizCv.height;
@@ -2472,6 +2770,7 @@ drawOutlineIcon();
 function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (currentTab === 'orbit3d') { drawOrbit3D(ctx); return; }
   if (!animParent) { drawEnergyGraph(); return; }
 
   ctx.save();
@@ -2492,22 +2791,14 @@ function draw() {
     const cx = animParent.cx, cy = animParent.cy;
     const Z = viewZoom;
     ctx.save();
-    // Dashed ring
     ctx.strokeStyle = 'rgba(100,180,255,0.55)';
     ctx.lineWidth = 1.5 / Z;
-    ctx.setLineDash([8 / Z, 5 / Z]);
-    ctx.beginPath();
-    ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // Radius line
-    ctx.strokeStyle = 'rgba(100,180,255,0.3)';
-    ctx.lineWidth = 1 / Z;
+    ctx.setLineDash([6 / Z, 6 / Z]);
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + outerR, cy);
     ctx.stroke();
-    // Label in world space (font scaled by 1/zoom so it stays constant screen size)
+    ctx.setLineDash([]);
     const arUnit = (outerR / 100).toFixed(2);
     ctx.font = `${13 / Z}px Lexend, sans-serif`;
     ctx.fillStyle = 'rgba(140,200,255,0.9)';
@@ -2518,8 +2809,8 @@ function draw() {
   if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
   if (showParticles) drawParticles(animParent.particles, 1);
 
+  if (currentTab === 'trails') drawShellRings(ctx);
   if (currentTab === 'trails') drawElectrons(ctx);
-  else if (currentTab === 'shells2') drawElectronsShells2(ctx);
   else drawElectronsShells(ctx);
 
   ctx.restore();
@@ -2624,15 +2915,12 @@ let idleParticleRAF = null;
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
   if (currentTab === 'trails') stepElectrons();
+  else if (currentTab === 'orbit3d') stepOrbit3D();
   else stepElectronsShells();
-  if (animParent) draw();
+  if (animParent || currentTab === 'orbit3d') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
 
-function setParticleWheelActive(targetBtn) {
-  document.querySelectorAll('.awheel-item[data-pmode]').forEach(b => b.classList.remove('active'));
-  targetBtn.classList.add('active');
-}
 
 function setForceWheelActive(targetBtn) {
   document.querySelectorAll('.awheel-item[data-fmode]').forEach(b => b.classList.remove('active'));
@@ -2641,6 +2929,12 @@ function setForceWheelActive(targetBtn) {
 
 let arrowMode = 0;
 let fvShellMode = false;
+
+function syncElemBtnActive() {
+  document.querySelectorAll('.elem-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.z) === customZ);
+  });
+}
 let selectedElectronIdx = -1;
 let selectedShell = -1;
 let fvArrowExp = 0.13;  // exponent for shell-mode arrow length curve (lower = small forces bigger)
@@ -2648,32 +2942,39 @@ let fvArrowExp = 0.13;  // exponent for shell-mode arrow length curve (lower = s
 // ─── Tab switching ────────────────────────────────────────────────────────────
 const _devSlidersRow = document.getElementById('devSlidersRow');
 const _shellsOnlyHide = ['slRepulse', 'slDamp', 'slMinR', 'slMaxR'].map(id => document.getElementById(id)?.closest('.dev-row'));
+const _orbit3dOverlay = document.getElementById('orbit3dOverlay');
 function _syncDevSliders() {
-  const isShells = currentTab === 'shells' || currentTab === 'shells2';
+  const isOrbit = currentTab === 'orbit3d';
+  const isShells = currentTab === 'shells';
+  const devOn = document.getElementById('devToggle').checked;
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
+  const shellDev = document.getElementById('shellDevSliders');
+  if (shellDev) shellDev.style.display = isOrbit ? 'none' : '';
+  if (isOrbit) {
+    _devSlidersRow.style.display = 'none';
+    if (_orbit3dOverlay) _orbit3dOverlay.style.display = devOn ? 'flex' : 'none';
+  } else {
+    _devSlidersRow.style.display = devOn ? 'flex' : 'none';
+    if (_orbit3dOverlay) _orbit3dOverlay.style.display = 'none';
+  }
 }
 _syncDevSliders();
-document.getElementById('devToggle').addEventListener('change', function() {
-  _devSlidersRow.style.display = this.checked ? 'flex' : 'none';
-});
+document.getElementById('devToggle').addEventListener('change', _syncDevSliders);
 
-document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+function syncTabButtons() {
+  document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
+  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
+  document.getElementById('forceModeRow').style.display = hideForce ? 'none' : '';
+}
+
+document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
     currentTab = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === btn));
+    syncTabButtons();
     _syncDevSliders();
     syncForceVizVisibility();
+    if (currentTab === 'orbit3d') syncOrb3dShellSliders();
     logAction('Tab: ' + currentTab);
-    draw();
-  });
-});
-
-document.querySelectorAll('.awheel-item[data-pmode]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    showParticles = btn.dataset.pmode === 'particles';
-    logAction('View mode: ' + btn.dataset.pmode);
-    setParticleWheelActive(btn);
-    if (showParticles && !idleParticleRAF) idleParticleLoop();
     draw();
   });
 });
@@ -2688,6 +2989,8 @@ document.querySelectorAll('.awheel-item[data-fmode]').forEach(btn => {
     draw();
   });
 });
+
+// syncOrb3dShellSliders is called by the patched syncShellDevSliders below
 
 document.querySelectorAll('.fv-mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -2745,6 +3048,7 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
 
 // ─── Dev panel wiring ─────────────────────────────────────────────────────────
+var syncShellDevSliders = function() {}; // populated by _wireDevSliders once shell groups are built
 (function _wireDevSliders() {
   function bind(id, valId, setter, fmt) {
     const inp = document.getElementById(id);
@@ -2763,24 +3067,103 @@ window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
   bind('slDt',    'slDtVal',    v => { eDt      = v; }, v => v.toFixed(2));
   bind('slTrail',  'slTrailVal',  v => { eTrailLen = Math.round(v); for (const e of electrons) { if (e.trail.length > eTrailLen) e.trail.splice(0, e.trail.length - eTrailLen); } }, v => Math.round(v));
   bind('slBaseR',  'slBaseRVal',  v => { shellBaseR  = v; }, v => Math.round(v));
+  bind('slElectronDot', 'slElectronDotVal', v => { electronDotR = v; }, v => v.toFixed(1));
   bind('slShrink', 'slShrinkVal', v => { shellShrink = v; }, v => v.toFixed(2));
   bind('slFvExp', 'slFvExpVal', v => { fvArrowExp = v; drawForceViz(); }, v => v.toFixed(2));
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
   bind('slBandHW', 'slBandHWVal', v => { eShellBandHW = v; }, v => Math.round(v));
-  for (let i = 0; i < 7; i++) {
-    bind(`slWallK${i}`, `slWallK${i}Val`, v => { shellWallK[i] = v; }, v => Math.round(v));
+  // ── Per-shell dev sliders (generated dynamically) ─────────────────────────────────────────
+  const SHELL_SLIDER_DEFS = [
+    { key: 'k',    label: 'k',         min: 1000,  max: 500000, step: 5000,  fmt: v => Math.round(v),   get: s => shellK[s],        set: (s,v) => { shellK[s] = v; } },
+    { key: 'wm',   label: 'wall mult', min: 0.1,   max: 3.0,    step: 0.05,  fmt: v => v.toFixed(2),    get: s => shellWallMult[s], set: (s,v) => { shellWallMult[s] = v; } },
+    { key: 'wk',   label: 'wall k',    min: 0,     max: 2000,   step: 5,     fmt: v => Math.round(v),   get: s => shellWallK[s],    set: (s,v) => { shellWallK[s] = v; } },
+    { key: 'vm',   label: 'v max',     min: 0.05,  max: 3.0,    step: 0.05,  fmt: v => v.toFixed(2),    get: s => shellVMax[s],     set: (s,v) => { shellVMax[s] = v; } },
+    { key: 'mr',   label: 'min r',     min: 0,     max: 200,    step: 1,     fmt: v => Math.round(v),    get: s => shellMinR[s],       set: (s,v) => { shellMinR[s] = v; } },
+    { key: 'rd',   label: 'tan steer', min: 0,     max: 1.0,    step: 0.01,  fmt: v => v.toFixed(2),    get: s => shellRadialDamp[s], set: (s,v) => { shellRadialDamp[s] = v; } },
+  ];
+  const shellDevContainer = document.getElementById('shellDevSliders');
+  shellDevContainer.style.cssText = 'display:flex;flex-direction:row;gap:16px;align-items:flex-start;flex-wrap:wrap';
+  const _shellGroups = [];
+  for (let s = 0; s < 4; s++) {
+    const color = SHELL_COLORS[s];
+    const group = document.createElement('div');
+    group.dataset.shell = s;
+    group.style.cssText = `display:none;flex-direction:column;gap:2px;padding:4px 0 4px 8px;border-left:3px solid ${color}`;
+    const header = document.createElement('div');
+    header.style.cssText = `font-size:10px;font-weight:700;color:${color};letter-spacing:0.08em;margin-bottom:2px`;
+    header.textContent = `SHELL ${s}`;
+    group.appendChild(header);
+    for (const def of SHELL_SLIDER_DEFS) {
+      const row = document.createElement('div');
+      row.className = 'dev-row';
+      const valId = `slShell_${def.key}${s}Val`;
+      const slId  = `slShell_${def.key}${s}`;
+      const initVal = def.get(s);
+      row.innerHTML = `<label>${def.label}</label><input type="range" id="${slId}" min="${def.min}" max="${def.max}" step="${def.step}" value="${initVal}"><span class="dev-val" id="${valId}">${def.fmt(initVal)}</span>`;
+      group.appendChild(row);
+      const sl = row.querySelector('input');
+      const vspan = row.querySelector('.dev-val');
+      sl.addEventListener('input', () => {
+        const v = parseFloat(sl.value);
+        def.set(s, v);
+        vspan.textContent = def.fmt(v);
+      });
+    }
+    shellDevContainer.appendChild(group);
+    _shellGroups.push(group);
   }
+
+  syncShellDevSliders = function() {
+    for (let s = 0; s < 4; s++) {
+      const occupied = electrons.some(e => e.shell === s);
+      _shellGroups[s].style.display = occupied ? 'flex' : 'none';
+    }
+    syncOrb3dShellSliders();
+  };
+  syncShellDevSliders();
+  // ─── Element picker grid ─────────────────────────────────────────────────────
+  const ELEM_DATA = [
+    [1,'H','Hydrogen','alkali',1,1],[2,'He','Helium','noble',8,1],
+    [3,'Li','Lithium','alkali',1,2],[4,'Be','Beryllium','alkaline',2,2],
+    [6,'C','Carbon','carbon-gp',6,2],[9,'F','Fluorine','halogen',7,2],[10,'Ne','Neon','noble',8,2],
+    [11,'Na','Sodium','alkali',1,3],[12,'Mg','Magnesium','alkaline',2,3],
+    [14,'Si','Silicon','carbon-gp',6,3],[17,'Cl','Chlorine','halogen',7,3],[18,'Ar','Argon','noble',8,3],
+    [19,'K','Potassium','alkali',1,4],[20,'Ca','Calcium','alkaline',2,4],
+    [26,'Fe','Iron','transition',3,4],[29,'Cu','Copper','transition',4,4],[30,'Zn','Zinc','transition',5,4],
+    [32,'Ge','Germanium','carbon-gp',6,4],[35,'Br','Bromine','halogen',7,4],[36,'Kr','Krypton','noble',8,4],
+  ];
+  const elemGrid = document.getElementById('elemGrid');
+  for (const [z, sym, name, cat, col, row] of ELEM_DATA) {
+    const btn = document.createElement('button');
+    btn.className = `elem-btn ${cat}`;
+    btn.dataset.z = z;
+    btn.style.gridColumn = col;
+    btn.style.gridRow = row;
+    btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
+    btn.addEventListener('click', () => {
+      setNucleusFromZ(z);
+      if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+      syncShellDevSliders();
+      syncElemBtnActive();
+    });
+    elemGrid.appendChild(btn);
+  }
+  syncElemBtnActive();
+
   document.getElementById('addElectronBtn').addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     addElectron();
+    syncShellDevSliders();
   });
   document.getElementById('removeElectronBtn').addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     removeElectron();
+    syncShellDevSliders();
   });
   document.getElementById('neutralCheckbox').addEventListener('change', function () {
     if (this.checked) syncNeutralElectrons();
+    syncShellDevSliders();
   });
   const _pSlider = document.getElementById('protonSlider');
   function _stepProton(delta) {
@@ -2788,13 +3171,19 @@ window.addEventListener('mouseup', () => { _fvResize = null; _fvDrag = null; });
     _pSlider.value = v;
     setNucleusFromZ(v);
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    syncShellDevSliders();
+    syncElemBtnActive();
   }
   _pSlider.addEventListener('input', function () {
     setNucleusFromZ(parseInt(this.value));
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    syncShellDevSliders();
+    syncElemBtnActive();
   });
-  document.getElementById('protonDown').addEventListener('click', () => _stepProton(-1));
-  document.getElementById('protonUp').addEventListener('click',   () => _stepProton(+1));
+  const _protonDown = document.getElementById('protonDown');
+  const _protonUp = document.getElementById('protonUp');
+  if (_protonDown) _protonDown.addEventListener('click', () => _stepProton(-1));
+  if (_protonUp)   _protonUp.addEventListener('click',   () => _stepProton(+1));
 }());
 
 // ─── Energy model ─────────────────────────────────────────────────────────────
@@ -2901,7 +3290,7 @@ const _axisCol  = LIGHT ? 'rgba(0,0,0,0.55)' : 'rgba(0,200,255,0.35)';
 
 // ─── Canvas click: select electron or shell for force display ────────────────
 canvas.addEventListener('click', e => {
-  if (arrowMode === 0 || currentTab !== 'shells' && currentTab !== 'shells2' || !animParent || !electrons.length) return;
+  if (arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
   const rect = canvas.getBoundingClientRect();
   const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
 
@@ -3040,7 +3429,7 @@ document.getElementById('themeLight').addEventListener('click', () => {
 applyTheme('A');
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-setParticleWheelActive(document.querySelector('.awheel-item[data-pmode="particles"]'));
+syncTabButtons();
 initNuclei();
 
 // Startup benchmark — measure actual gradient render cost and set initial quality.
@@ -3061,13 +3450,16 @@ initNuclei();
   // else stays 'hi-res' (default)
 }());
 
-setNucleusFromZ(16);
+setNucleusFromZ(10);
 syncNeutralElectrons();
-arrowMode = 2;
-setForceWheelActive(document.querySelector('.awheel-item[data-fmode="2"]'));
-fvShellMode = true;
-document.querySelectorAll('.fv-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.fvmode === 'shell'));
-selectedShell = 2;
+syncShellDevSliders();
+syncElemBtnActive();
+arrowMode = 0;
+setForceWheelActive(document.querySelector('.awheel-item[data-fmode="0"]'));
+currentTab = 'orbit3d';
+syncTabButtons();
+document.getElementById('showElectric').checked = true;
+document.getElementById('showElectric').dispatchEvent(new Event('change'));
 syncForceVizVisibility();
 draw();
 if (!idleParticleRAF) idleParticleLoop();
