@@ -1787,13 +1787,14 @@ function _clearOrb3dShell(s) {
 function _growOrb3dShell(s, newCount) {
   const groups = orb3dShellGroups[s];
   while (orb3dShellCounts[s] < newCount) {
-    const lastGrp = groups[groups.length - 1];
-    if (lastGrp && lastGrp.count === 1) {
-      // Promote loner to pair — keep its existing trail
+    const lastIdx = groups.length - 1;
+    const lastGrp = groups[lastIdx];
+    // First two groups are always independent s-orbital loners — never pair them
+    const canPair = lastGrp && lastGrp.count === 1 && lastIdx >= 2;
+    if (canPair) {
       lastGrp.count = 2;
       lastGrp.trails.push([]);
     } else {
-      // New loner group
       const gi = groups.length;
       groups.push({
         count: 1,
@@ -2118,7 +2119,7 @@ function applyAutoScale() {
   const outerShell = Math.max(...electrons.map(e => e.shell));
   const outerR = getShellRadius(outerShell);
   const H = canvas.height;
-  const targetZoom = Math.min((H * 0.40) / outerR, 2.0);
+  const targetZoom = Math.min((H * 0.34) / outerR, 2.0);
   viewZoom = targetZoom;
   const sl = document.getElementById('zoomSlider');
   if (sl) sl.value = _sliderFromZoom(targetZoom).toFixed(3);
@@ -2139,7 +2140,6 @@ function setNucleusFromZ(Z) {
   for (const e of electrons) e.trail = [];
   document.getElementById('protonSliderVal').textContent = Z;
   document.getElementById('protonSlider').value = Z;
-  applyAutoScale();
   draw();
 }
 
@@ -3212,6 +3212,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     btn.addEventListener('click', () => {
       setNucleusFromZ(z);
       if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+      applyAutoScale();
       syncShellDevSliders();
       syncElemBtnActive();
     });
@@ -3565,11 +3566,11 @@ document.addEventListener('keydown', e => {
   const secret = 'itunes';
   let buf = '';
   document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key.length !== 1) return;  // ignore Tab, Escape, ArrowUp, etc.
     buf = (buf + e.key.toLowerCase()).slice(-secret.length);
     if (buf === secret) {
       const btn = document.getElementById('trailsTabBtn');
-      if (btn) btn.style.display = '';
+      if (btn) btn.style.display = 'block';
     }
   });
 })();
