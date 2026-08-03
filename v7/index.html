@@ -770,10 +770,13 @@
     gap: 6px;
     font-size: 11px;
     color: rgba(220,215,255,0.6);
+    flex-shrink: 0;
+    min-width: 120px;
   }
   .dev-row label { white-space: nowrap; flex-shrink: 0; }
-  .dev-row input[type=range] { flex: 1; accent-color: #eeff00; }
-  .dev-val { width: 56px; text-align: right; color: #eeff00; font-variant-numeric: tabular-nums; }
+  .dev-row input[type=range] { flex: 1; min-width: 40px; accent-color: #eeff00; }
+  .dev-val { width: 56px; text-align: right; color: #eeff00; font-variant-numeric: tabular-nums; cursor: text; }
+  .dev-val:hover { color: #ffff44; }
 
   /* ── Force viz panel (draggable, resizable) ────────────────────────────── */
   #forceVizPanel {
@@ -969,7 +972,7 @@
       <span style="font-size:9px;letter-spacing:0.08em;color:rgba(238,255,0,0.45);font-weight:600;">dev</span>
     </label>
   </div>
-  <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
+  <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:nowrap;overflow-x:auto;padding-top:4px;border-top:1px solid var(--ui-border)">
     <div class="dev-row" style="display:none"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="140000"><span class="dev-val" id="slKVal">140000</span></div>
     <div class="dev-row" style="display:none"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
     <div class="dev-row" style="display:none"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
@@ -992,7 +995,7 @@
   </div>
 </div>
 <div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
-  <div id="orbit3dDevSliders" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"></div>
+  <div id="orbit3dDevSliders" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:nowrap;overflow-x:auto"></div>
 </div>
 <div id="forceVizPanel">
   <div class="fp-rh nw" data-dir="nw"></div><div class="fp-rh ne" data-dir="ne"></div>
@@ -3849,6 +3852,57 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   });
 
   syncElemBtnActiveB();
+}());
+
+// ─── Editable dev-val spans: click yellow number to type a value ──────────────
+(function() {
+  function _initDevValEditable(container) {
+    if (!container) return;
+    container.addEventListener('click', e => {
+      const span = e.target.closest('.dev-val');
+      if (!span || span.dataset.editing) return;
+      const row = span.closest('.dev-row');
+      if (!row) return;
+      const slider = row.querySelector('input[type=range]');
+      if (!slider) return;
+
+      span.dataset.editing = '1';
+      const prevText = span.textContent;
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = prevText;
+      inp.style.cssText = 'width:52px;background:rgba(0,0,0,0.7);color:#eeff00;border:1px solid #eeff00;border-radius:3px;font:inherit;font-size:inherit;text-align:right;padding:0 2px;box-sizing:border-box;outline:none;';
+      span.textContent = '';
+      span.appendChild(inp);
+      inp.select();
+
+      let done = false;
+      const commit = () => {
+        if (done) return; done = true;
+        let v = parseFloat(inp.value);
+        if (isNaN(v)) v = parseFloat(slider.value);
+        v = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), v));
+        slider.value = v;
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        delete span.dataset.editing;
+      };
+      const cancel = () => {
+        if (done) return; done = true;
+        span.textContent = prevText;
+        delete span.dataset.editing;
+      };
+
+      inp.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') { ev.preventDefault(); commit(); inp.blur(); }
+        else if (ev.key === 'Escape') { cancel(); inp.blur(); }
+      });
+      inp.addEventListener('blur', () => { if (!done) commit(); });
+      inp.focus();
+    });
+  }
+
+  _initDevValEditable(document.getElementById('devSlidersRow'));
+  _initDevValEditable(document.getElementById('orbit3dDevSliders'));
 }());
 
 // ─── Energy model ─────────────────────────────────────────────────────────────
