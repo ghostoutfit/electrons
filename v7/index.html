@@ -1612,8 +1612,10 @@ let bondOrbitSteer = 0.3;            // velocity steering rate (0=no correction,
 let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
 let bondSpeed    = 0.15; // phase advance per frame
 let bondTrailLen = 190;
-let bondRadial   = 0.0;  // along-bond orbit extent offset (0 = default, +1 = 2× shell radius)
-let bondOrbitWander = 0.0; // perpendicular orbit scale offset (0 = default, +1 = 2× height)
+let bondRadial      = 0.0;  // amplitude of along-bond radial oscillation (0 = none)
+let bondOrbitWander = 0.0;  // amplitude of perpendicular wander oscillation (0 = none)
+let bondRadialPh    = 0.0;  // slowly advancing phase for radial oscillation
+let bondWanderPh    = 0.0;  // slowly advancing phase for wander oscillation
 let bondSepMult  = 1.0;  // multiplier on the computed atom-to-atom separation
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
@@ -1990,19 +1992,22 @@ function _bondCycle(deltaEN, moreEN) {
 }
 
 // Compute ideal (lx, ly) in bond-midpoint frame for a given visit type and phase.
+// Effective per-frame wander/radial offsets — updated once per step, read by _orbitPos
+let _bondEffRadial = 0, _bondEffWander = 0;
+
 function _orbitPos(visitType, phase, gIsB, rG, rL, d) {
   const isG   = visitType.endsWith('-G');
   const isFig8 = visitType.startsWith('fig8');
-  const a     = (isG ? rG : rL) * (1 + bondRadial) + d;
+  const a     = (isG ? rG : rL) * (1 + _bondEffRadial) + d;
   if (isFig8) {
     const t     = isG ? (gIsB ? phase : phase + Math.PI)
                       : (gIsB ? phase + Math.PI : phase);
     const denom = 1 + Math.cos(t) ** 2;
-    return { lx: a * Math.sin(t) / denom, ly: (1 + bondOrbitWander) * a * Math.sin(t) * Math.cos(t) / denom };
+    return { lx: a * Math.sin(t) / denom, ly: (1 + _bondEffWander) * a * Math.sin(t) * Math.cos(t) / denom };
   }
   // Teardrop: passes through crossing (0,0) at phase=0 and 2π, tip at atom at phase=π
   const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
-  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * (1 + bondOrbitWander) * a * Math.sin(phase) / 2 };
+  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * (1 + _bondEffWander) * a * Math.sin(phase) / 2 };
 }
 
 // ─── Bond electron (shared, hot-pink) ────────────────────────────────────────
@@ -2011,8 +2016,13 @@ function stepBondElectron() {
   const ratio = getBondRatio();
   if (!ratio) { bondElecFracs = []; return; }
 
+  // Advance slow oscillation phases and compute effective per-frame offsets
+  bondRadialPh += 0.008;
+  bondWanderPh += 0.0063;  // prime-ish ratio keeps them from syncing
+  _bondEffRadial = bondRadial * Math.sin(bondRadialPh);
+  _bondEffWander = bondOrbitWander * Math.sin(bondWanderPh);
+
   const { deltaEN, moreEN } = ratio;
-  const cycle = _bondCycle(deltaEN, moreEN);
   const visitType = cycle[bondOrbitVisit % cycle.length];
 
   const sep = getTwoAtomSep();
@@ -2271,7 +2281,7 @@ function syncOrb3dShellSliders() {
   bondTitle.style.cssText = 'font-size:10px;color:#ff44cc;font-weight:600;letter-spacing:0.05em;opacity:0.85';
   bondTitle.textContent = 'bond e⁻';
   bondGrp.appendChild(bondTitle);
-  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; }
+  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; bondRadialPh=0; bondWanderPh=0; }
   const _bondDefs = [
     { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
     { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
