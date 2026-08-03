@@ -917,15 +917,15 @@
       <div id="elemGridB"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:2px;">
         <div style="display:flex;align-items:center;gap:3px;">
-          <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">arc</span>
+          <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">radial</span>
           <button id="bondArcMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">1.00</span>
+          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">0.00</span>
           <button id="bondArcPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
         <div style="display:flex;align-items:center;gap:3px;">
-          <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">radius</span>
+          <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">wander</span>
           <button id="bondRadMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">1.00</span>
+          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">0.00</span>
           <button id="bondRadPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
       </div>
@@ -986,8 +986,7 @@
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
     <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="1"><span class="dev-val" id="slBondSepVal">1.00</span></div>
     <div class="dev-row"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.30" step="0.005" value="0.15"><span class="dev-val" id="slBondSpeedVal">0.150</span></div>
-    <div class="dev-row"><label>bond arc</label><input type="range" id="slBondArc" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slBondArcVal">1.00</span></div>
-    <div class="dev-row"><label>bond dot</label><input type="range" id="slBondDot" min="0" max="20" step="0.5" value="0"><span class="dev-val" id="slBondDotVal">0.0</span></div>
+    <div class="dev-row"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="0"><span class="dev-val" id="slBondArcVal">0.00</span></div>
     <div class="dev-row"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="400" step="5" value="190"><span class="dev-val" id="slBondTrailVal">190</span></div>
     <div id="shellDevSliders"></div>
   </div>
@@ -1612,10 +1611,9 @@ let bondElecVX = 0, bondElecVY = 0; // actual velocity; steered toward ideal eac
 let bondOrbitSteer = 0.3;            // velocity steering rate (0=no correction, 1=instant snap)
 let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
 let bondSpeed    = 0.15; // phase advance per frame
-let bondDotR     = 0;    // dot radius (0 = hidden)
 let bondTrailLen = 190;
-let bondArcFrac  = 1.0;  // along-bond orbit extent (scales lemniscate/teardrop 'a')
-let bondOrbitRadius = 1.0; // perpendicular orbit scale (multiplies ly component only)
+let bondRadial   = 0.0;  // along-bond orbit extent offset (0 = default, +1 = 2× shell radius)
+let bondOrbitWander = 0.0; // perpendicular orbit scale offset (0 = default, +1 = 2× height)
 let bondSepMult  = 1.0;  // multiplier on the computed atom-to-atom separation
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
@@ -1995,16 +1993,16 @@ function _bondCycle(deltaEN, moreEN) {
 function _orbitPos(visitType, phase, gIsB, rG, rL, d) {
   const isG   = visitType.endsWith('-G');
   const isFig8 = visitType.startsWith('fig8');
-  const a     = (isG ? rG : rL) * bondArcFrac + d;
+  const a     = (isG ? rG : rL) * (1 + bondRadial) + d;
   if (isFig8) {
     const t     = isG ? (gIsB ? phase : phase + Math.PI)
                       : (gIsB ? phase + Math.PI : phase);
     const denom = 1 + Math.cos(t) ** 2;
-    return { lx: a * Math.sin(t) / denom, ly: bondOrbitRadius * a * Math.sin(t) * Math.cos(t) / denom };
+    return { lx: a * Math.sin(t) / denom, ly: (1 + bondOrbitWander) * a * Math.sin(t) * Math.cos(t) / denom };
   }
   // Teardrop: passes through crossing (0,0) at phase=0 and 2π, tip at atom at phase=π
   const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
-  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * bondOrbitRadius * a * Math.sin(phase) / 2 };
+  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * (1 + bondOrbitWander) * a * Math.sin(phase) / 2 };
 }
 
 // ─── Bond electron (shared, hot-pink) ────────────────────────────────────────
@@ -2074,7 +2072,7 @@ function stepBondElectron() {
 
 function drawBondElectronShells(ctx) {
   if (bondElecFracs.length < 2) return;
-  if (bondTrailLen <= 0 && bondDotR <= 0) return;
+  if (bondTrailLen <= 0) return;
   const sep = getTwoAtomSep();
   const W = canvas.width, H = canvas.height;
   const n = bondElecFracs.length;
@@ -2103,22 +2101,12 @@ function drawBondElectronShells(ctx) {
       ctx.stroke();
     }
   }
-  if (bondDotR > 0) {
-    const { frac, perp } = bondElecFracs[n - 1];
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ff44cc';
-    ctx.shadowColor = '#ff44cc';
-    ctx.shadowBlur = 18 / viewZoom;
-    ctx.beginPath();
-    ctx.arc(W / 2 + frac * sep, H / 2 + perp * sep, bondDotR / viewZoom, 0, Math.PI * 2);
-    ctx.fill();
-  }
   ctx.restore();
 }
 
 function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
   if (bondElecFracs.length < 2) return;
-  if (bondTrailLen <= 0 && bondDotR <= 0) return;
+  if (bondTrailLen <= 0) return;
   const sepScreen = cxB - cxA;
   const n = bondElecFracs.length;
   ctx.save();
@@ -2145,16 +2133,6 @@ function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
       ctx.lineTo(ox(i1), oy(i1));
       ctx.stroke();
     }
-  }
-  if (bondDotR > 0) {
-    const { frac, perp } = bondElecFracs[n - 1];
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ff44cc';
-    ctx.shadowColor = '#ff44cc';
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.arc(cxA + frac * sepScreen, centerY + perp * sepScreen, bondDotR, 0, Math.PI * 2);
-    ctx.fill();
   }
   ctx.restore();
 }
@@ -2297,11 +2275,10 @@ function syncOrb3dShellSliders() {
   const _bondDefs = [
     { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
     { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
-    { lbl:'arc',   min:0,     max:1,   step:0.05,  val:()=>bondArcFrac,       fmt:v=>v.toFixed(2), set:v=>{ bondArcFrac=v;         bondElecFracs=[]; } },
+    { lbl:'radial',min:-0.9,  max:1,   step:0.05,  val:()=>bondRadial,        fmt:v=>v.toFixed(2), set:v=>{ bondRadial=v;          bondElecFracs=[]; } },
     { lbl:'slow',  min:0,     max:2,   step:0.05,  val:()=>bondCrossSlowMin,  fmt:v=>v.toFixed(2), set:v=>{ bondCrossSlowMin=v; } },
     { lbl:'steer', min:0.01,  max:1,   step:0.01,  val:()=>bondOrbitSteer,    fmt:v=>v.toFixed(2), set:v=>{ bondOrbitSteer=v; } },
-    { lbl:'radius',min:0.1,   max:3,   step:0.05,  val:()=>bondOrbitRadius,   fmt:v=>v.toFixed(2), set:v=>{ bondOrbitRadius=v; } },
-    { lbl:'dot',   min:0,     max:20,  step:0.5,   val:()=>bondDotR,          fmt:v=>v.toFixed(1), set:v=>{ bondDotR=v; } },
+    { lbl:'wander',min:-1,    max:1,   step:0.05,  val:()=>bondOrbitWander,   fmt:v=>v.toFixed(2), set:v=>{ bondOrbitWander=v; } },
     { lbl:'trail', min:0,     max:300, step:5,     val:()=>bondTrailLen,      fmt:v=>Math.round(v),set:v=>{ bondTrailLen=Math.round(v); const cap=Math.max(bondTrailLen,1); if(bondElecFracs.length>cap)bondElecFracs.splice(0,bondElecFracs.length-cap); } },
   ];
   for (const d of _bondDefs) {
@@ -3634,26 +3611,25 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   bind('slBandHW', 'slBandHWVal', v => { eShellBandHW = v; }, v => Math.round(v));
   bind('slBondSep',   'slBondSepVal',   v => { bondSepMult = v; bondElecFracs = []; }, v => v.toFixed(2));
   bind('slBondSpeed', 'slBondSpeedVal', v => { bondSpeed = v; bondElecFracs = []; }, v => v.toFixed(3));
-  bind('slBondArc',   'slBondArcVal',   v => { bondArcFrac = v; bondElecFracs = []; document.getElementById('bondArcDisplay').textContent = bondArcFrac.toFixed(2); }, v => v.toFixed(2));
+  bind('slBondArc',   'slBondArcVal',   v => { bondRadial = v; bondElecFracs = []; document.getElementById('bondArcDisplay').textContent = bondRadial.toFixed(2); }, v => v.toFixed(2));
 
-  // ── Arc / Radius ±  buttons (in Atom B pink box) ──────────────────────────
-  function _stepArc(delta) {
-    bondArcFrac = Math.max(0, Math.min(2, Math.round((bondArcFrac + delta) * 20) / 20));
-    document.getElementById('bondArcDisplay').textContent = bondArcFrac.toFixed(2);
+  // ── Radial / Wander ±  buttons (in Atom B pink box) ──────────────────────
+  function _stepRadial(delta) {
+    bondRadial = Math.max(-0.9, Math.min(1, Math.round((bondRadial + delta) * 20) / 20));
+    document.getElementById('bondArcDisplay').textContent = bondRadial.toFixed(2);
     const sl = document.getElementById('slBondArc');
-    sl.value = bondArcFrac;
-    document.getElementById('slBondArcVal').textContent = bondArcFrac.toFixed(2);
+    sl.value = bondRadial;
+    document.getElementById('slBondArcVal').textContent = bondRadial.toFixed(2);
     bondElecFracs = [];
   }
-  function _stepRadius(delta) {
-    bondOrbitRadius = Math.max(0.1, Math.min(3, Math.round((bondOrbitRadius + delta) * 20) / 20));
-    document.getElementById('bondRadDisplay').textContent = bondOrbitRadius.toFixed(2);
+  function _stepWander(delta) {
+    bondOrbitWander = Math.max(-1, Math.min(1, Math.round((bondOrbitWander + delta) * 20) / 20));
+    document.getElementById('bondRadDisplay').textContent = bondOrbitWander.toFixed(2);
   }
-  document.getElementById('bondArcMinus').addEventListener('click', () => _stepArc(-0.1));
-  document.getElementById('bondArcPlus' ).addEventListener('click', () => _stepArc(+0.1));
-  document.getElementById('bondRadMinus').addEventListener('click', () => _stepRadius(-0.1));
-  document.getElementById('bondRadPlus' ).addEventListener('click', () => _stepRadius(+0.1));
-  bind('slBondDot',   'slBondDotVal',   v => { bondDotR = v; }, v => v.toFixed(1));
+  document.getElementById('bondArcMinus').addEventListener('click', () => _stepRadial(-0.1));
+  document.getElementById('bondArcPlus' ).addEventListener('click', () => _stepRadial(+0.1));
+  document.getElementById('bondRadMinus').addEventListener('click', () => _stepWander(-0.1));
+  document.getElementById('bondRadPlus' ).addEventListener('click', () => _stepWander(+0.1));
   bind('slBondTrail', 'slBondTrailVal', v => {
     bondTrailLen = Math.round(v);
     const cap = Math.max(bondTrailLen, 1);
