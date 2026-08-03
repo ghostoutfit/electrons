@@ -2065,16 +2065,22 @@ function drawBondElectronShells(ctx) {
   const n = bondElecFracs.length;
   ctx.save();
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.lineWidth = 2.5 / viewZoom;
+  ctx.strokeStyle = '#ff44cc';
   if (bondTrailLen > 0) {
-    for (let i = 1; i < n; i++) {
-      const { frac: f0, perp: p0 } = bondElecFracs[i - 1];
-      const { frac: f1, perp: p1 } = bondElecFracs[i];
-      ctx.globalAlpha = (i / n) ** 2 * 0.85;
-      ctx.strokeStyle = '#ff44cc';
+    // Batch segments by alpha bucket so each batch is one path — eliminates
+    // per-segment round caps that appear as dots at slow-moving sections.
+    const BUCKETS = 16;
+    for (let b = 0; b < BUCKETS; b++) {
+      const i0 = Math.round(b / BUCKETS * (n - 1));
+      const i1 = Math.round((b + 1) / BUCKETS * (n - 1));
+      if (i1 <= i0) continue;
+      ctx.globalAlpha = ((b + 1) / BUCKETS) ** 2 * 0.85;
       ctx.beginPath();
-      ctx.moveTo(W / 2 + f0 * sep, H / 2 + p0 * sep);
-      ctx.lineTo(W / 2 + f1 * sep, H / 2 + p1 * sep);
+      ctx.moveTo(W / 2 + bondElecFracs[i0].frac * sep, H / 2 + bondElecFracs[i0].perp * sep);
+      for (let i = i0 + 1; i <= i1; i++)
+        ctx.lineTo(W / 2 + bondElecFracs[i].frac * sep, H / 2 + bondElecFracs[i].perp * sep);
       ctx.stroke();
     }
   }
@@ -2098,16 +2104,20 @@ function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
   const n = bondElecFracs.length;
   ctx.save();
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#ff44cc';
   if (bondTrailLen > 0) {
-    for (let i = 1; i < n; i++) {
-      const { frac: f0, perp: p0 } = bondElecFracs[i - 1];
-      const { frac: f1, perp: p1 } = bondElecFracs[i];
-      ctx.globalAlpha = (i / n) ** 2 * 0.85;
-      ctx.strokeStyle = '#ff44cc';
+    const BUCKETS = 16;
+    for (let b = 0; b < BUCKETS; b++) {
+      const i0 = Math.round(b / BUCKETS * (n - 1));
+      const i1 = Math.round((b + 1) / BUCKETS * (n - 1));
+      if (i1 <= i0) continue;
+      ctx.globalAlpha = ((b + 1) / BUCKETS) ** 2 * 0.85;
       ctx.beginPath();
-      ctx.moveTo(cxA + f0 * sepScreen, centerY + p0 * sepScreen);
-      ctx.lineTo(cxA + f1 * sepScreen, centerY + p1 * sepScreen);
+      ctx.moveTo(cxA + bondElecFracs[i0].frac * sepScreen, centerY + bondElecFracs[i0].perp * sepScreen);
+      for (let i = i0 + 1; i <= i1; i++)
+        ctx.lineTo(cxA + bondElecFracs[i].frac * sepScreen, centerY + bondElecFracs[i].perp * sepScreen);
       ctx.stroke();
     }
   }
