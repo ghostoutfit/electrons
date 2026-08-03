@@ -2080,6 +2080,77 @@ function stepBondElectron() {
   if (bondElecFracs.length > maxLen) bondElecFracs.splice(0, bondElecFracs.length - maxLen);
 }
 
+function drawBondCloud(ctx) {
+  if (!animParent || !animParentB) return;
+  const ratio = getBondRatio();
+  if (!ratio) return;
+
+  const { ionicFraction, moreEN } = ratio;
+  const sep = getTwoAtomSep();
+  const cxA = animParent.cx;
+  const cy  = animParent.cy;
+  const cxB = cxA + sep;
+
+  const outerA = electrons.length  ? Math.max(...electrons.map(e => e.shell))  : 1;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 1;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, atomBZ);
+
+  // EN weighting: ionicFraction 0 = 50/50, 1 = all on more-EN atom
+  const gIsB = moreEN >= 0;
+  const wG   = 0.5 + ionicFraction * 0.5;
+  const wL   = Math.max(0, 0.5 - ionicFraction * 0.5);
+  const wA   = gIsB ? wL : wG;
+  const wB   = gIsB ? wG : wL;
+
+  const hw   = eShellBandHW;
+  const PEAK = 0.38;
+
+  ctx.save();
+
+  // ── Ring cloud around each atom (same shape as shell bands, in pink) ──────
+  const drawRing = (atomCx, r, w) => {
+    if (w < 0.01) return;
+    const rIn  = Math.max(0, r - hw);
+    const rOut = r + hw;
+    const a    = (PEAK * w).toFixed(3);
+    const grad = ctx.createRadialGradient(atomCx, cy, rIn, atomCx, cy, rOut);
+    grad.addColorStop(0,   `rgba(255,68,204,0)`);
+    grad.addColorStop(0.5, `rgba(255,68,204,${a})`);
+    grad.addColorStop(1,   `rgba(255,68,204,0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(atomCx, cy, rOut, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  drawRing(cxA, rA, wA);
+  drawRing(cxB, rB, wB);
+
+  // ── Elliptical bridge cloud linking the two atoms ─────────────────────────
+  // Center shifts toward more-EN atom with ionicFraction
+  const bridgeFrac = gIsB ? 0.5 + ionicFraction * 0.25 : 0.5 - ionicFraction * 0.25;
+  const bridgeCx   = cxA + bridgeFrac * sep;
+  const alongR     = sep * 0.52;
+  const perpR      = Math.min(rA, rB) * 0.5 + hw * 0.4;
+  const bridgeA    = (PEAK * 0.5 * (wA + wB)).toFixed(3);
+
+  ctx.save();
+  ctx.translate(bridgeCx, cy);
+  ctx.scale(1, perpR / alongR);
+  const bg = ctx.createRadialGradient(0, 0, 0, 0, 0, alongR);
+  bg.addColorStop(0,   `rgba(255,68,204,${bridgeA})`);
+  bg.addColorStop(0.55,`rgba(255,68,204,${(PEAK * 0.15 * (wA + wB)).toFixed(3)})`);
+  bg.addColorStop(1,   `rgba(255,68,204,0)`);
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.arc(0, 0, alongR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+}
+
 function drawBondElectronShells(ctx) {
   if (bondElecFracs.length < 2) return;
   if (bondTrailLen <= 0) return;
@@ -2669,17 +2740,16 @@ function stepElectronsShells() {
   stepElectronsShellsFor(electrons, customZ);
 }
 
-function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, stealFromOuter = 0) {
+function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false) {
   if (!elecs.length) return;
   if (!_eGlowImg) _buildElectronGlow();
   const vz = viewZoom;
 
-  // When bond electron is active, remove one outer-shell electron (it's "in the bond")
+  // In shells view when bonded, hide the entire outer shell — replaced by the bond cloud
   let drawElecs = elecs;
-  if (stealFromOuter > 0) {
+  if (hideOuterShell) {
     const outerS = Math.max(...elecs.map(e => e.shell));
-    let stolen = 0;
-    drawElecs = elecs.filter(e => !(e.shell === outerS && stolen++ < stealFromOuter));
+    drawElecs = elecs.filter(e => e.shell !== outerS);
   }
 
   ctx.save();
@@ -3293,7 +3363,7 @@ nucleusIconLoop(0);
 drawOutlineIcon();
 
 // ─── Main draw function ─────────────────────────────────────────────────────
-function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, steal = 0) {
+function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false) {
   const cx=ap.cx, cy=ap.cy;
   if (showAR && elecs.length) {
     const outerShell=Math.max(...elecs.map(e=>e.shell));
@@ -3309,7 +3379,7 @@ function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, steal = 0) {
   if (!showParticles) drawCloudOutline(cx, cy, ap.sphereR);
   else drawParticles(ap.particles, 1);
   if (currentTab==='trails') { drawShellRingsFor(ctx, cx, cy, elecs, Z); drawElectronsFor(ctx, elecs); }
-  else drawElectronsShellsFor(ctx, elecs, cx, cy, Z, steal);
+  else drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuter);
 }
 
 function draw() {
@@ -3335,18 +3405,18 @@ function draw() {
   const vz=viewZoom;
 
   // ── Atom A ──────────────────────────────────────────────────────────────────
-  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz, animParentB ? 1 : 0);
+  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz, !!animParentB);
 
   // ── Atom B ──────────────────────────────────────────────────────────────────
   if (animParentB) {
     ctx.save();
     ctx.translate(sep, 0);
-    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, 1);
+    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, true);
     ctx.restore();
   }
 
   // ── Bond electron ────────────────────────────────────────────────────────────
-  drawBondElectronShells(ctx);
+  drawBondCloud(ctx);
 
   ctx.restore();
   drawBondRatioLabel(ctx);
