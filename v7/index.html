@@ -2084,8 +2084,6 @@ function drawBondElectronShells(ctx) {
   ctx.lineWidth = 2.5 / viewZoom;
   ctx.strokeStyle = '#ff44cc';
   if (bondTrailLen > 0) {
-    // Batch segments by alpha bucket so each batch is one path — eliminates
-    // per-segment round caps that appear as dots at slow-moving sections.
     const BUCKETS = 16;
     for (let b = 0; b < BUCKETS; b++) {
       const i0 = Math.round(b / BUCKETS * (n - 1));
@@ -2093,9 +2091,15 @@ function drawBondElectronShells(ctx) {
       if (i1 <= i0) continue;
       ctx.globalAlpha = ((b + 1) / BUCKETS) ** 2 * 0.85;
       ctx.beginPath();
-      ctx.moveTo(W / 2 + bondElecFracs[i0].frac * sep, H / 2 + bondElecFracs[i0].perp * sep);
-      for (let i = i0 + 1; i <= i1; i++)
-        ctx.lineTo(W / 2 + bondElecFracs[i].frac * sep, H / 2 + bondElecFracs[i].perp * sep);
+      const bx = (i) => W / 2 + bondElecFracs[i].frac * sep;
+      const by = (i) => H / 2 + bondElecFracs[i].perp * sep;
+      ctx.moveTo(bx(i0), by(i0));
+      if (i1 > i0 + 1) {
+        ctx.lineTo((bx(i0) + bx(i0 + 1)) / 2, (by(i0) + by(i0 + 1)) / 2);
+        for (let i = i0 + 1; i < i1; i++)
+          ctx.quadraticCurveTo(bx(i), by(i), (bx(i) + bx(i + 1)) / 2, (by(i) + by(i + 1)) / 2);
+      }
+      ctx.lineTo(bx(i1), by(i1));
       ctx.stroke();
     }
   }
@@ -2130,9 +2134,15 @@ function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
       if (i1 <= i0) continue;
       ctx.globalAlpha = ((b + 1) / BUCKETS) ** 2 * 0.85;
       ctx.beginPath();
-      ctx.moveTo(cxA + bondElecFracs[i0].frac * sepScreen, centerY + bondElecFracs[i0].perp * sepScreen);
-      for (let i = i0 + 1; i <= i1; i++)
-        ctx.lineTo(cxA + bondElecFracs[i].frac * sepScreen, centerY + bondElecFracs[i].perp * sepScreen);
+      const ox = (i) => cxA + bondElecFracs[i].frac * sepScreen;
+      const oy = (i) => centerY + bondElecFracs[i].perp * sepScreen;
+      ctx.moveTo(ox(i0), oy(i0));
+      if (i1 > i0 + 1) {
+        ctx.lineTo((ox(i0) + ox(i0 + 1)) / 2, (oy(i0) + oy(i0 + 1)) / 2);
+        for (let i = i0 + 1; i < i1; i++)
+          ctx.quadraticCurveTo(ox(i), oy(i), (ox(i) + ox(i + 1)) / 2, (oy(i) + oy(i + 1)) / 2);
+      }
+      ctx.lineTo(ox(i1), oy(i1));
       ctx.stroke();
     }
   }
