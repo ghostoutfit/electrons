@@ -911,6 +911,12 @@
       <span id="protonSliderVal" style="display:none">16</span>
     </div>
 
+    <!-- Pink box: atom B element picker -->
+    <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:7px;">
+      <span class="ctrl-box-label ctrl-box-label-pink" style="right:auto;left:14px;">ATOM B</span>
+      <div id="elemGridB"></div>
+    </div>
+
     <!-- Blue box: stacked sliders + electric field + particles + forces -->
     <div class="ctrl-box-blue">
       <span class="ctrl-box-label ctrl-box-label-blue">VISUALS</span>
@@ -935,7 +941,6 @@
           <button class="awheel-item active" data-tab="shells">Shells</button>
           <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="display:none">iTunes Visualizer</button>
           <button class="awheel-item" data-tab="orbit3d">Orbit</button>
-          <button class="awheel-item" data-tab="bond">Bond</button>
         </div>
         <div id="forceModeRow" style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-fmode="0">Forces off</button>
@@ -966,16 +971,6 @@
     <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
     <div id="shellDevSliders"></div>
-  </div>
-</div>
-<div id="bondPickerRow" class="toolbar-row" style="display:none;gap:16px;align-items:flex-start">
-  <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:6px">
-    <span class="ctrl-box-label ctrl-box-label-pink">ATOM A</span>
-    <div id="elemGridA"></div>
-  </div>
-  <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:6px">
-    <span class="ctrl-box-label ctrl-box-label-pink">ATOM B</span>
-    <div id="elemGridB"></div>
   </div>
 </div>
 <div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
@@ -1586,7 +1581,10 @@ let egZoomStart = 0, egZoomEnd = 1;
 let egDragStartPx = null, egDragCurPx = null;
 let animParent = null;
 let _imgParent = null;
-let atomBZ = 6; // Bond tab: second atom (default Carbon)
+let atomBZ = 6; // second atom Z (default Carbon)
+let animParentB = null;
+let _imgParentB = null;
+let electronsB = [];
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
@@ -1641,6 +1639,10 @@ let orb3dShellCounts = new Array(ORB3D_N).fill(0);  // total electrons per shell
 let orb3dShellGroups = Array.from({length: ORB3D_N}, () => []);
 // Each group: { count:1|2, phase, wanderPh, radPh, axisPhi, trails:[[],[]] }
 
+// Atom B orbit state
+let orb3dShellCountsB = new Array(ORB3D_N).fill(0);
+let orb3dShellGroupsB = Array.from({length: ORB3D_N}, () => []);
+
 // Per-shell tunable parameters
 let orbShellSpeed    = [8.0, 7.0, 6.0, 5.0];
 let orbShellRadAmp   = [0.20, 0.20, 0.10, 0.05];
@@ -1689,107 +1691,102 @@ function stepOrbit3D() {
   }
 }
 
-function drawOrbit3D(ctx) {
-  if (!animParent || !electrons.length) return;
-  const W = canvas.width, H = canvas.height;
-  const tbH = document.getElementById('toolbar').offsetHeight;
-  const _sbH = document.getElementById('scrubBar').classList.contains('visible')
-    ? document.getElementById('scrubBar').offsetHeight : 0;
-  const cy = (tbH + H - _sbH) / 2;
-  const cx = W * 0.5;
-
-  // Nucleus — same camera transform as Shells/Trails so it appears at (cx, cy)
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(viewZoom, viewZoom);
-  ctx.translate(-W / 2, -H / 2);
-  if (showParticles) drawParticles(animParent.particles, 1);
-  else drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
-  ctx.restore();
-
-  // 3D projection — orthographic, screen-space coords centered at (cx, cy)
+function _drawOrbit3DCore(ctx, cx, cy, elecs, shellGroups, Z) {
+  if (!elecs.length) return;
   const AZ = 0.60, EL = 0.42;
   const cosAZ = Math.cos(AZ), sinAZ = Math.sin(AZ), cosEL = Math.cos(EL), sinEL = Math.sin(EL);
   function proj3D(nx, ny, nz, r3d) {
-    const x = nx*r3d, y = ny*r3d, z = nz*r3d;
-    const rx = x*cosAZ + z*sinAZ, ry = y, rz = -x*sinAZ + z*cosAZ;
-    return [cx + rx, cy - (ry*cosEL - rz*sinEL)];
+    const x=nx*r3d, y=ny*r3d, z=nz*r3d;
+    const rx=x*cosAZ+z*sinAZ, ry=y, rz=-x*sinAZ+z*cosAZ;
+    return [cx+rx, cy-(ry*cosEL-rz*sinEL)];
   }
-
-  const occupied = [...new Set(electrons.map(e => e.shell))].sort((a,b) => a-b);
-
+  const occupied = [...new Set(elecs.map(e => e.shell))].sort((a,b)=>a-b);
   // Shell reference rings
   ctx.lineWidth = 1;
   for (const s of occupied) {
-    const r3d = getShellRadius(s) * orb3dRadScale * viewZoom;
+    const r3d = getShellRadiusForZ(s, Z) * orb3dRadScale * viewZoom;
     ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length] + '28';
     ctx.beginPath();
-    for (let a = 0; a <= 360; a += 5) {
-      const rad = a * Math.PI / 180;
-      const [sx,sy] = proj3D(Math.cos(rad), 0, Math.sin(rad), r3d);
-      a === 0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
-    }
+    for (let a=0; a<=360; a+=5) { const rad=a*Math.PI/180; const [sx,sy]=proj3D(Math.cos(rad),0,Math.sin(rad),r3d); a===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); }
     ctx.stroke();
     ctx.beginPath();
-    for (let a = -90; a <= 90; a += 4) {
-      const rad = a * Math.PI / 180;
-      const [sx,sy] = proj3D(Math.cos(rad), Math.sin(rad), 0, r3d);
-      a === -90 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
-    }
+    for (let a=-90; a<=90; a+=4) { const rad=a*Math.PI/180; const [sx,sy]=proj3D(Math.cos(rad),Math.sin(rad),0,r3d); a===-90?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); }
     ctx.stroke();
   }
-
   // Trails
   ctx.lineWidth = 1.5;
   for (const s of occupied) {
-    const r3d = getShellRadius(s) * orb3dRadScale * viewZoom;
+    const r3d = getShellRadiusForZ(s, Z) * orb3dRadScale * viewZoom;
     const col = SHELL_COLORS[s % SHELL_COLORS.length];
-    for (const grp of orb3dShellGroups[s]) {
-      for (let ei = 0; ei < grp.count; ei++) {
-        const trail = grp.trails[ei];
-        const n = trail.length;
-        for (let i = 1; i < n; i++) {
-          const p0 = trail[i-1], p1 = trail[i];
-          const [sx0,sy0] = proj3D(p0[0],p0[1],p0[2], r3d);
-          const [sx1,sy1] = proj3D(p1[0],p1[1],p1[2], r3d);
-          ctx.globalAlpha = (i / n) * 0.75;
-          ctx.strokeStyle = col;
+    for (const grp of shellGroups[s]) {
+      for (let ei=0; ei<grp.count; ei++) {
+        const trail = grp.trails[ei], n = trail.length;
+        for (let i=1; i<n; i++) {
+          const p0=trail[i-1], p1=trail[i];
+          const [sx0,sy0]=proj3D(p0[0],p0[1],p0[2],r3d);
+          const [sx1,sy1]=proj3D(p1[0],p1[1],p1[2],r3d);
+          ctx.globalAlpha=(i/n)*0.75; ctx.strokeStyle=col;
           ctx.beginPath(); ctx.moveTo(sx0,sy0); ctx.lineTo(sx1,sy1); ctx.stroke();
         }
-        ctx.globalAlpha = 1;
-        // Dot at trail head
-        if (orb3dDotR > 0 && n > 0) {
-          const tip = trail[n - 1];
-          const [tx, ty] = proj3D(tip[0], tip[1], tip[2], r3d);
-          ctx.fillStyle = col;
-          ctx.beginPath();
-          ctx.arc(tx, ty, orb3dDotR, 0, Math.PI * 2);
-          ctx.fill();
+        ctx.globalAlpha=1;
+        if (orb3dDotR>0 && n>0) {
+          const tip=trail[n-1]; const [tx,ty]=proj3D(tip[0],tip[1],tip[2],r3d);
+          ctx.fillStyle=col; ctx.beginPath(); ctx.arc(tx,ty,orb3dDotR,0,Math.PI*2); ctx.fill();
         }
       }
     }
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha=1;
+}
 
-  // Atomic radius label — same flat horizontal line as Shells tab
-  if (occupied.length) {
-    const outerShell = Math.max(...occupied);
-    const outerR = getShellRadius(outerShell) * orb3dRadScale * viewZoom;
-    const arPm = Math.round(getShellRadius(outerShell) / shellBaseR);
+function drawOrbit3D(ctx) {
+  const W=canvas.width, H=canvas.height;
+  const tbH=document.getElementById('toolbar').offsetHeight;
+  const _sbEl=document.getElementById('scrubBar');
+  const _sbH=_sbEl.classList.contains('visible')?_sbEl.offsetHeight:0;
+  const centerY=(tbH+H-_sbH)/2;
+
+  const sep = getTwoAtomSep() * orb3dRadScale * viewZoom;
+  const cxA = W/2 - sep/2;
+  const cxB = W/2 + sep/2;
+
+  // Nucleus A
+  if (animParent) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + outerR, cy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(140,200,255,0.9)';
-    ctx.font = '13px Lexend, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`r = ${arPm} pm`, cx + outerR / 2, cy - 10);
+    ctx.translate(cxA, centerY); ctx.scale(viewZoom, viewZoom); ctx.translate(-W/2,-H/2);
+    if (showParticles) drawParticles(animParent.particles,1); else drawCloudOutline(animParent.cx,animParent.cy,animParent.sphereR);
     ctx.restore();
+  }
+  // Nucleus B
+  if (animParentB) {
+    ctx.save();
+    ctx.translate(cxB, centerY); ctx.scale(viewZoom, viewZoom); ctx.translate(-W/2,-H/2);
+    if (showParticles) drawParticles(animParentB.particles,1); else drawCloudOutline(animParentB.cx,animParentB.cy,animParentB.sphereR);
+    ctx.restore();
+  }
+
+  // Orbit trails
+  if (animParent && electrons.length) _drawOrbit3DCore(ctx, cxA, centerY, electrons, orb3dShellGroups, customZ);
+  if (animParentB && electronsB.length) _drawOrbit3DCore(ctx, cxB, centerY, electronsB, orb3dShellGroupsB, atomBZ);
+
+  // Atomic radius lines
+  const showAR = document.getElementById('showElectric').checked;
+  function _drawARLine(cx, cy, outerR, arPm) {
+    ctx.save();
+    ctx.strokeStyle='rgba(100,180,255,0.55)'; ctx.lineWidth=1.5; ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+outerR,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(140,200,255,0.9)'; ctx.font='13px Lexend, sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`r = ${arPm} pm`, cx+outerR/2, cy-10);
+    ctx.restore();
+  }
+  if (showAR && electrons.length) {
+    const outerS=Math.max(...electrons.map(e=>e.shell));
+    _drawARLine(cxA, centerY, getShellRadius(outerS)*orb3dRadScale*viewZoom, Math.round(getShellRadius(outerS)/shellBaseR));
+  }
+  if (showAR && electronsB.length) {
+    const outerS=Math.max(...electronsB.map(e=>e.shell));
+    _drawARLine(cxB, centerY, getShellRadiusForZ(outerS,atomBZ)*orb3dRadScale*viewZoom, Math.round(getShellRadiusForZ(outerS,atomBZ)/shellBaseR));
   }
 }
 
@@ -1804,6 +1801,114 @@ const ORB3D_SHELL_SLIDER_DEFS = [
 function _clearOrb3dShell(s) {
   orb3dShellCounts[s] = 0;
   orb3dShellGroups[s] = [];
+}
+
+// ─── Atom B management ────────────────────────────────────────────────────────
+function _clearOrb3dShellB(s) { orb3dShellCountsB[s]=0; orb3dShellGroupsB[s]=[]; }
+
+function _growOrb3dShellB(s, newCount) {
+  const groups = orb3dShellGroupsB[s];
+  while (orb3dShellCountsB[s] < newCount) {
+    const lastIdx=groups.length-1, lastGrp=groups[lastIdx];
+    const canPair = lastGrp && lastGrp.count===1 && lastIdx>=2;
+    if (canPair) { lastGrp.count=2; lastGrp.trails.push([]); }
+    else {
+      const gi=groups.length;
+      groups.push({ count:1, phase:gi*0.7, wanderPh:gi*2.1, radPh:gi*1.3+s*1.1,
+        axisPhi: gi>0 ? gi*Math.PI/(gi+1) : 0, trails:[[]] });
+    }
+    orb3dShellCountsB[s]++;
+  }
+}
+
+function _shrinkOrb3dShellB(s, newCount) {
+  const groups = orb3dShellGroupsB[s];
+  while (orb3dShellCountsB[s] > newCount) {
+    const lastGrp=groups[groups.length-1];
+    if (lastGrp.count===2) { lastGrp.count=1; lastGrp.trails.pop(); }
+    else groups.pop();
+    orb3dShellCountsB[s]--;
+  }
+}
+
+function syncOrb3dShellSlidersB() {
+  const countPerShell={};
+  for (const e of electronsB) countPerShell[e.shell]=(countPerShell[e.shell]||0)+1;
+  for (let s=0; s<ORB3D_N; s++) {
+    const newCount=countPerShell[s]||0, oldCount=orb3dShellCountsB[s];
+    if (newCount===oldCount) continue;
+    if (newCount===0) _clearOrb3dShellB(s);
+    else if (newCount>oldCount) _growOrb3dShellB(s, newCount);
+    else _shrinkOrb3dShellB(s, newCount);
+  }
+}
+
+function stepOrbit3DB() {
+  const occupied=[...new Set(electronsB.map(e=>e.shell))];
+  for (const s of occupied) {
+    const sp=orbShellSpeed[s]??8, radAmp=orbShellRadAmp[s]??0.2;
+    const wandDeg=orbShellWander[s]??45, maxLen=orbShellTrailLen[s]??140;
+    const phStep=0.025*sp;
+    for (const grp of orb3dShellGroupsB[s]) {
+      grp.wanderPh+=0.0025*sp; grp.radPh+=0.018*sp; grp.axisPhi+=0.0004*sp;
+      const r=1+radAmp*Math.sin(grp.radPh);
+      const wr=(wandDeg*Math.PI/180)*Math.sin(grp.wanderPh);
+      const axis=[Math.sin(wr)*Math.cos(grp.axisPhi),Math.sin(wr)*Math.sin(grp.axisPhi),Math.cos(wr)];
+      const ref=Math.abs(axis[0])<0.9?[1,0,0]:[0,1,0];
+      const e1=_o3Norm(_o3Cross(axis,ref)), e2=_o3Cross(axis,e1);
+      grp.phase+=phStep;
+      for (let ei=0; ei<grp.count; ei++) {
+        const ph=grp.phase+ei*Math.PI, c=Math.cos(ph), ss=Math.sin(ph);
+        const trail=grp.trails[ei];
+        trail.push([r*(c*e1[0]+ss*e2[0]),r*(c*e1[1]+ss*e2[1]),r*(c*e1[2]+ss*e2[2])]);
+        if (trail.length>maxLen) trail.splice(0,trail.length-maxLen);
+      }
+    }
+  }
+}
+
+function buildNucleusImagesB() {
+  if (!animParentB) { _imgParentB=null; return; }
+  _imgParentB = _prerenderNucleus(animParentB);
+}
+
+function _getShellForElectronInB() {
+  const n=electronsB.length;
+  if (n<2)  return 0;
+  if (n<10) return 1;
+  if (n<18) return 2;
+  if (n<20) return 3;
+  if (n<30) return 2;
+  return 3;
+}
+
+function addElectronB() {
+  if (!animParentB || electronsB.length>=E_MAX_TOTAL) return;
+  if (!_eGlowImg) _buildElectronGlow();
+  const cx=animParentB.cx, cy=animParentB.cy;
+  const shell=_getShellForElectronInB();
+  const shellR=getShellRadiusForZ(shell, atomBZ);
+  const angle=(electronsB.length*(2*Math.PI/3)+Math.random()*0.4)%(Math.PI*2);
+  electronsB.push({ x:cx+Math.cos(angle)*shellR, y:cy+Math.sin(angle)*shellR,
+    vx:0, vy:0, trail:[], shell, angle, dAngle:0.018, radialOffset:0, dRadial:0 });
+}
+
+function syncNeutralElectronsB() {
+  const target=Math.min(atomBZ, E_MAX_TOTAL);
+  while (electronsB.length<target) addElectronB();
+  while (electronsB.length>target) electronsB.pop();
+}
+
+function setAtomBFromZ(Z) {
+  atomBZ=Z;
+  const N=autoNeutrons(Math.max(Z,1));
+  const W=canvas.width, H=canvas.height;
+  animParentB = Z>0 ? generateNucleus(Z, N, W/2, H/2, currentSeed+1) : null;
+  buildNucleusImagesB();
+  electronsB=[];
+  syncNeutralElectronsB();
+  syncOrb3dShellSlidersB();
+  syncElemBtnActiveB();
 }
 
 function _growOrb3dShell(s, newCount) {
@@ -2079,47 +2184,6 @@ function _worldToScreen(ctx, wx, wy) {
   return { x: m.a * wx + m.c * wy + m.e, y: m.b * wx + m.d * wy + m.f };
 }
 
-function drawElectrons(ctx) {
-  if (!electrons.length || !_eGlowImg) return;
-
-  // Project all trail points and heads to screen space before we reset the transform.
-  // This keeps glow size and trail width constant in screen pixels regardless of zoom.
-  const screenElectrons = electrons.map(e => ({
-    sx: _worldToScreen(ctx, e.x, e.y),
-    trail: e.trail.map(p => _worldToScreen(ctx, p.x, p.y)),
-    color: SHELL_COLORS[e.shell % SHELL_COLORS.length],
-  }));
-
-  ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // draw in screen space
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.5;
-
-  for (const se of screenElectrons) {
-    const pts = se.trail;
-    const n = pts.length;
-    if (n < 2) continue;
-    ctx.strokeStyle = se.color;
-    for (let i = 1; i < n; i++) {
-      const t = i / (n - 1);
-      ctx.globalAlpha = t * t * t * 0.9;
-      const p0 = pts[i - 1];
-      const p1 = pts[i];
-      const sx = i === 1 ? p0.x : (pts[i - 2].x + p0.x) / 2;
-      const sy = i === 1 ? p0.y : (pts[i - 2].y + p0.y) / 2;
-      const ex = (p0.x + p1.x) / 2;
-      const ey = (p0.y + p1.y) / 2;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.quadraticCurveTo(p0.x, p0.y, ex, ey);
-      ctx.stroke();
-    }
-  }
-
-  ctx.restore();
-}
-
 // Auto neutron count: 1:1 up to Z=20, then +0.1× per 10 protons above 20.
 function autoNeutrons(Z) {
   if (Z === 1) return 0;
@@ -2237,89 +2301,12 @@ function nucleusSphereR(Z) {
   return Math.cbrt(vol * 3 / (4 * Math.PI));
 }
 
-function _drawBondAtomShells(ctx, cx, cy, Z) {
-  const table = SHELL_RADII_PM[Math.max(Z, 1)] || [];
-  ctx.save();
-  ctx.setLineDash([6, 10]);
-  ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.35;
-  for (let s = 0; s < table.length; s++) {
-    const r = getShellRadiusForZ(s, Z);
-    ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length];
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawBond(ctx) {
-  const ZA = Math.max(customZ, 1);
-  const ZB = Math.max(atomBZ, 1);
-  const outerA = outerShellForZ(ZA);
-  const outerB = outerShellForZ(ZB);
-  const rA = getShellRadiusForZ(outerA, ZA);
-  const rB = getShellRadiusForZ(outerB, ZB);
-  // Place atoms so valence shells overlap by ~25%
-  const bondDist = (rA + rB) * 0.75;
-
-  const _W = canvas.width, _H = canvas.height;
-  const _tbH = document.getElementById('toolbar').offsetHeight;
-  const _sbEl = document.getElementById('scrubBar');
-  const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
-  const _centerY = (_tbH + _H - _sbH) / 2;
-
-  ctx.save();
-  ctx.translate(_W / 2, _centerY);
-  ctx.scale(viewZoom, viewZoom);
-  ctx.translate(-_W / 2, -_H / 2);
-
-  const cy = _H / 2;
-  const cxA = _W / 2 - bondDist / 2;
-  const cxB = _W / 2 + bondDist / 2;
-
-  // Shell rings for each atom
-  _drawBondAtomShells(ctx, cxA, cy, ZA);
-  _drawBondAtomShells(ctx, cxB, cy, ZB);
-
-  // Atomic radius lines
-  const showAtomicRadius = document.getElementById('showElectric').checked;
-  if (showAtomicRadius) {
-    const vz = viewZoom;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
-    ctx.lineWidth = 1.5 / vz;
-    ctx.setLineDash([6 / vz, 6 / vz]);
-    ctx.beginPath(); ctx.moveTo(cxA, cy); ctx.lineTo(cxA - rA, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cxB, cy); ctx.lineTo(cxB + rB, cy); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.font = `${13 / vz}px Lexend, sans-serif`;
-    ctx.fillStyle = 'rgba(140,200,255,0.9)';
-    ctx.textAlign = 'center';
-    ctx.fillText(`r = ${Math.round(rA / shellBaseR)} pm`, cxA - rA / 2, cy - 12 / vz);
-    ctx.fillText(`r = ${Math.round(rB / shellBaseR)} pm`, cxB + rB / 2, cy - 12 / vz);
-    ctx.restore();
-  }
-
-  // Nuclei
-  const srA = animParent ? animParent.sphereR : nucleusSphereR(ZA);
-  const srB = nucleusSphereR(ZB);
-  drawCloudOutline(cxA, cy, srA);
-  drawCloudOutline(cxB, cy, srB);
-
-  // Element labels
-  const vz = viewZoom;
-  const symA = (BOND_ELEM_DATA.find(e => e[0] === ZA) || [])[1] || String(ZA);
-  const symB = (BOND_ELEM_DATA.find(e => e[0] === ZB) || [])[1] || String(ZB);
-  ctx.save();
-  ctx.font = `bold ${15 / vz}px Lexend, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.fillText(symA, cxA, cy - srA - 16 / vz);
-  ctx.fillText(symB, cxB, cy - srB - 16 / vz);
-  ctx.restore();
-
-  ctx.restore();
+function getTwoAtomSep() {
+  const outerA = electrons.length ? Math.max(...electrons.map(e => e.shell)) : 0;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, Math.max(atomBZ, 1));
+  return Math.max(rA + rB + Math.max(rA, rB) * 0.4, 120);
 }
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
@@ -2335,13 +2322,11 @@ const SHELL_RADIAL_DAMP   = 0.92;    // radial velocity damping
 const SHELL_RADIAL_RESTORE = 0.018;  // restoring spring toward shell center radius
 let eRadialJitter = 1.0;             // stochastic radial kick magnitude
 
-function stepElectronsShells() {
-  if (!animParent || !electrons.length) return;
-
+function stepElectronsShellsFor(elecs, Z) {
   // Same-shell repulsion: angular (1/dA, longer range) + radial (one in, one out)
-  for (let i = 0; i < electrons.length; i++) {
-    for (let j = i + 1; j < electrons.length; j++) {
-      const ei = electrons[i], ej = electrons[j];
+  for (let i = 0; i < elecs.length; i++) {
+    for (let j = i + 1; j < elecs.length; j++) {
+      const ei = elecs[i], ej = elecs[j];
       if (ei.shell !== ej.shell) continue;
       let dA = ei.angle - ej.angle;
       dA = ((dA + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
@@ -2359,7 +2344,7 @@ function stepElectronsShells() {
     }
   }
 
-  for (const e of electrons) {
+  for (const e of elecs) {
     // Enforce minimum orbital speed — always cruising
     const dir = e.dAngle >= 0 ? 1 : -1;
     if (Math.abs(e.dAngle) < SHELL_BASE_DA) {
@@ -2372,7 +2357,7 @@ function stepElectronsShells() {
     e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
 
     // Radial offset within the band
-    const shellR = getShellRadius(e.shell);
+    const shellR = getShellRadiusForZ(e.shell, Z);
     const hw = eShellBandHW + shellR * 0.5;
     if (!e.dRadial) e.dRadial = 0;
     e.dRadial += (Math.random() - 0.5) * eRadialJitter;  // stochastic radial kick
@@ -2383,18 +2368,22 @@ function stepElectronsShells() {
   }
 }
 
-function drawElectronsShells(ctx) {
+function stepElectronsShells() {
   if (!animParent || !electrons.length) return;
+  stepElectronsShellsFor(electrons, customZ);
+}
+
+function drawElectronsShellsFor(ctx, elecs, cx, cy, Z) {
+  if (!elecs.length) return;
   if (!_eGlowImg) _buildElectronGlow();
-  const cx = animParent.cx, cy = animParent.cy;
-  const Z = viewZoom;
+  const vz = viewZoom;
 
   ctx.save();
 
   // Shaded channel for each occupied shell, colored by SHELL_COLORS
-  const occupied = new Set(electrons.map(e => e.shell));
+  const occupied = new Set(elecs.map(e => e.shell));
   for (const s of occupied) {
-    const r = getShellRadius(s);
+    const r = getShellRadiusForZ(s, Z);
     const hw = eShellBandHW + r * 0.1;
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
@@ -2411,11 +2400,11 @@ function drawElectronsShells(ctx) {
   }
 
   // Electrons as glow dots within their shell band
-  const worldR = electronDotR / Z;
+  const worldR = electronDotR / vz;
   ctx.globalAlpha = 1;
   if (electronDotR > 0) {
-    for (const e of electrons) {
-      const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+    for (const e of elecs) {
+      const r = getShellRadiusForZ(e.shell, Z) + (e.radialOffset || 0);
       const ex = cx + Math.cos(e.angle) * r;
       const ey = cy + Math.sin(e.angle) * r;
       ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
@@ -2424,16 +2413,26 @@ function drawElectronsShells(ctx) {
 
   // Bright white core
   ctx.fillStyle = 'rgba(255,255,220,0.95)';
-  const coreR = electronDotR / 6 / Z;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+  const coreR = electronDotR / 6 / vz;
+  for (const e of elecs) {
+    const r = getShellRadiusForZ(e.shell, Z) + (e.radialOffset || 0);
     ctx.beginPath();
     ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Highlight selection
+  ctx.restore();
+}
+
+function drawElectronsShells(ctx) {
+  if (!animParent || !electrons.length) return;
+  drawElectronsShellsFor(ctx, electrons, animParent.cx, animParent.cy, customZ);
+
+  // Highlight selection (wrapper only)
   if (arrowMode > 0) {
+    const cx = animParent.cx, cy = animParent.cy;
+    const Z = viewZoom;
+    ctx.save();
     if (fvShellMode && selectedShell >= 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.55)';
       ctx.lineWidth = 2 / Z;
@@ -2455,28 +2454,61 @@ function drawElectronsShells(ctx) {
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    ctx.restore();
   }
-
-  ctx.restore();
 }
 
-
-function drawShellRings(ctx) {
-  if (!animParent || !electrons.length) return;
-  const cx = animParent.cx, cy = animParent.cy;
-  const occupied = [...new Set(electrons.map(e => e.shell))];
+function drawShellRingsFor(ctx, cx, cy, elecs, Z) {
+  if (!elecs.length) return;
+  const occupied = [...new Set(elecs.map(e => e.shell))];
   ctx.save();
   ctx.setLineDash([6, 10]);
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.35;
   for (const s of occupied) {
-    const r = getShellRadius(s);
     ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length];
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx, cy, getShellRadiusForZ(s, Z), 0, Math.PI * 2);
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function drawShellRings(ctx) {
+  if (!animParent || !electrons.length) return;
+  drawShellRingsFor(ctx, animParent.cx, animParent.cy, electrons, customZ);
+}
+
+function drawElectronsFor(ctx, elecs) {
+  if (!elecs.length || !_eGlowImg) return;
+  const screenElecs = elecs.map(e => ({
+    sx: _worldToScreen(ctx, e.x, e.y),
+    trail: e.trail.map(p => _worldToScreen(ctx, p.x, p.y)),
+    color: SHELL_COLORS[e.shell % SHELL_COLORS.length],
+  }));
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 1.5;
+  for (const se of screenElecs) {
+    const pts = se.trail;
+    const n = pts.length;
+    if (n < 2) continue;
+    ctx.strokeStyle = se.color;
+    for (let i = 1; i < n; i++) {
+      const t = i / (n - 1);
+      ctx.globalAlpha = t * t * t * 0.9;
+      const p0 = pts[i - 1], p1 = pts[i];
+      const sx = i === 1 ? p0.x : (pts[i - 2].x + p0.x) / 2;
+      const sy = i === 1 ? p0.y : (pts[i - 2].y + p0.y) / 2;
+      const ex = (p0.x + p1.x) / 2, ey = (p0.y + p1.y) / 2;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(p0.x, p0.y, ex, ey); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawElectrons(ctx) {
+  drawElectronsFor(ctx, electrons);
 }
 
 // ─── Force viz panel ──────────────────────────────────────────────────────────
@@ -2957,52 +2989,57 @@ nucleusIconLoop(0);
 drawOutlineIcon();
 
 // ─── Main draw function ─────────────────────────────────────────────────────
+function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz) {
+  const cx=ap.cx, cy=ap.cy;
+  if (showAR && elecs.length) {
+    const outerShell=Math.max(...elecs.map(e=>e.shell));
+    const outerR=getShellRadiusForZ(outerShell, Z);
+    ctx.save();
+    ctx.strokeStyle='rgba(100,180,255,0.55)'; ctx.lineWidth=1.5/vz; ctx.setLineDash([6/vz,6/vz]);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+outerR,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font=`${13/vz}px Lexend, sans-serif`; ctx.fillStyle='rgba(140,200,255,0.9)'; ctx.textAlign='center';
+    ctx.fillText(`r = ${Math.round(outerR/shellBaseR)} pm`, cx+outerR/2, cy-10/vz);
+    ctx.restore();
+  }
+  if (!showParticles) drawCloudOutline(cx, cy, ap.sphereR);
+  else drawParticles(ap.particles, 1);
+  if (currentTab==='trails') { drawShellRingsFor(ctx, cx, cy, elecs, Z); drawElectronsFor(ctx, elecs); }
+  else drawElectronsShellsFor(ctx, elecs, cx, cy, Z);
+}
+
 function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (currentTab === 'orbit3d') { drawOrbit3D(ctx); return; }
-  if (currentTab === 'bond') { drawBond(ctx); return; }
   if (!animParent) { drawEnergyGraph(); return; }
 
   ctx.save();
-  const _W = canvas.width, _H = canvas.height;
-  const _tbH = document.getElementById('toolbar').offsetHeight;
-  const _sbEl = document.getElementById('scrubBar');
-  const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
-  const _centerY = (_tbH + _H - _sbH) / 2;
-  const _camX = _W / 2 + getCameraShiftX();
+  const _W=canvas.width, _H=canvas.height;
+  const _tbH=document.getElementById('toolbar').offsetHeight;
+  const _sbEl=document.getElementById('scrubBar');
+  const _sbH=_sbEl.classList.contains('visible')?_sbEl.offsetHeight:0;
+  const _centerY=(_tbH+_H-_sbH)/2;
+
+  const sep=getTwoAtomSep();
+  const _camX=_W/2+getCameraShiftX()-sep*viewZoom/2;
   ctx.translate(_camX, _centerY);
   ctx.scale(viewZoom, viewZoom);
-  ctx.translate(-_W / 2, -_H / 2);
+  ctx.translate(-_W/2, -_H/2);
 
-  const showAtomicRadius = document.getElementById('showElectric').checked;
-  if (showAtomicRadius && electrons.length) {
-    const outerShell = Math.max(...electrons.map(e => e.shell));
-    const outerR = getShellRadius(outerShell);
-    const cx = animParent.cx, cy = animParent.cy;
-    const Z = viewZoom;
+  const showAR=document.getElementById('showElectric').checked;
+  const vz=viewZoom;
+
+  // ── Atom A ──────────────────────────────────────────────────────────────────
+  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz);
+
+  // ── Atom B ──────────────────────────────────────────────────────────────────
+  if (animParentB) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
-    ctx.lineWidth = 1.5 / Z;
-    ctx.setLineDash([6 / Z, 6 / Z]);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + outerR, cy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    const arPm = Math.round(outerR / shellBaseR);
-    ctx.font = `${13 / Z}px Lexend, sans-serif`;
-    ctx.fillStyle = 'rgba(140,200,255,0.9)';
-    ctx.textAlign = 'center';
-    ctx.fillText(`r = ${arPm} pm`, cx + outerR / 2, cy - 10 / Z);
+    ctx.translate(sep, 0);
+    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz);
     ctx.restore();
   }
-  if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
-  if (showParticles) drawParticles(animParent.particles, 1);
-
-  if (currentTab === 'trails') drawShellRings(ctx);
-  if (currentTab === 'trails') drawElectrons(ctx);
-  else drawElectronsShells(ctx);
 
   ctx.restore();
   drawEnergyGraph();
@@ -3111,9 +3148,9 @@ let idleParticleRAF = null;
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
   if (currentTab === 'trails') stepElectrons();
-  else if (currentTab === 'orbit3d') stepOrbit3D();
-  else stepElectronsShells();
-  if (animParent || currentTab === 'orbit3d' || currentTab === 'bond') draw();
+  else if (currentTab === 'orbit3d') { stepOrbit3D(); stepOrbit3DB(); }
+  else { stepElectronsShells(); if (animParentB && electronsB.length) stepElectronsShellsFor(electronsB, atomBZ); }
+  if (animParent || currentTab === 'orbit3d') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
 
@@ -3150,7 +3187,7 @@ function _syncDevSliders() {
   const devOn = document.getElementById('devToggle').checked;
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
   const shellDev = document.getElementById('shellDevSliders');
-  if (shellDev) shellDev.style.display = (isOrbit || currentTab === 'bond') ? 'none' : '';
+  if (shellDev) shellDev.style.display = isOrbit ? 'none' : '';
   if (isOrbit) {
     _devSlidersRow.style.display = 'none';
     if (_orbit3dOverlay) _orbit3dOverlay.style.display = devOn ? 'flex' : 'none';
@@ -3164,10 +3201,8 @@ document.getElementById('devToggle').addEventListener('change', _syncDevSliders)
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d' || currentTab === 'bond';
+  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
   document.getElementById('forceModeRow').style.display = hideForce ? 'none' : '';
-  const bondRow = document.getElementById('bondPickerRow');
-  if (bondRow) bondRow.style.display = currentTab === 'bond' ? '' : 'none';
 }
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
@@ -3403,8 +3438,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   });
 
   _buildElemGrid('elemGridB', (z) => {
-    atomBZ = z;
-    syncElemBtnActiveB();
+    setAtomBFromZ(z);
     draw();
   });
 
@@ -3677,6 +3711,7 @@ initNuclei();
 
 setNucleusFromZ(10);
 syncNeutralElectrons();
+setAtomBFromZ(6);
 applyAutoScale();
 syncShellDevSliders();
 syncElemBtnActive();
