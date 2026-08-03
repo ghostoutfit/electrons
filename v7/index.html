@@ -2023,6 +2023,7 @@ function stepBondElectron() {
   _bondEffWander = bondOrbitWander * Math.sin(bondWanderPh);
 
   const { deltaEN, moreEN } = ratio;
+  const cycle = _bondCycle(deltaEN, moreEN);
   const visitType = cycle[bondOrbitVisit % cycle.length];
 
   const sep = getTwoAtomSep();
