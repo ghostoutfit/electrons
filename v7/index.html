@@ -1617,8 +1617,9 @@ let bondSpeed    = 0.15; // phase advance per frame
 let bondTrailLen = 190;
 let bondRadial      = 0.0;  // amplitude of along-bond radial oscillation (0 = none)
 let bondOrbitWander = 0.0;  // amplitude of perpendicular wander oscillation (0 = none)
-let bondRadialPh    = 0.0;  // slowly advancing phase for radial oscillation
-let bondWanderPh    = 0.0;  // slowly advancing phase for wander oscillation
+let _prevBondVisit    = -1;   // last bondOrbitVisit — detect visit boundary
+let _bondTargetRadial = 0.0;  // random radial target picked each new visit
+let _bondTargetWander = 0.0;  // random wander target picked each new visit
 let bondSepMult  = 1.0;  // multiplier on the computed atom-to-atom separation
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
@@ -2020,10 +2021,15 @@ function stepBondElectron() {
   if (!ratio) { bondElecFracs = []; return; }
 
   // Advance slow oscillation phases and compute effective per-frame offsets
-  bondRadialPh += 0.008;
-  bondWanderPh += 0.0063;  // prime-ish ratio keeps them from syncing
-  _bondEffRadial = bondRadial * Math.sin(bondRadialPh);
-  _bondEffWander = bondOrbitWander * Math.sin(bondWanderPh);
+  // At each new visit, pick fresh random targets within [−amp, +amp]
+  if (bondOrbitVisit !== _prevBondVisit) {
+    _prevBondVisit    = bondOrbitVisit;
+    _bondTargetRadial = (Math.random() * 2 - 1) * bondRadial;
+    _bondTargetWander = (Math.random() * 2 - 1) * bondOrbitWander;
+  }
+  // Lerp effective values toward targets — settles within one visit, smooth across boundary
+  _bondEffRadial += (_bondTargetRadial - _bondEffRadial) * 0.08;
+  _bondEffWander += (_bondTargetWander - _bondEffWander) * 0.08;
 
   const { deltaEN, moreEN } = ratio;
   const cycle = _bondCycle(deltaEN, moreEN);
@@ -2356,7 +2362,7 @@ function syncOrb3dShellSliders() {
   bondTitle.style.cssText = 'font-size:10px;color:#ff44cc;font-weight:600;letter-spacing:0.05em;opacity:0.85';
   bondTitle.textContent = 'bond e⁻';
   bondGrp.appendChild(bondTitle);
-  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; bondRadialPh=0; bondWanderPh=0; }
+  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; _prevBondVisit=-1; _bondTargetRadial=0; _bondTargetWander=0; }
   const _bondDefs = [
     { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
     { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
