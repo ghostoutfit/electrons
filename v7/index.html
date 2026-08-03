@@ -2016,10 +2016,13 @@ function stepBondElectron() {
   if (bondOrbitPhase >= maxPhase) {
     bondOrbitPhase -= maxPhase;
     bondOrbitVisit  = (bondOrbitVisit + 1) % cycle.length;
-    bondElecFracs   = [];
+    // Do NOT clear trail — teardrop sphere orbits share the crossing midpoint with
+    // the fig8 halves, so position is continuous across visit boundaries.
   }
 
   // Position in bond-midpoint coordinate frame
+  // Both fig8 halves AND teardrop sphere orbits start/end at the crossing (lx=0, ly=0),
+  // making the full path positionally continuous.
   let lx, ly;
   if (isFig8) {
     const t     = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
@@ -2029,11 +2032,13 @@ function stepBondElectron() {
     lx = a * Math.sin(t) / denom;
     ly = a * Math.sin(t) * Math.cos(t) / denom;
   } else {
-    // Sphere orbit: circle centered on the atom
-    const r  = (isG ? rG : rL) * bondArcFrac;
-    const dc = isG ? dG : dL;
-    lx = dc + r * Math.cos(bondOrbitPhase);
-    ly =      r * Math.sin(bondOrbitPhase);
+    // Teardrop orbit: passes through crossing (0,0) at phase=0 and 2π, loops out to atom at π.
+    // Uses same 'a' as the lemniscate so the loop tip aligns with the fig8 lobe tip.
+    // sign drives which atom is targeted (+1=B side, -1=A side) and rotational direction.
+    const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
+    const a    = (isG ? rG : rL) * bondArcFrac + d;
+    lx = sign * a * (1 - Math.cos(bondOrbitPhase)) / 2;
+    ly = sign * a * Math.sin(bondOrbitPhase) / 2;
   }
 
   bondElecFracs.push({ frac: 0.5 + lx / sep, perp: ly / sep });
