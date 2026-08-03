@@ -1593,6 +1593,9 @@ let electronsB = [];
 let bondOrbitVisit = 0;     // index into current orbit cycle
 let bondOrbitPhase = 0;     // phase within current visit (0..2π sphere, 0..π fig8)
 let bondCrossSlowMin = 0.6; // floor speed multiplier at fig8 crossing (0=full stop, 1=no slowdown)
+let bondElecX = 0, bondElecY = 0;   // actual electron position in bond-midpoint frame
+let bondElecVX = 0, bondElecVY = 0; // actual velocity; steered toward ideal each frame
+let bondOrbitSteer = 0.12;           // velocity steering rate (0=no correction, 1=instant snap)
 let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
 let bondSpeed    = 0.04; // phase advance per frame
 let bondDotR     = 0;    // dot radius (0 = hidden)
@@ -1973,6 +1976,22 @@ function _bondCycle(deltaEN, moreEN) {
   return cycle;
 }
 
+// Compute ideal (lx, ly) in bond-midpoint frame for a given visit type and phase.
+function _orbitPos(visitType, phase, gIsB, rG, rL, d) {
+  const isG   = visitType.endsWith('-G');
+  const isFig8 = visitType.startsWith('fig8');
+  const a     = (isG ? rG : rL) * bondArcFrac + d;
+  if (isFig8) {
+    const t     = isG ? (gIsB ? phase : phase + Math.PI)
+                      : (gIsB ? phase + Math.PI : phase);
+    const denom = 1 + Math.cos(t) ** 2;
+    return { lx: a * Math.sin(t) / denom, ly: a * Math.sin(t) * Math.cos(t) / denom };
+  }
+  // Teardrop: passes through crossing (0,0) at phase=0 and 2π, tip at atom at phase=π
+  const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
+  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * a * Math.sin(phase) / 2 };
+}
+
 // ─── Bond electron (shared, hot-pink) ────────────────────────────────────────
 function stepBondElectron() {
   if (!animParent || !animParentB) { bondElecFracs = []; return; }
@@ -1991,57 +2010,49 @@ function stepBondElectron() {
   const rA = getShellRadius(outerA);
   const rB = getShellRadiusForZ(outerB, atomBZ);
 
-  // G = more EN atom; gIsB = true when B is more EN (or equal)
   const gIsB = moreEN >= 0;
   const rG = gIsB ? rB : rA;
   const rL = gIsB ? rA : rB;
-  const dG = gIsB ? d : -d;   // signed offset from midpoint to G atom
-  const dL = gIsB ? -d : d;
 
-  const isFig8 = visitType.startsWith('fig8');
-  const isG    = visitType.endsWith('-G');
+  const isFig8   = visitType.startsWith('fig8');
+  const isG      = visitType.endsWith('-G');
   const maxPhase = isFig8 ? Math.PI : 2 * Math.PI;
 
-  // Speed: slow fig8 electron at crossing points (sin = 0)
+  // Phase-advance speed, with crossing slowdown for fig8 visits
   let speed = bondSpeed;
   if (isFig8) {
     const localT    = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
                           : (gIsB ? bondOrbitPhase + Math.PI : bondOrbitPhase);
-    const nearCross = Math.abs(Math.sin(localT));
-    speed *= bondCrossSlowMin + (1 - bondCrossSlowMin) * nearCross;
+    speed *= bondCrossSlowMin + (1 - bondCrossSlowMin) * Math.abs(Math.sin(localT));
   }
 
-  bondOrbitPhase += speed;
+  // Ideal velocity = (next ideal position) − (current ideal position).
+  // When phase wraps to the next visit, sample the next visit's path for p1.
+  const p0         = _orbitPos(visitType, bondOrbitPhase, gIsB, rG, rL, d);
+  const phaseNext  = bondOrbitPhase + speed;
+  const p1         = phaseNext >= maxPhase
+    ? _orbitPos(cycle[(bondOrbitVisit + 1) % cycle.length], phaseNext - maxPhase, gIsB, rG, rL, d)
+    : _orbitPos(visitType, phaseNext, gIsB, rG, rL, d);
+  const idealVX = p1.lx - p0.lx;
+  const idealVY = p1.ly - p0.ly;
 
+  // Advance phase / visit
+  bondOrbitPhase += speed;
   if (bondOrbitPhase >= maxPhase) {
     bondOrbitPhase -= maxPhase;
     bondOrbitVisit  = (bondOrbitVisit + 1) % cycle.length;
-    // Do NOT clear trail — teardrop sphere orbits share the crossing midpoint with
-    // the fig8 halves, so position is continuous across visit boundaries.
   }
 
-  // Position in bond-midpoint coordinate frame
-  // Both fig8 halves AND teardrop sphere orbits start/end at the crossing (lx=0, ly=0),
-  // making the full path positionally continuous.
-  let lx, ly;
-  if (isFig8) {
-    const t     = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
-                      : (gIsB ? bondOrbitPhase + Math.PI : bondOrbitPhase);
-    const a     = (isG ? rG : rL) * bondArcFrac + d;
-    const denom = 1 + Math.cos(t) ** 2;
-    lx = a * Math.sin(t) / denom;
-    ly = a * Math.sin(t) * Math.cos(t) / denom;
-  } else {
-    // Teardrop orbit: passes through crossing (0,0) at phase=0 and 2π, loops out to atom at π.
-    // Uses same 'a' as the lemniscate so the loop tip aligns with the fig8 lobe tip.
-    // sign drives which atom is targeted (+1=B side, -1=A side) and rotational direction.
-    const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
-    const a    = (isG ? rG : rL) * bondArcFrac + d;
-    lx = sign * a * (1 - Math.cos(bondOrbitPhase)) / 2;
-    ly = sign * a * Math.sin(bondOrbitPhase) / 2;
-  }
+  // Steer actual velocity toward ideal velocity (snap on very first frame so trail isn't blank)
+  const sr = bondElecFracs.length === 0 ? 1.0 : bondOrbitSteer;
+  bondElecVX += sr * (idealVX - bondElecVX);
+  bondElecVY += sr * (idealVY - bondElecVY);
 
-  bondElecFracs.push({ frac: 0.5 + lx / sep, perp: ly / sep });
+  // Update position: velocity-driven + gentle pull back toward ideal path to prevent drift
+  bondElecX += bondElecVX + 0.06 * (p0.lx - bondElecX);
+  bondElecY += bondElecVY + 0.06 * (p0.ly - bondElecY);
+
+  bondElecFracs.push({ frac: 0.5 + bondElecX / sep, perp: bondElecY / sep });
   const maxLen = Math.max(bondTrailLen, 1);
   if (bondElecFracs.length > maxLen) bondElecFracs.splice(0, bondElecFracs.length - maxLen);
 }
@@ -2247,11 +2258,13 @@ function syncOrb3dShellSliders() {
   bondTitle.style.cssText = 'font-size:10px;color:#ff44cc;font-weight:600;letter-spacing:0.05em;opacity:0.85';
   bondTitle.textContent = 'bond e⁻';
   bondGrp.appendChild(bondTitle);
+  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; }
   const _bondDefs = [
-    { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;         bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; } },
-    { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;            bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; } },
-    { lbl:'arc',   min:0,     max:1,   step:0.05,  val:()=>bondArcFrac,       fmt:v=>v.toFixed(2), set:v=>{ bondArcFrac=v;          bondElecFracs=[]; } },
+    { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
+    { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
+    { lbl:'arc',   min:0,     max:1,   step:0.05,  val:()=>bondArcFrac,       fmt:v=>v.toFixed(2), set:v=>{ bondArcFrac=v;         bondElecFracs=[]; } },
     { lbl:'slow',  min:0,     max:1,   step:0.05,  val:()=>bondCrossSlowMin,  fmt:v=>v.toFixed(2), set:v=>{ bondCrossSlowMin=v; } },
+    { lbl:'steer', min:0.01,  max:1,   step:0.01,  val:()=>bondOrbitSteer,    fmt:v=>v.toFixed(2), set:v=>{ bondOrbitSteer=v; } },
     { lbl:'dot',   min:0,     max:20,  step:0.5,   val:()=>bondDotR,          fmt:v=>v.toFixed(1), set:v=>{ bondDotR=v; } },
     { lbl:'trail', min:0,     max:300, step:5,     val:()=>bondTrailLen,      fmt:v=>Math.round(v),set:v=>{ bondTrailLen=Math.round(v); const cap=Math.max(bondTrailLen,1); if(bondElecFracs.length>cap)bondElecFracs.splice(0,bondElecFracs.length-cap); } },
   ];
