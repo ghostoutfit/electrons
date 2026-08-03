@@ -335,7 +335,7 @@
     position: relative;
   }
   .ctrl-box-pink input[type="range"] { width: 120px; }
-  #elemGrid {
+  #elemGrid, #elemGridA, #elemGridB {
     display: grid;
     grid-template-columns: repeat(8, 36px);
     grid-template-rows: repeat(4, 34px);
@@ -935,6 +935,7 @@
           <button class="awheel-item active" data-tab="shells">Shells</button>
           <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="display:none">iTunes Visualizer</button>
           <button class="awheel-item" data-tab="orbit3d">Orbit</button>
+          <button class="awheel-item" data-tab="bond">Bond</button>
         </div>
         <div id="forceModeRow" style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-fmode="0">Forces off</button>
@@ -965,6 +966,16 @@
     <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
     <div id="shellDevSliders"></div>
+  </div>
+</div>
+<div id="bondPickerRow" class="toolbar-row" style="display:none;gap:16px;align-items:flex-start">
+  <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <span class="ctrl-box-label ctrl-box-label-pink">ATOM A</span>
+    <div id="elemGridA"></div>
+  </div>
+  <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:6px">
+    <span class="ctrl-box-label ctrl-box-label-pink">ATOM B</span>
+    <div id="elemGridB"></div>
   </div>
 </div>
 <div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
@@ -1575,6 +1586,7 @@ let egZoomStart = 0, egZoomEnd = 1;
 let egDragStartPx = null, egDragCurPx = null;
 let animParent = null;
 let _imgParent = null;
+let atomBZ = 6; // Bond tab: second atom (default Carbon)
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
@@ -1582,6 +1594,16 @@ let electrons = [];
 let eK = 140000, eRepulse = 50000, eDamp = 1, eMinR = 80, eMaxR = 90, eDt = 1.45;
 let eTrailLen = 105;
 const SHELL_COLORS = ['#ff4488', '#00ddff', '#ff8800', '#88ff00'];
+const BOND_ELEM_DATA = [
+  [1,'H','Hydrogen','alkali',1,1],[2,'He','Helium','noble',8,1],
+  [3,'Li','Lithium','alkali',1,2],[4,'Be','Beryllium','alkaline',2,2],
+  [6,'C','Carbon','carbon-gp',6,2],[9,'F','Fluorine','halogen',7,2],[10,'Ne','Neon','noble',8,2],
+  [11,'Na','Sodium','alkali',1,3],[12,'Mg','Magnesium','alkaline',2,3],
+  [14,'Si','Silicon','carbon-gp',6,3],[17,'Cl','Chlorine','halogen',7,3],[18,'Ar','Argon','noble',8,3],
+  [19,'K','Potassium','alkali',1,4],[20,'Ca','Calcium','alkaline',2,4],
+  [26,'Fe','Iron','transition',3,4],[29,'Cu','Copper','transition',4,4],[30,'Zn','Zinc','transition',5,4],
+  [32,'Ge','Germanium','carbon-gp',6,4],[35,'Br','Bromine','halogen',7,4],[36,'Kr','Krypton','noble',8,4],
+];
 let shellK          = [140000, 11000, 91000, 140000]; // per-shell nuclear k
 let shellWallMult   = [1.0, 0.35, 0.95, 1.0];         // per-shell wall engagement multiplier
 let shellWallK      = [15, 155, 815, 15];              // per-shell wall stiffness
@@ -2194,6 +2216,110 @@ function getShellRadius(s) {
   // Inner shell must clear the nucleus
   if (s === 0 && animParent) return Math.max(px, animParent.sphereR * 1.4);
   return px;
+}
+
+function getShellRadiusForZ(s, Z) {
+  const table = SHELL_RADII_PM[Math.max(Z, 1)];
+  const pm = (table && table[s] != null) ? table[s] : (s + 1) * (s + 1) * 53 / Math.max(Z, 1);
+  return pm * shellBaseR;
+}
+
+function outerShellForZ(Z) {
+  const table = SHELL_RADII_PM[Math.max(Z, 1)];
+  return table ? table.length - 1 : 0;
+}
+
+function nucleusSphereR(Z) {
+  const N = autoNeutrons(Math.max(Z, 1));
+  const nTotal = Math.max(Z, 1) + N;
+  const packFrac = 0.62;
+  const vol = nTotal * (4 / 3 * Math.PI * 10 ** 3) / packFrac;
+  return Math.cbrt(vol * 3 / (4 * Math.PI));
+}
+
+function _drawBondAtomShells(ctx, cx, cy, Z) {
+  const table = SHELL_RADII_PM[Math.max(Z, 1)] || [];
+  ctx.save();
+  ctx.setLineDash([6, 10]);
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.35;
+  for (let s = 0; s < table.length; s++) {
+    const r = getShellRadiusForZ(s, Z);
+    ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length];
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawBond(ctx) {
+  const ZA = Math.max(customZ, 1);
+  const ZB = Math.max(atomBZ, 1);
+  const outerA = outerShellForZ(ZA);
+  const outerB = outerShellForZ(ZB);
+  const rA = getShellRadiusForZ(outerA, ZA);
+  const rB = getShellRadiusForZ(outerB, ZB);
+  // Place atoms so valence shells overlap by ~25%
+  const bondDist = (rA + rB) * 0.75;
+
+  const _W = canvas.width, _H = canvas.height;
+  const _tbH = document.getElementById('toolbar').offsetHeight;
+  const _sbEl = document.getElementById('scrubBar');
+  const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
+  const _centerY = (_tbH + _H - _sbH) / 2;
+
+  ctx.save();
+  ctx.translate(_W / 2, _centerY);
+  ctx.scale(viewZoom, viewZoom);
+  ctx.translate(-_W / 2, -_H / 2);
+
+  const cy = _H / 2;
+  const cxA = _W / 2 - bondDist / 2;
+  const cxB = _W / 2 + bondDist / 2;
+
+  // Shell rings for each atom
+  _drawBondAtomShells(ctx, cxA, cy, ZA);
+  _drawBondAtomShells(ctx, cxB, cy, ZB);
+
+  // Atomic radius lines
+  const showAtomicRadius = document.getElementById('showElectric').checked;
+  if (showAtomicRadius) {
+    const vz = viewZoom;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(100,180,255,0.55)';
+    ctx.lineWidth = 1.5 / vz;
+    ctx.setLineDash([6 / vz, 6 / vz]);
+    ctx.beginPath(); ctx.moveTo(cxA, cy); ctx.lineTo(cxA - rA, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cxB, cy); ctx.lineTo(cxB + rB, cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `${13 / vz}px Lexend, sans-serif`;
+    ctx.fillStyle = 'rgba(140,200,255,0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`r = ${Math.round(rA / shellBaseR)} pm`, cxA - rA / 2, cy - 12 / vz);
+    ctx.fillText(`r = ${Math.round(rB / shellBaseR)} pm`, cxB + rB / 2, cy - 12 / vz);
+    ctx.restore();
+  }
+
+  // Nuclei
+  const srA = animParent ? animParent.sphereR : nucleusSphereR(ZA);
+  const srB = nucleusSphereR(ZB);
+  drawCloudOutline(cxA, cy, srA);
+  drawCloudOutline(cxB, cy, srB);
+
+  // Element labels
+  const vz = viewZoom;
+  const symA = (BOND_ELEM_DATA.find(e => e[0] === ZA) || [])[1] || String(ZA);
+  const symB = (BOND_ELEM_DATA.find(e => e[0] === ZB) || [])[1] || String(ZB);
+  ctx.save();
+  ctx.font = `bold ${15 / vz}px Lexend, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillText(symA, cxA, cy - srA - 16 / vz);
+  ctx.fillText(symB, cxB, cy - srB - 16 / vz);
+  ctx.restore();
+
+  ctx.restore();
 }
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
@@ -2835,6 +2961,7 @@ function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (currentTab === 'orbit3d') { drawOrbit3D(ctx); return; }
+  if (currentTab === 'bond') { drawBond(ctx); return; }
   if (!animParent) { drawEnergyGraph(); return; }
 
   ctx.save();
@@ -2986,7 +3113,7 @@ function idleParticleLoop() {
   if (currentTab === 'trails') stepElectrons();
   else if (currentTab === 'orbit3d') stepOrbit3D();
   else stepElectronsShells();
-  if (animParent || currentTab === 'orbit3d') draw();
+  if (animParent || currentTab === 'orbit3d' || currentTab === 'bond') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
 
@@ -3000,8 +3127,13 @@ let arrowMode = 0;
 let fvShellMode = false;
 
 function syncElemBtnActive() {
-  document.querySelectorAll('.elem-btn').forEach(b => {
+  document.querySelectorAll('#elemGrid .elem-btn, #elemGridA .elem-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.z) === customZ);
+  });
+}
+function syncElemBtnActiveB() {
+  document.querySelectorAll('#elemGridB .elem-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.z) === atomBZ);
   });
 }
 let selectedElectronIdx = -1;
@@ -3018,7 +3150,7 @@ function _syncDevSliders() {
   const devOn = document.getElementById('devToggle').checked;
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
   const shellDev = document.getElementById('shellDevSliders');
-  if (shellDev) shellDev.style.display = isOrbit ? 'none' : '';
+  if (shellDev) shellDev.style.display = (isOrbit || currentTab === 'bond') ? 'none' : '';
   if (isOrbit) {
     _devSlidersRow.style.display = 'none';
     if (_orbit3dOverlay) _orbit3dOverlay.style.display = devOn ? 'flex' : 'none';
@@ -3032,8 +3164,10 @@ document.getElementById('devToggle').addEventListener('change', _syncDevSliders)
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
+  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d' || currentTab === 'bond';
   document.getElementById('forceModeRow').style.display = hideForce ? 'none' : '';
+  const bondRow = document.getElementById('bondPickerRow');
+  if (bondRow) bondRow.style.display = currentTab === 'bond' ? '' : 'none';
 }
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
@@ -3191,18 +3325,8 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   };
   syncShellDevSliders();
   // ─── Element picker grid ─────────────────────────────────────────────────────
-  const ELEM_DATA = [
-    [1,'H','Hydrogen','alkali',1,1],[2,'He','Helium','noble',8,1],
-    [3,'Li','Lithium','alkali',1,2],[4,'Be','Beryllium','alkaline',2,2],
-    [6,'C','Carbon','carbon-gp',6,2],[9,'F','Fluorine','halogen',7,2],[10,'Ne','Neon','noble',8,2],
-    [11,'Na','Sodium','alkali',1,3],[12,'Mg','Magnesium','alkaline',2,3],
-    [14,'Si','Silicon','carbon-gp',6,3],[17,'Cl','Chlorine','halogen',7,3],[18,'Ar','Argon','noble',8,3],
-    [19,'K','Potassium','alkali',1,4],[20,'Ca','Calcium','alkaline',2,4],
-    [26,'Fe','Iron','transition',3,4],[29,'Cu','Copper','transition',4,4],[30,'Zn','Zinc','transition',5,4],
-    [32,'Ge','Germanium','carbon-gp',6,4],[35,'Br','Bromine','halogen',7,4],[36,'Kr','Krypton','noble',8,4],
-  ];
   const elemGrid = document.getElementById('elemGrid');
-  for (const [z, sym, name, cat, col, row] of ELEM_DATA) {
+  for (const [z, sym, name, cat, col, row] of BOND_ELEM_DATA) {
     const btn = document.createElement('button');
     btn.className = `elem-btn ${cat}`;
     btn.dataset.z = z;
@@ -3253,6 +3377,38 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   const _protonUp = document.getElementById('protonUp');
   if (_protonDown) _protonDown.addEventListener('click', () => _stepProton(-1));
   if (_protonUp)   _protonUp.addEventListener('click',   () => _stepProton(+1));
+
+  // ─── Bond tab element pickers ─────────────────────────────────────────────
+  function _buildElemGrid(containerId, clickFn) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    for (const [z, sym, name, cat, col, row] of BOND_ELEM_DATA) {
+      const btn = document.createElement('button');
+      btn.className = `elem-btn ${cat}`;
+      btn.dataset.z = z;
+      btn.style.gridColumn = col;
+      btn.style.gridRow = row;
+      btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
+      btn.addEventListener('click', () => clickFn(z));
+      grid.appendChild(btn);
+    }
+  }
+
+  _buildElemGrid('elemGridA', (z) => {
+    setNucleusFromZ(z);
+    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    syncShellDevSliders();
+    syncElemBtnActive();
+    draw();
+  });
+
+  _buildElemGrid('elemGridB', (z) => {
+    atomBZ = z;
+    syncElemBtnActiveB();
+    draw();
+  });
+
+  syncElemBtnActiveB();
 }());
 
 // ─── Energy model ─────────────────────────────────────────────────────────────
