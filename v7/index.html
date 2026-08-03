@@ -970,6 +970,11 @@
     <div class="dev-row" style="display:none"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slRadialJitterVal">1.000</span></div>
     <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
+    <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="1"><span class="dev-val" id="slBondSepVal">1.00</span></div>
+    <div class="dev-row"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.15" step="0.005" value="0.04"><span class="dev-val" id="slBondSpeedVal">0.040</span></div>
+    <div class="dev-row"><label>bond arc</label><input type="range" id="slBondArc" min="0" max="1" step="0.05" value="1"><span class="dev-val" id="slBondArcVal">1.00</span></div>
+    <div class="dev-row"><label>bond dot</label><input type="range" id="slBondDot" min="0" max="20" step="0.5" value="0"><span class="dev-val" id="slBondDotVal">0.0</span></div>
+    <div class="dev-row"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="300" step="5" value="120"><span class="dev-val" id="slBondTrailVal">120</span></div>
     <div id="shellDevSliders"></div>
   </div>
 </div>
@@ -1585,6 +1590,15 @@ let atomBZ = 6; // second atom Z (default Carbon)
 let animParentB = null;
 let _imgParentB = null;
 let electronsB = [];
+let bondOrbitVisit = 0;     // index into current orbit cycle
+let bondOrbitPhase = 0;     // phase within current visit (0..2π sphere, 0..π fig8)
+let bondCrossSlowMin = 0.6; // floor speed multiplier at fig8 crossing (0=full stop, 1=no slowdown)
+let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
+let bondSpeed    = 0.04; // phase advance per frame
+let bondDotR     = 0;    // dot radius (0 = hidden)
+let bondTrailLen = 120;
+let bondArcFrac  = 1.0;  // fraction of each shell arc traced (0=none, 1=full semicircle to back)
+let bondSepMult  = 1.0;  // multiplier on the computed atom-to-atom separation
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
@@ -1602,6 +1616,23 @@ const BOND_ELEM_DATA = [
   [26,'Fe','Iron','transition',3,4],[29,'Cu','Copper','transition',4,4],[30,'Zn','Zinc','transition',5,4],
   [32,'Ge','Germanium','carbon-gp',6,4],[35,'Br','Bromine','halogen',7,4],[36,'Kr','Krypton','noble',8,4],
 ];
+
+// Pauling electronegativity values; null = noble gas (no bond data)
+const ELECTRONEGATIVITY = {
+  1: 2.20, 2: null, 3: 0.98, 4: 1.57, 6: 2.55, 9: 3.98, 10: null,
+  11: 0.93, 12: 1.31, 14: 1.90, 17: 3.16, 18: null, 19: 0.82, 20: 1.00,
+  26: 1.83, 29: 1.90, 30: 1.65, 32: 2.01, 35: 2.96, 36: null,
+};
+
+function getBondRatio() {
+  const enA = ELECTRONEGATIVITY[customZ];
+  const enB = ELECTRONEGATIVITY[atomBZ];
+  if (enA == null || enB == null) return null;
+  const deltaEN = Math.abs(enA - enB);
+  const ionicFraction = 1 - Math.exp(-0.25 * deltaEN * deltaEN);
+  const moreEN = enB > enA ? 1 : (enA > enB ? -1 : 0); // +1=B more EN, -1=A more EN
+  return { enA, enB, deltaEN, ionicFraction, covalentFraction: 1 - ionicFraction, moreEN };
+}
 let shellK          = [140000, 11000, 91000, 140000]; // per-shell nuclear k
 let shellWallMult   = [1.0, 0.35, 0.95, 1.0];         // per-shell wall engagement multiplier
 let shellWallK      = [15, 155, 815, 15];              // per-shell wall stiffness
@@ -1788,6 +1819,10 @@ function drawOrbit3D(ctx) {
     const outerS=Math.max(...electronsB.map(e=>e.shell));
     _drawARLine(cxB, centerY, getShellRadiusForZ(outerS,atomBZ)*orb3dRadScale*viewZoom, Math.round(getShellRadiusForZ(outerS,atomBZ)/shellBaseR));
   }
+
+  // Bond electron and ratio label
+  drawBondElectronOrbit(ctx, cxA, cxB, centerY);
+  drawBondRatioLabel(ctx);
 }
 
 // ─── Orbit 3D per-shell dev sliders ──────────────────────────────────────────
@@ -1906,9 +1941,201 @@ function setAtomBFromZ(Z) {
   animParentB = Z>0 ? generateNucleus(Z, N, W/2, H/2, currentSeed+1) : null;
   buildNucleusImagesB();
   electronsB=[];
+  bondElecFracs=[];
   syncNeutralElectronsB();
   syncOrb3dShellSlidersB();
   syncElemBtnActiveB();
+}
+
+// ─── Bond electron orbit sequencing ──────────────────────────────────────────
+// Returns {nG, nL}: smallest positive integers with nG/nL ≈ deltaEN (G = more EN atom)
+function _bondOrbitCounts(deltaEN) {
+  let bestNg = 1, bestNl = 1, bestErr = Infinity;
+  for (let nl = 1; nl <= 4; nl++) {
+    const ng = Math.max(nl, Math.round(deltaEN * nl));
+    if (ng + nl > 6) continue;
+    const err = Math.abs(ng / nl - deltaEN);
+    if (err < bestErr - 0.001 || (Math.abs(err - bestErr) < 0.001 && ng + nl < bestNg + bestNl)) {
+      bestErr = err; bestNg = ng; bestNl = nl;
+    }
+  }
+  return { nG: bestNg, nL: bestNl };
+}
+
+// Returns ordered cycle of visit strings: 'sphere-G'|'fig8-G'|'sphere-L'|'fig8-L'
+// Last visit in each group is always fig8 (transition through crossing point).
+function _bondCycle(deltaEN, moreEN) {
+  if (deltaEN < 0.3 || moreEN === 0) return ['fig8-G', 'fig8-L'];
+  const { nG, nL } = _bondOrbitCounts(deltaEN);
+  const cycle = [];
+  for (let i = 0; i < nG; i++) cycle.push(i === nG - 1 ? 'fig8-G' : 'sphere-G');
+  for (let i = 0; i < nL; i++) cycle.push(i === nL - 1 ? 'fig8-L' : 'sphere-L');
+  return cycle;
+}
+
+// ─── Bond electron (shared, hot-pink) ────────────────────────────────────────
+function stepBondElectron() {
+  if (!animParent || !animParentB) { bondElecFracs = []; return; }
+  const ratio = getBondRatio();
+  if (!ratio) { bondElecFracs = []; return; }
+
+  const { deltaEN, moreEN } = ratio;
+  const cycle = _bondCycle(deltaEN, moreEN);
+  const visitType = cycle[bondOrbitVisit % cycle.length];
+
+  const sep = getTwoAtomSep();
+  const d   = sep / 2;
+
+  const outerA = electrons.length  ? Math.max(...electrons.map(e => e.shell)) : 0;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, atomBZ);
+
+  // G = more EN atom; gIsB = true when B is more EN (or equal)
+  const gIsB = moreEN >= 0;
+  const rG = gIsB ? rB : rA;
+  const rL = gIsB ? rA : rB;
+  const dG = gIsB ? d : -d;   // signed offset from midpoint to G atom
+  const dL = gIsB ? -d : d;
+
+  const isFig8 = visitType.startsWith('fig8');
+  const isG    = visitType.endsWith('-G');
+  const maxPhase = isFig8 ? Math.PI : 2 * Math.PI;
+
+  // Speed: slow fig8 electron at crossing points (sin = 0)
+  let speed = bondSpeed;
+  if (isFig8) {
+    const localT    = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
+                          : (gIsB ? bondOrbitPhase + Math.PI : bondOrbitPhase);
+    const nearCross = Math.abs(Math.sin(localT));
+    speed *= bondCrossSlowMin + (1 - bondCrossSlowMin) * nearCross;
+  }
+
+  bondOrbitPhase += speed;
+
+  if (bondOrbitPhase >= maxPhase) {
+    bondOrbitPhase -= maxPhase;
+    bondOrbitVisit  = (bondOrbitVisit + 1) % cycle.length;
+    bondElecFracs   = [];
+  }
+
+  // Position in bond-midpoint coordinate frame
+  let lx, ly;
+  if (isFig8) {
+    const t     = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
+                      : (gIsB ? bondOrbitPhase + Math.PI : bondOrbitPhase);
+    const a     = (isG ? rG : rL) * bondArcFrac + d;
+    const denom = 1 + Math.cos(t) ** 2;
+    lx = a * Math.sin(t) / denom;
+    ly = a * Math.sin(t) * Math.cos(t) / denom;
+  } else {
+    // Sphere orbit: circle centered on the atom
+    const r  = (isG ? rG : rL) * bondArcFrac;
+    const dc = isG ? dG : dL;
+    lx = dc + r * Math.cos(bondOrbitPhase);
+    ly =      r * Math.sin(bondOrbitPhase);
+  }
+
+  bondElecFracs.push({ frac: 0.5 + lx / sep, perp: ly / sep });
+  const maxLen = Math.max(bondTrailLen, 1);
+  if (bondElecFracs.length > maxLen) bondElecFracs.splice(0, bondElecFracs.length - maxLen);
+}
+
+function drawBondElectronShells(ctx) {
+  if (bondElecFracs.length < 2) return;
+  if (bondTrailLen <= 0 && bondDotR <= 0) return;
+  const sep = getTwoAtomSep();
+  const W = canvas.width, H = canvas.height;
+  const n = bondElecFracs.length;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 2.5 / viewZoom;
+  if (bondTrailLen > 0) {
+    for (let i = 1; i < n; i++) {
+      const { frac: f0, perp: p0 } = bondElecFracs[i - 1];
+      const { frac: f1, perp: p1 } = bondElecFracs[i];
+      ctx.globalAlpha = (i / n) ** 2 * 0.85;
+      ctx.strokeStyle = '#ff44cc';
+      ctx.beginPath();
+      ctx.moveTo(W / 2 + f0 * sep, H / 2 + p0 * sep);
+      ctx.lineTo(W / 2 + f1 * sep, H / 2 + p1 * sep);
+      ctx.stroke();
+    }
+  }
+  if (bondDotR > 0) {
+    const { frac, perp } = bondElecFracs[n - 1];
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff44cc';
+    ctx.shadowColor = '#ff44cc';
+    ctx.shadowBlur = 18 / viewZoom;
+    ctx.beginPath();
+    ctx.arc(W / 2 + frac * sep, H / 2 + perp * sep, bondDotR / viewZoom, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
+  if (bondElecFracs.length < 2) return;
+  if (bondTrailLen <= 0 && bondDotR <= 0) return;
+  const sepScreen = cxB - cxA;
+  const n = bondElecFracs.length;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 2.5;
+  if (bondTrailLen > 0) {
+    for (let i = 1; i < n; i++) {
+      const { frac: f0, perp: p0 } = bondElecFracs[i - 1];
+      const { frac: f1, perp: p1 } = bondElecFracs[i];
+      ctx.globalAlpha = (i / n) ** 2 * 0.85;
+      ctx.strokeStyle = '#ff44cc';
+      ctx.beginPath();
+      ctx.moveTo(cxA + f0 * sepScreen, centerY + p0 * sepScreen);
+      ctx.lineTo(cxA + f1 * sepScreen, centerY + p1 * sepScreen);
+      ctx.stroke();
+    }
+  }
+  if (bondDotR > 0) {
+    const { frac, perp } = bondElecFracs[n - 1];
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff44cc';
+    ctx.shadowColor = '#ff44cc';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(cxA + frac * sepScreen, centerY + perp * sepScreen, bondDotR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBondRatioLabel(ctx) {
+  const ratio = getBondRatio();
+  const W = canvas.width;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const labelY = tbH + 26;
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.font = 'bold 13px Lexend, sans-serif';
+  ctx.textAlign = 'center';
+  if (!ratio) {
+    ctx.fillStyle = 'rgba(160,120,200,0.5)';
+    ctx.fillText('— noble gas: no bond data —', W / 2, labelY);
+    ctx.restore();
+    return;
+  }
+  const { enA, enB, deltaEN, ionicFraction } = ratio;
+  const ioPct  = Math.round(ionicFraction * 100);
+  const covPct = 100 - ioPct;
+  const symA = BOND_ELEM_DATA.find(e => e[0] === customZ)?.[1]  ?? String(customZ);
+  const symB = BOND_ELEM_DATA.find(e => e[0] === atomBZ)?.[1] ?? String(atomBZ);
+  ctx.shadowColor = 'rgba(255,80,220,0.5)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = 'rgba(255,160,255,0.92)';
+  ctx.fillText(
+    `${symA} (χ ${enA.toFixed(2)})  —  ${symB} (χ ${enB.toFixed(2)})  ·  ΔEN ${deltaEN.toFixed(2)}  →  ${covPct}% covalent / ${ioPct}% ionic`,
+    W / 2, labelY
+  );
+  ctx.restore();
 }
 
 function _growOrb3dShell(s, newCount) {
@@ -2007,6 +2234,33 @@ function syncOrb3dShellSliders() {
   globalGrp.appendChild(_mkRow(dotLbl, dotIn, dotVal));
 
   container.appendChild(globalGrp);
+
+  // Bond electron group (mirrors the sliders in #devSlidersRow)
+  const bondGrp = document.createElement('div');
+  bondGrp.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding-left:12px;border-left:1px solid rgba(255,68,204,0.3)';
+  const bondTitle = document.createElement('div');
+  bondTitle.style.cssText = 'font-size:10px;color:#ff44cc;font-weight:600;letter-spacing:0.05em;opacity:0.85';
+  bondTitle.textContent = 'bond e⁻';
+  bondGrp.appendChild(bondTitle);
+  const _bondDefs = [
+    { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;         bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; } },
+    { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;            bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; } },
+    { lbl:'arc',   min:0,     max:1,   step:0.05,  val:()=>bondArcFrac,       fmt:v=>v.toFixed(2), set:v=>{ bondArcFrac=v;          bondElecFracs=[]; } },
+    { lbl:'slow',  min:0,     max:1,   step:0.05,  val:()=>bondCrossSlowMin,  fmt:v=>v.toFixed(2), set:v=>{ bondCrossSlowMin=v; } },
+    { lbl:'dot',   min:0,     max:20,  step:0.5,   val:()=>bondDotR,          fmt:v=>v.toFixed(1), set:v=>{ bondDotR=v; } },
+    { lbl:'trail', min:0,     max:300, step:5,     val:()=>bondTrailLen,      fmt:v=>Math.round(v),set:v=>{ bondTrailLen=Math.round(v); const cap=Math.max(bondTrailLen,1); if(bondElecFracs.length>cap)bondElecFracs.splice(0,bondElecFracs.length-cap); } },
+  ];
+  for (const d of _bondDefs) {
+    const row = document.createElement('div'); row.className = 'dev-row';
+    const lbl = document.createElement('label'); lbl.textContent = d.lbl;
+    const inp = document.createElement('input');
+    inp.type='range'; inp.min=d.min; inp.max=d.max; inp.step=d.step; inp.value=d.val();
+    const val = document.createElement('span'); val.className='dev-val'; val.textContent=d.fmt(d.val());
+    inp.addEventListener('input', ()=>{ const v=parseFloat(inp.value); d.set(v); val.textContent=d.fmt(v); });
+    row.append(lbl, inp, val);
+    bondGrp.appendChild(row);
+  }
+  container.appendChild(bondGrp);
 
   // Per-shell groups
   const occupied = [...new Set(electrons.map(e => e.shell))].sort((a,b)=>a-b);
@@ -2224,6 +2478,7 @@ function setNucleusFromZ(Z) {
   }
   // Keep shell electrons but clear trails since nucleus changed
   for (const e of electrons) e.trail = [];
+  bondElecFracs = [];
   document.getElementById('protonSliderVal').textContent = Z;
   document.getElementById('protonSlider').value = Z;
   draw();
@@ -2306,7 +2561,7 @@ function getTwoAtomSep() {
   const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
   const rA = getShellRadius(outerA);
   const rB = getShellRadiusForZ(outerB, Math.max(atomBZ, 1));
-  return Math.max(rA + rB + Math.max(rA, rB) * 0.4, 120);
+  return Math.max(rA + rB + Math.max(rA, rB) * 0.4, 120) * bondSepMult;
 }
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
@@ -3041,7 +3296,11 @@ function draw() {
     ctx.restore();
   }
 
+  // ── Bond electron ────────────────────────────────────────────────────────────
+  drawBondElectronShells(ctx);
+
   ctx.restore();
+  drawBondRatioLabel(ctx);
   drawEnergyGraph();
   updateParticleCounters();
   drawForceViz();
@@ -3150,6 +3409,7 @@ function idleParticleLoop() {
   if (currentTab === 'trails') stepElectrons();
   else if (currentTab === 'orbit3d') { stepOrbit3D(); stepOrbit3DB(); }
   else { stepElectronsShells(); if (animParentB && electronsB.length) stepElectronsShellsFor(electronsB, atomBZ); }
+  stepBondElectron();
   if (animParent || currentTab === 'orbit3d') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
@@ -3310,6 +3570,15 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
   bind('slBandHW', 'slBandHWVal', v => { eShellBandHW = v; }, v => Math.round(v));
+  bind('slBondSep',   'slBondSepVal',   v => { bondSepMult = v; bondElecFracs = []; }, v => v.toFixed(2));
+  bind('slBondSpeed', 'slBondSpeedVal', v => { bondSpeed = v; bondElecFracs = []; }, v => v.toFixed(3));
+  bind('slBondArc',   'slBondArcVal',   v => { bondArcFrac = v; bondElecFracs = []; }, v => v.toFixed(2));
+  bind('slBondDot',   'slBondDotVal',   v => { bondDotR = v; }, v => v.toFixed(1));
+  bind('slBondTrail', 'slBondTrailVal', v => {
+    bondTrailLen = Math.round(v);
+    const cap = Math.max(bondTrailLen, 1);
+    if (bondElecFracs.length > cap) bondElecFracs.splice(0, bondElecFracs.length - cap);
+  }, v => Math.round(v));
   // ── Per-shell dev sliders (generated dynamically) ─────────────────────────────────────────
   const SHELL_SLIDER_DEFS = [
     { key: 'k',    label: 'k',         min: 1000,  max: 500000, step: 5000,  fmt: v => Math.round(v),   get: s => shellK[s],        set: (s,v) => { shellK[s] = v; } },
