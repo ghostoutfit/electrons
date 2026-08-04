@@ -1784,7 +1784,16 @@ function _drawOrbit3DCore(ctx, cx, cy, elecs, shellGroups, Z) {
         ctx.globalAlpha=1;
         if (orb3dDotR>0 && n>0) {
           const tip=trail[n-1]; const [tx,ty]=proj3D(tip[0],tip[1],tip[2],r3d);
-          ctx.fillStyle=col; ctx.beginPath(); ctx.arc(tx,ty,orb3dDotR,0,Math.PI*2); ctx.fill();
+          const prev=trail[Math.max(0,n-3)]; const [px2,py2]=proj3D(prev[0],prev[1],prev[2],r3d);
+          let dx=tx-px2, dy=ty-py2; const dl=Math.sqrt(dx*dx+dy*dy);
+          if (dl>0.5){dx/=dl;dy/=dl;}else{dx=1;dy=0;}
+          const L=orb3dDotR, W=orb3dDotR*0.65, perpx=-dy, perpy=dx;
+          ctx.fillStyle=col; ctx.beginPath();
+          ctx.moveTo(tx+dx*L,           ty+dy*L);
+          ctx.lineTo(tx-dx*L+perpx*W,   ty-dy*L+perpy*W);
+          ctx.lineTo(tx-dx*L*0.25,      ty-dy*L*0.25);
+          ctx.lineTo(tx-dx*L-perpx*W,   ty-dy*L-perpy*W);
+          ctx.closePath(); ctx.fill();
         }
       }
     }
