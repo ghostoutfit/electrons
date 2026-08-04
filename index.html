@@ -2296,26 +2296,40 @@ function drawElectronsShells(ctx) {
     ctx.fill();
   }
 
-  // Electrons as glow dots within their shell band
+  // Electrons as glowing arrows pointing in direction of orbital motion
   const worldR = electronDotR / Z;
+  const coreR  = electronDotR / 6 / Z;
   ctx.globalAlpha = 1;
   if (electronDotR > 0) {
     for (const e of electrons) {
-      const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+      const r  = getShellRadius(e.shell) + (e.radialOffset || 0);
       const ex = cx + Math.cos(e.angle) * r;
       const ey = cy + Math.sin(e.angle) * r;
-      ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
+      // Tangent direction of orbital motion
+      const sign = e.dAngle >= 0 ? 1 : -1;
+      const tx = -Math.sin(e.angle) * sign;
+      const ty =  Math.cos(e.angle) * sign;
+      const px = -ty, py = tx;  // perpendicular
+      const L = worldR, W = worldR * 0.65;
+      ctx.save();
+      ctx.shadowColor = 'rgba(238,255,0,0.9)';
+      ctx.shadowBlur  = worldR * 2.5 * Z;  // shadowBlur is always in screen pixels
+      ctx.fillStyle = 'rgba(238,255,0,0.85)';
+      ctx.beginPath();
+      ctx.moveTo(ex + tx * L,              ey + ty * L);
+      ctx.lineTo(ex - tx * L + px * W,     ey - ty * L + py * W);
+      ctx.lineTo(ex - tx * L * 0.3,        ey - ty * L * 0.3);
+      ctx.lineTo(ex - tx * L - px * W,     ey - ty * L - py * W);
+      ctx.closePath();
+      ctx.fill();
+      // White tip
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,220,0.95)';
+      ctx.beginPath();
+      ctx.arc(ex + tx * L * 0.75, ey + ty * L * 0.75, coreR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
-  }
-
-  // Bright white core
-  ctx.fillStyle = 'rgba(255,255,220,0.95)';
-  const coreR = electronDotR / 6 / Z;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
-    ctx.beginPath();
-    ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   // Highlight selection
