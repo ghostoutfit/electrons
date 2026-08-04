@@ -1869,9 +1869,8 @@ function _growOrb3dShellB(s, newCount) {
     const canPair = lastGrp && lastGrp.count===1 && lastIdx>=2;
     if (canPair) { lastGrp.count=2; lastGrp.trails.push([]); }
     else {
-      const gi=groups.length;
-      groups.push({ count:1, phase:gi*0.7, wanderPh:gi*2.1, radPh:gi*1.3+s*1.1,
-        axisPhi: gi>0 ? gi*Math.PI/(gi+1) : 0, trails:[[]] });
+      groups.push({ count:1, phase:Math.random()*Math.PI*2, wanderPh:Math.random()*Math.PI*2,
+        radPh:Math.random()*Math.PI*2, axisPhi:Math.random()*Math.PI*2, trails:[[]] });
     }
     orb3dShellCountsB[s]++;
   }
@@ -2050,8 +2049,12 @@ function stepBondElectron() {
   const isG      = visitType.endsWith('-G');
   const maxPhase = isFig8 ? Math.PI : 2 * Math.PI;
 
-  // Phase-advance speed, with crossing slowdown for fig8 visits
-  let speed = bondSpeed;
+  // Normalize phase rate by amplitude so ideal velocity at visit boundaries is
+  // always d·bondSpeed/2 regardless of how different the two atoms' shell radii are.
+  // Without this, large atoms (K shell 3 = 385 pm) produce a 2× velocity jump at
+  // the G↔L crossing, causing a visible kink in the trail near the midpoint.
+  const a_curr = (isG ? rG : rL) * (1 + _bondEffRadial) + d;
+  let speed = bondSpeed * (d / a_curr);
   if (isFig8) {
     const localT    = isG ? (gIsB ? bondOrbitPhase : bondOrbitPhase + Math.PI)
                           : (gIsB ? bondOrbitPhase + Math.PI : bondOrbitPhase);
@@ -2242,10 +2245,10 @@ function _growOrb3dShell(s, newCount) {
       const gi = groups.length;
       groups.push({
         count: 1,
-        phase: 0,
-        wanderPh: gi * 2.1,
-        radPh:    gi * 1.3 + s * 1.1,
-        axisPhi:  gi > 0 ? gi * Math.PI / (gi + 1) : 0,
+        phase:    Math.random() * Math.PI * 2,
+        wanderPh: Math.random() * Math.PI * 2,
+        radPh:    Math.random() * Math.PI * 2,
+        axisPhi:  Math.random() * Math.PI * 2,
         trails: [[]],
       });
     }
