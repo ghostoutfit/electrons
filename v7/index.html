@@ -1982,12 +1982,15 @@ function _bondOrbitCounts(deltaEN) {
   return { nG: bestNg, nL: bestNl };
 }
 
-// Always fig8 (lemniscate) for both sides. sphere-G/L visits end at zero velocity
-// while the next fig8 starts at non-zero velocity → hard kink at every cycle boundary.
-// Ionic character is shown by lobe-size asymmetry (smaller EN-rich side = denser trail
-// due to speed normalization) rather than visit-count ratio.
+// Returns ordered cycle of visit strings: 'sphere-G'|'fig8-G'|'sphere-L'|'fig8-L'
+// Last visit in each group is always fig8 (transition through crossing point).
 function _bondCycle(deltaEN, moreEN) {
-  return ['fig8-G', 'fig8-L'];
+  if (deltaEN < 0.3 || moreEN === 0) return ['fig8-G', 'fig8-L'];
+  const { nG, nL } = _bondOrbitCounts(deltaEN);
+  const cycle = [];
+  for (let i = 0; i < nG; i++) cycle.push(i === nG - 1 ? 'fig8-G' : 'sphere-G');
+  for (let i = 0; i < nL; i++) cycle.push(i === nL - 1 ? 'fig8-L' : 'sphere-L');
+  return cycle;
 }
 
 // Compute ideal (lx, ly) in bond-midpoint frame for a given visit type and phase.
