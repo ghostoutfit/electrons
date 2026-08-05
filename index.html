@@ -1756,7 +1756,7 @@ function drawOrbit3D(ctx) {
           let dx = tx - px2, dy = ty - py2;
           const dl = Math.sqrt(dx * dx + dy * dy);
           if (dl > 0.5) { dx /= dl; dy /= dl; } else { dx = 1; dy = 0; }
-          const L = orb3dDotR, W = orb3dDotR * 0.65, perpx = -dy, perpy = dx;
+          const L = orb3dDotR * r3d / 200, W = L * 0.65, perpx = -dy, perpy = dx;
           ctx.fillStyle = col;
           ctx.beginPath();
           ctx.moveTo(tx + dx * L,           ty + dy * L);

@@ -922,13 +922,13 @@
         <div style="display:flex;align-items:center;gap:3px;">
           <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">radial</span>
           <button id="bondArcMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">0.00</span>
+          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.10</span>
           <button id="bondArcPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
         <div style="display:flex;align-items:center;gap:3px;">
           <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">wander</span>
           <button id="bondRadMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">0.00</span>
+          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.50</span>
           <button id="bondRadPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
       </div>
@@ -989,7 +989,7 @@
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
     <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="1"><span class="dev-val" id="slBondSepVal">1.00</span></div>
     <div class="dev-row"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.30" step="0.005" value="0.15"><span class="dev-val" id="slBondSpeedVal">0.150</span></div>
-    <div class="dev-row"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="0"><span class="dev-val" id="slBondArcVal">0.00</span></div>
+    <div class="dev-row"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="-0.1"><span class="dev-val" id="slBondArcVal">-0.10</span></div>
     <div class="dev-row"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="400" step="5" value="190"><span class="dev-val" id="slBondTrailVal">190</span></div>
     <div id="shellDevSliders"></div>
   </div>
@@ -1615,8 +1615,8 @@ let bondOrbitSteer = 0.3;            // velocity steering rate (0=no correction,
 let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
 let bondSpeed    = 0.15; // phase advance per frame
 let bondTrailLen = 190;
-let bondRadial      = 0.0;  // amplitude of along-bond radial oscillation (0 = none)
-let bondOrbitWander = 0.0;  // amplitude of perpendicular wander oscillation (0 = none)
+let bondRadial      = -0.1; // amplitude of along-bond radial oscillation (0 = none)
+let bondOrbitWander = -0.5; // amplitude of perpendicular wander oscillation (0 = none)
 let _prevBondVisit    = -1;   // last bondOrbitVisit — detect visit boundary
 let _bondTargetRadial = 0.0;  // random radial target picked each new visit
 let _bondTargetWander = 0.0;  // random wander target picked each new visit
@@ -1787,7 +1787,7 @@ function _drawOrbit3DCore(ctx, cx, cy, elecs, shellGroups, Z) {
           const prev=trail[Math.max(0,n-3)]; const [px2,py2]=proj3D(prev[0],prev[1],prev[2],r3d);
           let dx=tx-px2, dy=ty-py2; const dl=Math.sqrt(dx*dx+dy*dy);
           if (dl>0.5){dx/=dl;dy/=dl;}else{dx=1;dy=0;}
-          const L=orb3dDotR, W=orb3dDotR*0.65, perpx=-dy, perpy=dx;
+          const L=orb3dDotR*r3d/200, W=L*0.65, perpx=-dy, perpy=dx;
           ctx.fillStyle=col; ctx.beginPath();
           ctx.moveTo(tx+dx*L,           ty+dy*L);
           ctx.lineTo(tx-dx*L+perpx*W,   ty-dy*L+perpy*W);
@@ -1851,8 +1851,9 @@ function drawOrbit3D(ctx) {
     _drawARLine(cxB, centerY, getShellRadiusForZ(outerS,atomBZ)*orb3dRadScale*viewZoom, Math.round(getShellRadiusForZ(outerS,atomBZ)/shellBaseR));
   }
 
-  // Bond electron and ratio label
+  // Bond electron + EN stats label
   drawBondElectronOrbit(ctx, cxA, cxB, centerY);
+  drawBondENLabel(ctx);
 }
 
 // ─── Orbit 3D per-shell dev sliders ──────────────────────────────────────────
@@ -1991,12 +1992,17 @@ function _bondOrbitCounts(deltaEN) {
   return { nG: bestNg, nL: bestNl };
 }
 
-// Always fig8 (lemniscate) for both sides. sphere-G/L visits end at zero velocity
-// while the next fig8 starts at non-zero velocity → hard kink at every cycle boundary.
-// Ionic character is shown by lobe-size asymmetry (smaller EN-rich side = denser trail
-// due to speed normalization) rather than visit-count ratio.
+// Returns ordered visit cycle: 'sphere-G'|'fig8-G'|'sphere-L'|'fig8-L'
+// nG : nL ratio approximates deltaEN, controlling how much time the shared
+// electron spends near the more-EN vs less-EN atom. Last visit in each group
+// is always fig8 so the electron crosses through the bond midpoint.
 function _bondCycle(deltaEN, moreEN) {
-  return ['fig8-G', 'fig8-L'];
+  if (deltaEN < 0.3 || moreEN === 0) return ['fig8-G', 'fig8-L'];
+  const { nG, nL } = _bondOrbitCounts(deltaEN);
+  const cycle = [];
+  for (let i = 0; i < nG; i++) cycle.push(i === nG - 1 ? 'fig8-G' : 'sphere-G');
+  for (let i = 0; i < nL; i++) cycle.push(i === nL - 1 ? 'fig8-L' : 'sphere-L');
+  return cycle;
 }
 
 // Compute ideal (lx, ly) in bond-midpoint frame for a given visit type and phase.
@@ -2029,7 +2035,7 @@ function stepBondElectron() {
   if (bondOrbitVisit !== _prevBondVisit) {
     _prevBondVisit    = bondOrbitVisit;
     _bondTargetRadial = (Math.random() * 2 - 1) * bondRadial;
-    _bondTargetWander = (Math.random() * 2 - 1) * bondOrbitWander;
+    _bondTargetWander = -Math.random() * Math.abs(bondOrbitWander);
   }
   // Lerp effective values toward targets — settles within one visit, smooth across boundary
   _bondEffRadial += (_bondTargetRadial - _bondEffRadial) * 0.08;
@@ -2200,6 +2206,32 @@ function drawBondElectronShells(ctx) {
       ctx.stroke();
     }
   }
+  ctx.restore();
+}
+
+function drawBondENLabel(ctx) {
+  const ratio = getBondRatio();
+  const W = canvas.width;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  ctx.save();
+  ctx.font = 'bold 13px Lexend, sans-serif';
+  ctx.textAlign = 'center';
+  if (!ratio) {
+    ctx.fillStyle = 'rgba(160,120,200,0.5)';
+    ctx.fillText('— noble gas: no bond data —', W / 2, tbH + 26);
+    ctx.restore();
+    return;
+  }
+  const { enA, enB, deltaEN } = ratio;
+  const symA = BOND_ELEM_DATA.find(e => e[0] === customZ)?.[1]  ?? String(customZ);
+  const symB = BOND_ELEM_DATA.find(e => e[0] === atomBZ)?.[1] ?? String(atomBZ);
+  ctx.shadowColor = 'rgba(255,80,220,0.5)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = 'rgba(255,160,255,0.92)';
+  ctx.fillText(
+    `${symA}  χ ${enA.toFixed(2)}  —  ${symB}  χ ${enB.toFixed(2)}  ·  ΔEN ${deltaEN.toFixed(2)}`,
+    W / 2, tbH + 26
+  );
   ctx.restore();
 }
 
