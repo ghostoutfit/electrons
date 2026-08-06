@@ -976,8 +976,8 @@
   <div class="fp-rh n"  data-dir="n"></div><div class="fp-rh s"  data-dir="s"></div>
   <div class="fp-rh e"  data-dir="e"></div><div class="fp-rh w"  data-dir="w"></div>
   <div id="fvModeToggle">
-    <button class="fv-mode-btn active" data-fvmode="electron">Electron</button>
-    <button class="fv-mode-btn" data-fvmode="shell">Shell</button>
+    <button class="fv-mode-btn active" data-fvmode="shell">Shell</button>
+    <button class="fv-mode-btn" data-fvmode="electron">Electron</button>
   </div>
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
@@ -3579,7 +3579,7 @@ canvas.addEventListener('click', e => {
     }
     selectedShell = best;
   } else {
-    const HIT_R = 20 / viewZoom;
+    const HIT_R = 60 / viewZoom;
     let best = -1, bestD2 = HIT_R * HIT_R;
     for (let i = 0; i < electrons.length; i++) {
       const ei = electrons[i];
