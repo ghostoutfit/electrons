@@ -2173,15 +2173,18 @@ function autoNeutrons(Z) {
 
 let customZ = 0; // proton count driven by the slider
 let autoScaleZoom = true;
+let _lastAutoScaleShell = -1;
 
 function _sliderFromZoom(z) {
   if (z <= 0.55) return -Math.log(z / 0.55) / Math.log(0.006 / 0.55);
   return (z - 0.55) / 4.85;
 }
 
-function applyAutoScale() {
+function applyAutoScale(force) {
   if (!autoScaleZoom || !electrons.length) return;
   const outerShell = Math.max(...electrons.map(e => e.shell));
+  if (!force && outerShell === _lastAutoScaleShell) return; // same shell count — keep current scale
+  _lastAutoScaleShell = outerShell;
   const outerR = getShellRadius(outerShell);
   const H = canvas.height;
   const targetZoom = Math.min((H * 0.34) / outerR, 2.0);
@@ -3028,7 +3031,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 document.getElementById('autoscaleCheckbox').addEventListener('change', function() {
   autoScaleZoom = this.checked;
-  if (autoScaleZoom) applyAutoScale();
+  if (autoScaleZoom) { _lastAutoScaleShell = -1; applyAutoScale(); }
 });
 
 document.getElementById('showElectric').addEventListener('change', function() {
