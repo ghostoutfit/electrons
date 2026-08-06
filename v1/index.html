@@ -2029,6 +2029,7 @@ function clearElectrons() {
 function autoSelectOuterShell() {
   if (!fvShellMode || !electrons.length) return;
   const outer = Math.max(...electrons.map(e => e.shell));
+  if (outer === selectedShell) return; // same shell count — no zoom, forces update in place
   _fvPrevSr    = getShellRadius(outer) * 0.15; // zoom in from near-center
   _fvZoomStart = performance.now();
   selectedShell = outer;
