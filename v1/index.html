@@ -2026,6 +2026,14 @@ function clearElectrons() {
   updateElectronCount();
 }
 
+function autoSelectOuterShell() {
+  if (!fvShellMode || !electrons.length) return;
+  const outer = Math.max(...electrons.map(e => e.shell));
+  _fvPrevSr    = getShellRadius(outer) * 0.15; // zoom in from near-center
+  _fvZoomStart = performance.now();
+  selectedShell = outer;
+}
+
 function syncNeutralElectrons() {
   const target = Math.min(customZ, E_MAX_TOTAL);
   while (electrons.length < target) addElectron();
@@ -2555,6 +2563,9 @@ function drawForceVizShell() {
   fvc.fillStyle = 'rgba(0,0,0,0.4)';
   fvc.beginPath(); fvc.arc(panelCx, panelCy, panelNucR * 1.6, 0, Math.PI * 2); fvc.fill();
   fvc.restore();
+
+  // Don't draw force arrows until the zoom animation has finished
+  if (_fvZoomStart >= 0) return;
 
   // Build static "ideal ring" positions for electrons on OTHER shells.
   // Each shell's electrons are placed at evenly-spaced fixed angles, not their
@@ -3303,6 +3314,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     btn.addEventListener('click', () => {
       setNucleusFromZ(z);
       if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+      autoSelectOuterShell();
       applyAutoScale();
       syncShellDevSliders();
       syncElemBtnActive();
@@ -3323,6 +3335,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   });
   document.getElementById('neutralCheckbox').addEventListener('change', function () {
     if (this.checked) syncNeutralElectrons();
+    autoSelectOuterShell();
     syncShellDevSliders();
   });
   const _pSlider = document.getElementById('protonSlider');
@@ -3331,12 +3344,14 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     _pSlider.value = v;
     setNucleusFromZ(v);
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    autoSelectOuterShell();
     syncShellDevSliders();
     syncElemBtnActive();
   }
   _pSlider.addEventListener('input', function () {
     setNucleusFromZ(parseInt(this.value));
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    autoSelectOuterShell();
     syncShellDevSliders();
     syncElemBtnActive();
   });
@@ -3706,6 +3721,7 @@ syncTabButtons();
 document.getElementById('showElectric').checked = true;
 document.getElementById('showElectric').dispatchEvent(new Event('change'));
 syncForceVizVisibility();
+autoSelectOuterShell();
 draw();
 if (!idleParticleRAF) idleParticleLoop();
 
