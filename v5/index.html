@@ -2519,16 +2519,16 @@ function drawShellRings(ctx) {
 const FV_NUC_COLOR  = 'rgba(255,68,204,0.88)';   // magenta — nuclear attraction
 const FV_REP_COLOR  = 'rgba(0,238,255,0.88)';    // cyan    — electron repulsion
 
-// First ionization energies of valence electrons, rounded to nearest eV (elements 1–36)
+// First ionization energies of valence electrons in eV, to 1 decimal (elements 1–36)
 const IONIZATION_EV = {
-   1: 14,  2: 25,  3:  5,  4:  9,  5:  8,
-   6: 11,  7: 15,  8: 14,  9: 17, 10: 22,
-  11:  5, 12:  8, 13:  6, 14:  8, 15: 10,
-  16: 10, 17: 13, 18: 16, 19:  4, 20:  6,
-  21:  7, 22:  7, 23:  7, 24:  7, 25:  7,
-  26:  8, 27:  8, 28:  8, 29:  8, 30:  9,
-  31:  6, 32:  8, 33: 10, 34: 10, 35: 12,
-  36: 14,
+   1: 13.6,  2: 24.6,  3:  5.4,  4:  9.3,  5:  8.3,
+   6: 11.3,  7: 14.5,  8: 13.6,  9: 17.4, 10: 21.6,
+  11:  5.1, 12:  7.6, 13:  6.0, 14:  8.2, 15: 10.5,
+  16: 10.4, 17: 13.0, 18: 15.8, 19:  4.3, 20:  6.1,
+  21:  6.6, 22:  6.8, 23:  6.7, 24:  6.8, 25:  7.4,
+  26:  7.9, 27:  7.9, 28:  7.6, 29:  7.7, 30:  9.4,
+  31:  6.0, 32:  7.9, 33:  9.8, 34:  9.8, 35: 11.8,
+  36: 14.0,
 };
 const forceVizPanelEl = document.getElementById('forceVizPanel');
 const forceVizCv      = document.getElementById('forceVizCanvas');
@@ -2829,7 +2829,7 @@ function drawForceVizElectron() {
   fvc.font = '9px Lexend, sans-serif';
   fvc.textAlign = 'center';
   fvc.textBaseline = 'bottom';
-  fvc.fillText(`${ionEV} eV`, barX + barW / 2, barTop - 2);
+  fvc.fillText(`${ionEV.toFixed(1)} eV`, barX + barW / 2, barTop - 2);
 
   // "IE" sub-label above that
   fvc.fillStyle = 'rgba(255,255,255,0.3)';
@@ -2841,11 +2841,11 @@ function drawForceVizElectron() {
   if (fraction > 0.08) {
     fvc.fillStyle = '#eeff00';
     fvc.textBaseline = 'bottom';
-    fvc.fillText(`${Math.round(workEV)}`, barX + barW / 2, barBot - fillH - 2);
+    fvc.fillText(`${workEV.toFixed(1)}`, barX + barW / 2, barBot - fillH - 2);
   } else {
     fvc.fillStyle = 'rgba(255,255,200,0.4)';
     fvc.textBaseline = 'top';
-    fvc.fillText('0', barX + barW / 2, barBot + 3);
+    fvc.fillText('0.0', barX + barW / 2, barBot + 3);
   }
   // "eV" unit at very bottom
   fvc.fillStyle = 'rgba(255,255,255,0.28)';
