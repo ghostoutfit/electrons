@@ -989,7 +989,10 @@
   <div class="fp-rh sw" data-dir="sw"></div><div class="fp-rh se" data-dir="se"></div>
   <div class="fp-rh n"  data-dir="n"></div><div class="fp-rh s"  data-dir="s"></div>
   <div class="fp-rh e"  data-dir="e"></div><div class="fp-rh w"  data-dir="w"></div>
-  <div id="fvModeToggle" style="display:none"></div>
+  <div id="fvModeToggle">
+    <button class="fv-mode-btn active" data-fvmode="shell">Shell</button>
+    <button class="fv-mode-btn" data-fvmode="electron">Electron</button>
+  </div>
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
     <span><span style="color:#00eeff">■</span><span style="color:#00eeff;text-shadow:0 0 4px #00eeff,0 0 10px rgba(0,238,255,0.5)">Repulsion from Electrons (electric)</span></span>
@@ -2297,6 +2300,7 @@ function stepElectronsShells() {
   for (let i = 0; i < electrons.length; i++) {
     for (let j = i + 1; j < electrons.length; j++) {
       const ei = electrons[i], ej = electrons[j];
+      if (ei.free || ej.free || i === _draggedElectronIdx || j === _draggedElectronIdx) continue;
       if (ei.shell !== ej.shell) continue;
       let dA = ei.angle - ej.angle;
       dA = ((dA + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
@@ -2314,7 +2318,9 @@ function stepElectronsShells() {
     }
   }
 
-  for (const e of electrons) {
+  for (let _ei = 0; _ei < electrons.length; _ei++) {
+    const e = electrons[_ei];
+    if (e.free || _ei === _draggedElectronIdx) continue;
     // Enforce minimum orbital speed — always cruising
     const dir = e.dAngle >= 0 ? 1 : -1;
     if (Math.abs(e.dAngle) < SHELL_BASE_DA) {
@@ -2359,6 +2365,36 @@ function stepElectronsShells() {
     }
   }
 
+  // Free-electron physics: Euler integration back toward the nucleus
+  const cx = animParent.cx, cy = animParent.cy;
+  for (let i = 0; i < electrons.length; i++) {
+    const e = electrons[i];
+    if (!e.free) continue;
+    // Nuclear attraction
+    const dx = cx - e.freeX, dy = cy - e.freeY;
+    const d2 = Math.max(dx * dx + dy * dy, animParent.sphereR * animParent.sphereR);
+    const d  = Math.sqrt(d2);
+    const fMag = FREE_PULL * Math.max(customZ, 1) / d2;
+    e.freeVX += fMag * dx / d;
+    e.freeVY += fMag * dy / d;
+    // Light damping so it settles without endless oscillation
+    e.freeVX *= 0.97;
+    e.freeVY *= 0.97;
+    e.freeX  += e.freeVX;
+    e.freeY  += e.freeVY;
+    // Snap back to shell when within the shell band
+    const shellR = getShellRadius(e.shell);
+    const hw     = eShellBandHW + shellR * 0.5;
+    if (Math.abs(d - shellR) < hw * 0.7) {
+      e.angle       = Math.atan2(e.freeY - cy, e.freeX - cx);
+      e.radialOffset = d - shellR;
+      e.dAngle       = SHELL_BASE_DA * (Math.random() > 0.5 ? 1 : -1);
+      e.dRadial      = 0;
+      e.free         = false;
+      delete e.freeX; delete e.freeY; delete e.freeVX; delete e.freeVY;
+    }
+  }
+
 }
 
 function drawElectronsShells(ctx) {
@@ -2392,10 +2428,17 @@ function drawElectronsShells(ctx) {
   const worldR = electronDotR / Z;
   ctx.globalAlpha = 1;
   if (electronDotR > 0) {
-    for (const e of electrons) {
-      const r = getShellRadius(e.shell) + (e.radialOffset || 0);
-      const ex = cx + Math.cos(e.angle) * r;
-      const ey = cy + Math.sin(e.angle) * r;
+    for (let i = 0; i < electrons.length; i++) {
+      const e = electrons[i];
+      let ex, ey;
+      if (i === _draggedElectronIdx && _draggedPos) {
+        ex = _draggedPos.x; ey = _draggedPos.y;
+      } else if (e.free) {
+        ex = e.freeX; ey = e.freeY;
+      } else {
+        const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+        ex = cx + Math.cos(e.angle) * r; ey = cy + Math.sin(e.angle) * r;
+      }
       ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
     }
   }
@@ -2403,21 +2446,48 @@ function drawElectronsShells(ctx) {
   // Bright white core
   ctx.fillStyle = 'rgba(255,255,220,0.95)';
   const coreR = electronDotR / 6 / Z;
-  for (const e of electrons) {
-    const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+  for (let i = 0; i < electrons.length; i++) {
+    const e = electrons[i];
+    let ex, ey;
+    if (i === _draggedElectronIdx && _draggedPos) {
+      ex = _draggedPos.x; ey = _draggedPos.y;
+    } else if (e.free) {
+      ex = e.freeX; ey = e.freeY;
+    } else {
+      const r = getShellRadius(e.shell) + (e.radialOffset || 0);
+      ex = cx + Math.cos(e.angle) * r; ey = cy + Math.sin(e.angle) * r;
+    }
     ctx.beginPath();
-    ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
+    ctx.arc(ex, ey, coreR, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // Highlight selection
   if (arrowMode > 0) {
-    if (selectedShell >= 0) {
+    if (fvShellMode && selectedShell >= 0) {
       ctx.strokeStyle = 'rgba(255,255,255,0.55)';
       ctx.lineWidth = 2 / Z;
       ctx.setLineDash([6 / Z, 4 / Z]);
       ctx.beginPath();
       ctx.arc(cx, cy, getShellRadius(selectedShell), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (!fvShellMode && selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length) {
+      const se = electrons[selectedElectronIdx];
+      let sex, sey;
+      if (selectedElectronIdx === _draggedElectronIdx && _draggedPos) {
+        sex = _draggedPos.x; sey = _draggedPos.y;
+      } else if (se.free) {
+        sex = se.freeX; sey = se.freeY;
+      } else {
+        const sr = getShellRadius(se.shell) + (se.radialOffset || 0);
+        sex = cx + Math.cos(se.angle) * sr; sey = cy + Math.sin(se.angle) * sr;
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 1.5 / Z;
+      ctx.setLineDash([4 / Z, 3 / Z]);
+      ctx.beginPath();
+      ctx.arc(sex, sey, 14 / Z, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -2620,9 +2690,97 @@ function drawForceVizShell() {
   }
 }
 
+function drawForceVizElectron() {
+  const fvc = forceVizCv.getContext('2d');
+  const W = forceVizCv.width, H = forceVizCv.height;
+  fvc.clearRect(0, 0, W, H);
+
+  if ((selectedElectronIdx < 0 || selectedElectronIdx >= electrons.length) && _draggedElectronIdx < 0) {
+    fvc.fillStyle = 'rgba(255,255,255,0.3)';
+    fvc.font = '13px Lexend, sans-serif';
+    fvc.textAlign = 'center'; fvc.textBaseline = 'middle';
+    fvc.fillText('Click an electron to see its forces', W / 2, H / 2);
+    return;
+  }
+  if (!animParent) return;
+
+  const activeIdx = _draggedElectronIdx >= 0 ? _draggedElectronIdx : selectedElectronIdx;
+  const se = electrons[activeIdx];
+  if (!se) return;
+
+  const cx = animParent.cx, cy = animParent.cy;
+  // Get actual world position
+  let sex, sey;
+  if (activeIdx === _draggedElectronIdx && _draggedPos) {
+    sex = _draggedPos.x; sey = _draggedPos.y;
+  } else if (se.free) {
+    sex = se.freeX; sey = se.freeY;
+  } else {
+    const r = getShellRadius(se.shell) + (se.radialOffset || 0);
+    sex = cx + Math.cos(se.angle) * r; sey = cy + Math.sin(se.angle) * r;
+  }
+
+  const dxN = cx - sex, dyN = cy - sey;
+  const distN = Math.max(Math.sqrt(dxN * dxN + dyN * dyN), 1);
+  const fNuc = eK * Math.max(customZ, 1) / (distN * distN);
+  const nxN = dxN / distN, nyN = dyN / distN;
+
+  let frex = 0, frey = 0;
+  for (let i = 0; i < electrons.length; i++) {
+    if (i === activeIdx) continue;
+    const oe = electrons[i];
+    let oex, oey;
+    if (oe.free) { oex = oe.freeX; oey = oe.freeY; }
+    else { const or = getShellRadius(oe.shell) + (oe.radialOffset || 0); oex = cx + Math.cos(oe.angle) * or; oey = cy + Math.sin(oe.angle) * or; }
+    const ddx = sex - oex, ddy = sey - oey;
+    const d2 = Math.max(ddx * ddx + ddy * ddy, 625);
+    const d  = Math.sqrt(d2);
+    frex += eK / d2 * ddx / d;
+    frey += eK / d2 * ddy / d;
+  }
+  const fRep = Math.sqrt(frex * frex + frey * frey);
+
+  const shellR = getShellRadius(se.shell);
+  const REF_F  = eK * Math.max(customZ, 1) / (shellR * shellR);
+  const MAX_LEN = Math.min(W, H) * 0.38;
+  function arrowLen(f) { return MAX_LEN * Math.log1p(f / REF_F * 4) / Math.log1p(4); }
+
+  const panelCx = W / 2, panelCy = H / 2;
+  // Scale electron position in panel proportionally to actual distance vs shell radius
+  const distRatio = Math.min(distN / shellR, 2.8);
+  const panelDist = Math.min((MAX_LEN * 0.28) * distRatio + 8, Math.min(W, H) * 0.44);
+
+  fvc.save();
+  fvc.strokeStyle = 'rgba(255,255,255,0.18)';
+  fvc.lineWidth = 1;
+  fvc.beginPath(); fvc.arc(panelCx, panelCy, MAX_LEN * 0.28, 0, Math.PI * 2); fvc.stroke();
+  fvc.restore();
+
+  const ePx = panelCx - nxN * panelDist;
+  const ePy = panelCy - nyN * panelDist;
+
+  fvc.fillStyle = '#eeff00'; fvc.shadowColor = '#eeff00'; fvc.shadowBlur = 8;
+  fvc.beginPath(); fvc.arc(ePx, ePy, 5, 0, Math.PI * 2); fvc.fill();
+  fvc.shadowBlur = 0;
+
+  const fixedHead = MAX_LEN * 0.12;
+  fvArrowOnCtx(fvc, ePx, ePy, nxN, nyN, arrowLen(fNuc), FV_NUC_COLOR, 3, fixedHead);
+
+  if (fRep > 0.001) {
+    const nxR = frex / fRep, nyR = frey / fRep;
+    fvArrowOnCtx(fvc, ePx, ePy, nxR, nyR, arrowLen(fRep), FV_REP_COLOR, 3, fixedHead);
+  } else {
+    fvc.fillStyle = 'rgba(0,238,255,0.3)';
+    fvc.font = '11px Lexend, sans-serif';
+    fvc.textAlign = 'center'; fvc.textBaseline = 'top';
+    fvc.fillText('(no other electrons)', panelCx, H - 18);
+  }
+}
+
 function drawForceViz() {
   if (arrowMode === 0 || currentTab !== 'shells') return;
-  drawForceVizShell();
+  if (fvShellMode) { drawForceVizShell(); return; }
+  drawForceVizElectron();
 }
 
 
@@ -3127,13 +3285,17 @@ function setForceWheelActive(targetBtn) {
 
 let arrowMode = 0;
 let fvShellMode = true;
+let selectedElectronIdx = -1;
+let _draggedElectronIdx = -1;
+let _draggedPos = null;
+let _eDragMoved = false;
+const FREE_PULL = 3500; // world-space nuclear attraction for free electrons (px³/frame²)
 
 function syncElemBtnActive() {
   document.querySelectorAll('.elem-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.z) === customZ);
   });
 }
-let selectedElectronIdx = -1;
 let selectedShell = -1;
 let fvArrowExp = 0.13;  // exponent for shell-mode arrow length curve (lower = small forces bigger)
 
@@ -3186,6 +3348,18 @@ document.querySelectorAll('.awheel-item[data-fmode]').forEach(btn => {
     setForceWheelActive(btn);
     syncForceVizVisibility();
     draw();
+  });
+});
+
+document.querySelectorAll('.fv-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    fvShellMode = btn.dataset.fvmode === 'shell';
+    if (fvShellMode && selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length) {
+      selectedShell = electrons[selectedElectronIdx].shell;
+    }
+    document.querySelectorAll('.fv-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+    draw();
+    drawForceViz();
   });
 });
 
@@ -3554,34 +3728,98 @@ window.addEventListener('touchend', () => {
   orb3dDragState = null;
 });
 
-// ─── Canvas click: select electron or shell for force display ────────────────
-canvas.addEventListener('click', e => {
-  if (arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
+// ─── Screen → world coordinate conversion helper ─────────────────────────────
+function _screenToWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-
-  // Convert screen → world
+  const sx = clientX - rect.left, sy = clientY - rect.top;
   const _W = canvas.width, _H = canvas.height;
   const _tbH = document.getElementById('toolbar').offsetHeight;
   const _sbEl = document.getElementById('scrubBar');
   const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
   const _centerY = (_tbH + _H - _sbH) / 2;
   const _camX2 = _W / 2 + getCameraShiftX();
-  const wx = (sx - _camX2) / viewZoom + _W / 2;
-  const wy = (sy - _centerY) / viewZoom + _H / 2;
+  return { x: (sx - _camX2) / viewZoom + _W / 2, y: (sy - _centerY) / viewZoom + _H / 2 };
+}
 
+// ─── Electron drag ────────────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  if (fvShellMode || arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
+  const { x: wx, y: wy } = _screenToWorld(e.clientX, e.clientY);
+  const cx = animParent.cx, cy = animParent.cy;
+  const HIT_R = 60 / viewZoom;
+  let best = -1, bestD2 = HIT_R * HIT_R;
+  for (let i = 0; i < electrons.length; i++) {
+    const ei = electrons[i];
+    let ex, ey;
+    if (ei.free) { ex = ei.freeX; ey = ei.freeY; }
+    else { const r = getShellRadius(ei.shell) + (ei.radialOffset || 0); ex = cx + Math.cos(ei.angle) * r; ey = cy + Math.sin(ei.angle) * r; }
+    const d2 = (wx - ex) ** 2 + (wy - ey) ** 2;
+    if (d2 < bestD2) { bestD2 = d2; best = i; }
+  }
+  if (best < 0) return;
+  _draggedElectronIdx = best;
+  _draggedPos = { x: wx, y: wy };
+  _eDragMoved = false;
+  selectedElectronIdx = best;
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+  if (_draggedElectronIdx < 0) return;
+  const { x, y } = _screenToWorld(e.clientX, e.clientY);
+  _draggedPos = { x, y };
+  _eDragMoved = true;
+  drawForceViz();
+  draw();
+});
+
+window.addEventListener('mouseup', e => {
+  if (_draggedElectronIdx < 0) return;
+  const el = electrons[_draggedElectronIdx];
+  if (el && _eDragMoved) {
+    // Release into free physics
+    el.free  = true;
+    el.freeX = _draggedPos.x;
+    el.freeY = _draggedPos.y;
+    el.freeVX = 0;
+    el.freeVY = 0;
+  }
+  _draggedElectronIdx = -1;
+  _draggedPos = null;
+}, true);
+
+// ─── Canvas click: select electron or shell for force display ────────────────
+canvas.addEventListener('click', e => {
+  if (arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
+  if (_eDragMoved) { _eDragMoved = false; return; } // was a drag, not a click
+  const { x: wx, y: wy } = _screenToWorld(e.clientX, e.clientY);
   const cx = animParent.cx, cy = animParent.cy;
 
-  // Hit test: distance from nucleus vs each occupied shell's radius
-  const distFromNucleus = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
-  const HIT_R = 28 / viewZoom;
-  const occupied = [...new Set(electrons.map(e => e.shell))];
-  let best = -1, bestD = HIT_R;
-  for (const s of occupied) {
-    const d = Math.abs(distFromNucleus - getShellRadius(s));
-    if (d < bestD) { bestD = d; best = s; }
+  if (fvShellMode) {
+    // Hit test shells
+    const distFromNucleus = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
+    const HIT_R = 28 / viewZoom;
+    const occupied = [...new Set(electrons.map(e => e.shell))];
+    let best = -1, bestD = HIT_R;
+    for (const s of occupied) {
+      const d = Math.abs(distFromNucleus - getShellRadius(s));
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    selectedShell = best;
+  } else {
+    // Hit test individual electrons
+    const HIT_R = 60 / viewZoom;
+    let best = -1, bestD2 = HIT_R * HIT_R;
+    for (let i = 0; i < electrons.length; i++) {
+      const ei = electrons[i];
+      let ex, ey;
+      if (ei.free) { ex = ei.freeX; ey = ei.freeY; }
+      else { const r = getShellRadius(ei.shell) + (ei.radialOffset || 0); ex = cx + Math.cos(ei.angle) * r; ey = cy + Math.sin(ei.angle) * r; }
+      const d2 = (wx - ex) ** 2 + (wy - ey) ** 2;
+      if (d2 < bestD2) { bestD2 = d2; best = i; }
+    }
+    selectedElectronIdx = best;
   }
-  selectedShell = best;
 
   syncForceVizVisibility();
   draw();
