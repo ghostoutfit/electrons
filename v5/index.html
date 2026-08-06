@@ -2518,6 +2518,18 @@ function drawShellRings(ctx) {
 // ─── Force viz panel ──────────────────────────────────────────────────────────
 const FV_NUC_COLOR  = 'rgba(255,68,204,0.88)';   // magenta — nuclear attraction
 const FV_REP_COLOR  = 'rgba(0,238,255,0.88)';    // cyan    — electron repulsion
+
+// First ionization energies in eV (NIST values, elements 1–36)
+const IONIZATION_EV = {
+   1: 13.598,  2: 24.587,  3:  5.392,  4:  9.323,  5:  8.298,
+   6: 11.260,  7: 14.534,  8: 13.618,  9: 17.423, 10: 21.565,
+  11:  5.139, 12:  7.646, 13:  5.986, 14:  8.152, 15: 10.487,
+  16: 10.360, 17: 12.968, 18: 15.760, 19:  4.341, 20:  6.113,
+  21:  6.561, 22:  6.828, 23:  6.746, 24:  6.767, 25:  7.434,
+  26:  7.902, 27:  7.881, 28:  7.640, 29:  7.726, 30:  9.394,
+  31:  5.999, 32:  7.899, 33:  9.789, 34:  9.752, 35: 11.814,
+  36: 14.000,
+};
 const forceVizPanelEl = document.getElementById('forceVizPanel');
 const forceVizCv      = document.getElementById('forceVizCanvas');
 
@@ -2775,6 +2787,70 @@ function drawForceVizElectron() {
     fvc.textAlign = 'center'; fvc.textBaseline = 'top';
     fvc.fillText('(no other electrons)', panelCx, H - 18);
   }
+
+  // ── Work / ionization energy bar ─────────────────────────────────────────
+  const ionEV    = IONIZATION_EV[customZ] || (eK * Math.max(customZ, 1) / (shellR * shellR) * 0.016); // eV fallback
+  const fraction = Math.max(0, Math.min(1, 1 - shellR / distN));
+  const workEV   = ionEV * fraction;
+
+  const barW   = 26, barPad = 8;
+  const barX   = W - barW - barPad;
+  const barTop = 24, barBot = H - 32;
+  const barH   = barBot - barTop;
+  const fillH  = barH * fraction;
+
+  fvc.save();
+
+  // Track background
+  fvc.fillStyle = 'rgba(255,255,255,0.07)';
+  fvc.fillRect(barX, barTop, barW, barH);
+
+  // Colored fill — green → yellow → red
+  if (fillH > 0) {
+    const grad = fvc.createLinearGradient(0, barBot, 0, barBot - barH);
+    grad.addColorStop(0,    'rgba(0,220,80,0.9)');
+    grad.addColorStop(0.45, 'rgba(255,210,0,0.9)');
+    grad.addColorStop(1,    'rgba(255,55,55,0.95)');
+    fvc.fillStyle = grad;
+    fvc.fillRect(barX, barBot - fillH, barW, fillH);
+  }
+
+  // IE ceiling tick
+  fvc.strokeStyle = 'rgba(255,255,255,0.45)';
+  fvc.lineWidth = 1;
+  fvc.setLineDash([3, 3]);
+  fvc.beginPath(); fvc.moveTo(barX - 3, barTop); fvc.lineTo(barX + barW + 3, barTop); fvc.stroke();
+  fvc.setLineDash([]);
+
+  // IE label (top — always visible)
+  fvc.fillStyle = 'rgba(255,255,255,0.55)';
+  fvc.font = '9px Lexend, sans-serif';
+  fvc.textAlign = 'center';
+  fvc.textBaseline = 'bottom';
+  fvc.fillText(`${ionEV.toFixed(1)} eV`, barX + barW / 2, barTop - 2);
+
+  // "IE" sub-label above that
+  fvc.fillStyle = 'rgba(255,255,255,0.3)';
+  fvc.font = '8px Lexend, sans-serif';
+  fvc.fillText('IE', barX + barW / 2, barTop - 12);
+
+  // Current work label — floats near fill top, or shows at bottom when small
+  fvc.font = '9px Lexend, sans-serif';
+  if (fraction > 0.08) {
+    fvc.fillStyle = '#eeff00';
+    fvc.textBaseline = 'bottom';
+    fvc.fillText(`${workEV.toFixed(1)}`, barX + barW / 2, barBot - fillH - 2);
+  } else {
+    fvc.fillStyle = 'rgba(255,255,200,0.4)';
+    fvc.textBaseline = 'top';
+    fvc.fillText(`0.0`, barX + barW / 2, barBot + 3);
+  }
+  // "eV" unit at very bottom
+  fvc.fillStyle = 'rgba(255,255,255,0.28)';
+  fvc.textBaseline = 'top';
+  fvc.fillText('eV', barX + barW / 2, barBot + 14);
+
+  fvc.restore();
 }
 
 function drawForceViz() {
