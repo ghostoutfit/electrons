@@ -3017,11 +3017,11 @@ function drawForceVizShell() {
   // Divisor = 0.9^(1/0.2) = 0.9^5 ≈ 0.59.
   const refR  = animParent ? getShellRadius(0) : shellBaseR * 10;
   const F_MAX = eK * Math.max(customZ, 1) / (refR * refR * 0.59);
-  function shellArrowLen(f) {
+  function shellArrowLen(f, fieNN, fcVal) {
     const rawLen = Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
-    if (!_FieNN) return rawLen;
-    const fNN = f / _FcVal * _FieNN;
-    const T = 0.1 * _FieNN;
+    if (!fieNN) return rawLen;
+    const fNN = f / fcVal * fieNN;
+    const T = 0.1 * fieNN;
     return fNN < T ? rawLen * (fNN / T) : rawLen;
   }
 
@@ -3144,11 +3144,11 @@ function drawForceVizShell() {
     }
     const fRep = Math.sqrt(frex * frex + frey * frey);
 
-    const nucLen = shellArrowLen(fNuc);
+    const nucLen = shellArrowLen(fNuc, _FieNN, _FcVal);
     fvArrowOnCtx(fvc, px, py, -cosA, -sinA, nucLen, FV_NUC_COLOR, 2, nucLen * 0.35);
 
     if (fRep > 0.001) {
-      const repLen = shellArrowLen(fRep);
+      const repLen = shellArrowLen(fRep, _FieNN, _FcVal);
       fvArrowOnCtx(fvc, px, py, frex / fRep, frey / fRep, repLen, FV_REP_COLOR, 2, repLen * 0.35);
     }
 
@@ -3168,7 +3168,7 @@ function drawForceVizShell() {
         const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
         if (repLabel) {
           const rnx = frex / fRep, rny = frey / fRep;
-          const repLen = shellArrowLen(fRep);
+          const repLen = shellArrowLen(fRep, _FieNN, _FcVal);
           fvc.fillStyle = FV_REP_COLOR;
           fvc.textAlign = rnx > 0.3 ? 'left' : rnx < -0.3 ? 'right' : 'center';
           fvc.fillText(repLabel, px + rnx * (repLen + 4), py + rny * (repLen + 4));
@@ -3180,7 +3180,7 @@ function drawForceVizShell() {
     // Wire electric force — rightward arrow at each sample point
     if (grabWireMode === 'wire' && wireCharge > 0 && selectedShell === _valenceShellForViz) {
       const fWire = wireCharge * 0.6 * F_MAX;
-      const wireLen = shellArrowLen(fWire);
+      const wireLen = shellArrowLen(fWire, _FieNN, _FcVal);
       if (wireLen > 1) fvArrowOnCtx(fvc, px, py, 1, 0, wireLen, 'rgba(255,60,60,0.92)', 2, wireLen * 0.35);
     }
   }
@@ -3285,16 +3285,16 @@ function drawForceVizElectron() {
   const _FieNN  = _ie ? _ie / _rValPm * 160.2 : null;
   const _FcVal  = eK * Math.max(customZ, 1) / (_rValPx * _rValPx);
 
-  function arrowLen(f) {
+  function arrowLen(f, fieNN, fcVal) {
     const rawLen = Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
-    if (!_FieNN) return rawLen;
-    const fNN = f / _FcVal * _FieNN;
-    const T = 0.1 * _FieNN;
+    if (!fieNN) return rawLen;
+    const fNN = f / fcVal * fieNN;
+    const T = 0.1 * fieNN;
     return fNN < T ? rawLen * (fNN / T) : rawLen;
   }
 
   const maxHead = MAX_LEN * 0.12;
-  const nucArrowLen = arrowLen(fNuc);
+  const nucArrowLen = arrowLen(fNuc, _FieNN, _FcVal);
   fvArrowOnCtx(fvc, ePx, ePy, nxN, nyN, nucArrowLen, FV_NUC_COLOR, 3, Math.min(maxHead, nucArrowLen * 0.4));
 
   // Smooth label positions toward arrow tips (molasses lag)
@@ -3305,7 +3305,7 @@ function drawForceVizElectron() {
 
   if (fRep > 0.001) {
     const nxR = frex / fRep, nyR = frey / fRep;
-    const repArrowLen = arrowLen(fRep);
+    const repArrowLen = arrowLen(fRep, _FieNN, _FcVal);
     fvArrowOnCtx(fvc, ePx, ePy, nxR, nyR, repArrowLen, FV_REP_COLOR, 3, Math.min(maxHead, repArrowLen * 0.4));
 
     const _repTarget = { x: ePx + nxR * (repArrowLen + 8), y: ePy + nyR * (repArrowLen + 8) };
