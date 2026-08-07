@@ -115,6 +115,22 @@
       0 0 44px rgba(123,111,255,0.25);
   }
 
+  /* ── Form (ion) buttons ─────────────────────────────────────────────────── */
+  .form-btn {
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid rgba(238,255,0,0.22);
+    border-radius: 5px;
+    color: rgba(238,255,0,0.45);
+    font-size: 9px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer; font-family: inherit;
+  }
+  .form-btn.active {
+    background: rgba(238,255,0,0.1);
+    border-color: rgba(238,255,0,0.55);
+    color: #eeff00;
+  }
+
   /* ── Buttons ───────────────────────────────────────────────────────────── */
   .btn {
     padding: 4px 14px;
@@ -885,25 +901,16 @@
       <span class="ctrl-box-label ctrl-box-label-pink">PARTICLES</span>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <div id="elemGrid"></div>
-        <!-- Particle counts stacked to the right -->
-        <div style="display:flex;flex-direction:column;gap:6px;padding-top:2px">
-          <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:4px 7px;font-size:11px;color:var(--text-dim);line-height:1.7;white-space:nowrap;">
-            <div>P: <span id="p1Protons" style="color:var(--accent1)">0</span></div>
-            <div>N: <span id="p1Neutrons">0</span></div>
-            <div>e⁻: <span id="electronCount" style="color:#eeff00;text-shadow:0 0 8px rgba(238,255,0,0.6)">0</span></div>
-            <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:3px;padding-top:3px"><span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <button id="removeElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">−</button>
-              <span style="font-size:10px;color:rgba(238,255,0,0.6)">e⁻</span>
-              <button id="addElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">+</button>
+        <!-- Particle counts + form buttons to the right -->
+        <div style="display:flex;flex-direction:column;gap:5px;padding-top:2px">
+          <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:4px 7px;font-size:11px;color:var(--text-dim);white-space:nowrap;">
+            <div style="display:flex;gap:10px;line-height:1.7;">
+              <span>P: <span id="p1Protons" style="color:var(--accent1)">0</span></span>
+              <span>e⁻: <span id="electronCount" style="color:#eeff00;text-shadow:0 0 8px rgba(238,255,0,0.6)">0</span></span>
             </div>
-            <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:rgba(238,255,0,0.6);cursor:pointer;">
-              <input type="checkbox" id="neutralCheckbox" checked style="accent-color:#eeff00;width:12px;height:12px;">
-              neutral
-            </label>
+            <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:2px;padding-top:2px;line-height:1.5;"><span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span></div>
           </div>
+          <div id="formBtnsBox" style="display:flex;flex-direction:column;gap:3px;"></div>
         </div>
       </div>
       <!-- Hidden slider kept in DOM for setNucleusFromZ compatibility -->
@@ -928,6 +935,10 @@
           <input type="checkbox" id="showElectric">
           <span class="field-label-electric">Show atomic radius</span>
         </label>
+        <label class="toggle-label" id="showGridRow">
+          <input type="checkbox" id="showGridCheckbox">
+          <span class="field-label-electric">Grid on</span>
+        </label>
 
       </div>
       <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
@@ -943,6 +954,15 @@
       </div>
     </div>
 
+    <!-- Radius mode toggle -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;margin-left:6px;">
+      <span style="font-size:9px;letter-spacing:0.08em;color:rgba(255,255,255,0.35);font-weight:600;">radius</span>
+      <select id="radiusModeSelect" style="font-size:9px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 3px;cursor:pointer;">
+        <option value="covalent">Half a pair</option>
+        <option value="vdw">VdW / Shannon</option>
+      </select>
+    </div>
+
     <!-- Dev toggle -->
     <label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
       <input type="checkbox" id="devToggle" style="accent-color:#eeff00;width:12px;height:12px;">
@@ -950,6 +970,12 @@
     </label>
   </div>
   <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
+    <div class="dev-row"><label>grid type</label>
+      <select id="gridTypeSelect" style="font-size:11px;background:rgba(255,255,255,0.07);color:rgba(220,215,255,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:3px;padding:1px 4px;cursor:pointer;">
+        <option value="square">square grid</option>
+        <option value="radial">radial grid</option>
+      </select>
+    </div>
     <div class="dev-row" style="display:none"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="140000"><span class="dev-val" id="slKVal">140000</span></div>
     <div class="dev-row" style="display:none"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
     <div class="dev-row" style="display:none"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
@@ -1798,6 +1824,7 @@ function drawOrbit3D(ctx) {
     const outerShell = Math.max(...occupied);
     const outerR = getShellRadius(outerShell) * orb3dRadScale * viewZoom;
     const arPm = Math.round(getShellRadius(outerShell) / shellBaseR);
+    const arSuffix = ((customZ === 9 && electrons.length === 10) || (radiusMode === 'vdw' && (customZ === 10 || customZ === 18 || customZ === 36))) ? '*' : '';
     ctx.save();
     ctx.strokeStyle = 'rgba(100,180,255,0.55)';
     ctx.lineWidth = 1.5;
@@ -1810,7 +1837,7 @@ function drawOrbit3D(ctx) {
     ctx.fillStyle = 'rgba(140,200,255,0.9)';
     ctx.font = '13px Lexend, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`r = ${arPm} pm`, cx + outerR / 2, cy - 10);
+    ctx.fillText(`r = ${arPm}${arSuffix} pm`, cx + outerR / 2, cy - 10);
     ctx.restore();
   }
 
@@ -2026,14 +2053,38 @@ function clearElectrons() {
   updateElectronCount();
 }
 
-function autoSelectOuterShell() {
+function autoSelectOuterShell(prevSr) {
   if (!fvShellMode || !electrons.length) return;
   const outer = Math.max(...electrons.map(e => e.shell));
   if (outer === selectedShell) return; // same shell count — no zoom, forces update in place
-  _fvPrevSr    = getShellRadius(outer) * 0.15; // zoom in from near-center
+  const from = prevSr ?? _fvEffectiveSr;
+  _fvPrevSr    = from > 0 ? from : getShellRadius(outer) * 0.15;
   _fvZoomStart = performance.now();
   selectedShell = outer;
 }
+
+// Common ionic forms: [label, absolute electron count (null = neutral = Z)]
+const COMMON_FORMS = {
+   1: [['neutral', null]],
+   2: [['neutral', null]],
+   3: [['neutral', null], ['salt',  2]],   // Li / Li⁺
+   4: [['neutral', null], ['salt',  2]],   // Be / Be²⁺
+   9: [['neutral', null], ['salt', 10]],   // F  / F⁻
+  10: [['neutral', null]],
+  11: [['neutral', null], ['salt', 10]],   // Na / Na⁺
+  12: [['neutral', null], ['salt', 10]],   // Mg / Mg²⁺
+  14: [['neutral', null], ['salt', 10]],   // Si / Si⁴⁺
+  17: [['neutral', null], ['salt', 18]],   // Cl / Cl⁻
+  18: [['neutral', null]],
+  19: [['neutral', null], ['salt', 18]],   // K  / K⁺
+  20: [['neutral', null], ['salt', 18]],   // Ca / Ca²⁺
+  26: [['neutral', null], ['salt', 24]],   // Fe / Fe²⁺
+  29: [['neutral', null], ['salt', 27]],   // Cu / Cu²⁺
+  30: [['neutral', null], ['salt', 28]],   // Zn / Zn²⁺
+  32: [['neutral', null], ['salt', 28]],   // Ge / Ge⁴⁺
+  35: [['neutral', null], ['salt', 36]],   // Br / Br⁻
+  36: [['neutral', null]],
+};
 
 function syncNeutralElectrons() {
   const target = Math.min(customZ, E_MAX_TOTAL);
@@ -2042,10 +2093,49 @@ function syncNeutralElectrons() {
   updateElectronCount();
 }
 
+function setElectronCount(n) {
+  const target = Math.min(n, E_MAX_TOTAL);
+  while (electrons.length < target) addElectron();
+  while (electrons.length > target) electrons.pop();
+  updateElectronCount();
+}
+
+function syncFormButtons() {
+  const box = document.getElementById('formBtnsBox');
+  if (!box) return;
+  box.innerHTML = '';
+  const forms = COMMON_FORMS[customZ] || [['neutral', null]];
+  for (const [label, eCount] of forms) {
+    const target = eCount ?? customZ;
+    const btn = document.createElement('button');
+    btn.className = 'form-btn';
+    btn.textContent = label;
+    btn.dataset.ecount = target;
+    btn.addEventListener('click', () => {
+      setElectronCount(target);
+      syncFormBtnActive();
+      syncShellDevSliders();
+      draw();
+    });
+    box.appendChild(btn);
+  }
+  syncFormBtnActive();
+}
+
+function syncFormBtnActive() {
+  const box = document.getElementById('formBtnsBox');
+  if (!box) return;
+  const n = electrons.length;
+  box.querySelectorAll('.form-btn').forEach(btn => {
+    btn.classList.toggle('active', +btn.dataset.ecount === n);
+  });
+}
+
 function updateElectronCount() {
   const el = document.getElementById('electronCount');
   if (el) el.textContent = electrons.length;
   updateParticleCounters();
+  syncFormBtnActive();
 }
 
 function stepElectrons() {
@@ -2173,19 +2263,45 @@ function autoNeutrons(Z) {
 
 let customZ = 0; // proton count driven by the slider
 let autoScaleZoom = true;
-let _lastAutoScaleShell = -1;
+let _lastAutoScalePeriod = -1;
 
 function _sliderFromZoom(z) {
   if (z <= 0.55) return -Math.log(z / 0.55) / Math.log(0.006 / 0.55);
   return (z - 0.55) / 4.85;
 }
 
+function _periodForZ(Z) {
+  if (Z <=  2) return 1;
+  if (Z <= 10) return 2;
+  if (Z <= 18) return 3;
+  if (Z <= 36) return 4;
+  if (Z <= 54) return 5;
+  if (Z <= 86) return 6;
+  return 7;
+}
+
+function _periodMaxOuterR(Z) {
+  const bounds = [,[1,2],[3,10],[11,18],[19,36],[37,54],[55,86],[87,118]];
+  const [lo, hi] = bounds[_periodForZ(Z)];
+  let maxR = 0;
+  for (let z = lo; z <= hi; z++) {
+    const anchor = _anchorPm(z);
+    if (anchor != null) {
+      maxR = Math.max(maxR, anchor * shellBaseR);
+    } else {
+      const tbl = SHELL_RADII_PM[z];
+      if (tbl) maxR = Math.max(maxR, tbl[tbl.length - 1] * shellBaseR);
+    }
+  }
+  return maxR;
+}
+
 function applyAutoScale(force) {
   if (!autoScaleZoom || !electrons.length) return;
-  const outerShell = Math.max(...electrons.map(e => e.shell));
-  if (!force && outerShell === _lastAutoScaleShell) return; // same shell count — keep current scale
-  _lastAutoScaleShell = outerShell;
-  const outerR = getShellRadius(outerShell);
+  const period = _periodForZ(customZ);
+  if (!force && period === _lastAutoScalePeriod) return;
+  _lastAutoScalePeriod = period;
+  const outerR = _periodMaxOuterR(customZ);
   const H = canvas.height;
   const targetZoom = Math.min((H * 0.34) / outerR, 2.0);
   viewZoom = targetZoom;
@@ -2210,6 +2326,112 @@ function setNucleusFromZ(Z) {
   document.getElementById('protonSlider').value = Z;
   draw();
 }
+
+// ─── Master element table ────────────────────────────────────────────────────
+// Radii in pm. null = no data. cat/col/row: grid button position (col=0 → not in grid).
+const ELEMENT_DATA = {
+   1: { sym:'H',  name:'Hydrogen',   emp:25,  calc:53,  vdw:120, cov:32,  met:null, cat:'alkali',    col:1, row:1 },
+   2: { sym:'He', name:'Helium',     emp:120, calc:31,  vdw:140, cov:46,  met:null, cat:'noble',     col:8, row:1 },
+   3: { sym:'Li', name:'Lithium',    emp:145, calc:167, vdw:182, cov:133, met:152,  cat:'alkali',    col:1, row:2 },
+   4: { sym:'Be', name:'Beryllium',  emp:105, calc:112, vdw:153, cov:102, met:112,  cat:'alkaline',  col:2, row:2 },
+   5: { sym:'B',  name:'Boron',      emp:85,  calc:87,  vdw:192, cov:85,  met:null, cat:'metalloid', col:0, row:0 },
+   6: { sym:'C',  name:'Carbon',     emp:70,  calc:67,  vdw:170, cov:75,  met:null, cat:'carbon-gp', col:6, row:2 },
+   7: { sym:'N',  name:'Nitrogen',   emp:65,  calc:56,  vdw:155, cov:71,  met:null, cat:'nonmetal',  col:0, row:0 },
+   8: { sym:'O',  name:'Oxygen',     emp:60,  calc:48,  vdw:152, cov:63,  met:null, cat:'nonmetal',  col:0, row:0 },
+   9: { sym:'F',  name:'Fluorine',   emp:50,  calc:42,  vdw:147, cov:64,  met:null, cat:'halogen',   col:7, row:2 },
+  10: { sym:'Ne', name:'Neon',       emp:160, calc:38,  vdw:154, cov:67,  met:null, cat:'noble',     col:8, row:2 },
+  11: { sym:'Na', name:'Sodium',     emp:180, calc:190, vdw:227, cov:155, met:186,  cat:'alkali',    col:1, row:3 },
+  12: { sym:'Mg', name:'Magnesium',  emp:150, calc:145, vdw:173, cov:139, met:160,  cat:'alkaline',  col:2, row:3 },
+  13: { sym:'Al', name:'Aluminium',  emp:125, calc:118, vdw:184, cov:126, met:143,  cat:'post-trans',col:0, row:0 },
+  14: { sym:'Si', name:'Silicon',    emp:110, calc:111, vdw:210, cov:116, met:null, cat:'carbon-gp', col:6, row:3 },
+  15: { sym:'P',  name:'Phosphorus', emp:100, calc:98,  vdw:180, cov:111, met:null, cat:'nonmetal',  col:0, row:0 },
+  16: { sym:'S',  name:'Sulfur',     emp:100, calc:88,  vdw:180, cov:103, met:null, cat:'nonmetal',  col:0, row:0 },
+  17: { sym:'Cl', name:'Chlorine',   emp:100, calc:79,  vdw:175, cov:99,  met:null, cat:'halogen',   col:7, row:3 },
+  18: { sym:'Ar', name:'Argon',      emp:71,  calc:71,  vdw:188, cov:96,  met:null, cat:'noble',     col:8, row:3 },
+  19: { sym:'K',  name:'Potassium',  emp:220, calc:243, vdw:275, cov:196, met:227,  cat:'alkali',    col:1, row:4 },
+  20: { sym:'Ca', name:'Calcium',    emp:180, calc:194, vdw:231, cov:171, met:197,  cat:'alkaline',  col:2, row:4 },
+  21: { sym:'Sc', name:'Scandium',   emp:160, calc:184, vdw:211, cov:148, met:162,  cat:'transition',col:0, row:0 },
+  22: { sym:'Ti', name:'Titanium',   emp:140, calc:176, vdw:null,cov:136, met:147,  cat:'transition',col:0, row:0 },
+  23: { sym:'V',  name:'Vanadium',   emp:135, calc:171, vdw:null,cov:134, met:134,  cat:'transition',col:0, row:0 },
+  24: { sym:'Cr', name:'Chromium',   emp:140, calc:166, vdw:null,cov:122, met:128,  cat:'transition',col:0, row:0 },
+  25: { sym:'Mn', name:'Manganese',  emp:140, calc:161, vdw:null,cov:119, met:127,  cat:'transition',col:0, row:0 },
+  26: { sym:'Fe', name:'Iron',       emp:140, calc:156, vdw:null,cov:116, met:126,  cat:'transition',col:3, row:4 },
+  27: { sym:'Co', name:'Cobalt',     emp:135, calc:152, vdw:null,cov:111, met:125,  cat:'transition',col:0, row:0 },
+  28: { sym:'Ni', name:'Nickel',     emp:135, calc:149, vdw:163, cov:110, met:124,  cat:'transition',col:0, row:0 },
+  29: { sym:'Cu', name:'Copper',     emp:135, calc:145, vdw:140, cov:112, met:128,  cat:'transition',col:4, row:4 },
+  30: { sym:'Zn', name:'Zinc',       emp:135, calc:142, vdw:139, cov:118, met:134,  cat:'transition',col:5, row:4 },
+  31: { sym:'Ga', name:'Gallium',    emp:130, calc:136, vdw:187, cov:124, met:135,  cat:'post-trans',col:0, row:0 },
+  32: { sym:'Ge', name:'Germanium',  emp:125, calc:125, vdw:211, cov:121, met:null, cat:'carbon-gp', col:6, row:4 },
+  33: { sym:'As', name:'Arsenic',    emp:115, calc:114, vdw:185, cov:121, met:null, cat:'metalloid', col:0, row:0 },
+  34: { sym:'Se', name:'Selenium',   emp:115, calc:103, vdw:190, cov:116, met:null, cat:'nonmetal',  col:0, row:0 },
+  35: { sym:'Br', name:'Bromine',    emp:115, calc:94,  vdw:185, cov:114, met:null, cat:'halogen',   col:7, row:4 },
+  36: { sym:'Kr', name:'Krypton',    emp:null,calc:88,  vdw:202, cov:117, met:null, cat:'noble',     col:8, row:4 },
+};
+
+// ─── Atomic radii in pm (main-group / non-transition metals only) ─────────────
+// Source: textbook chart. Transition metals (Z 21-30, 39-48, 57-80) omitted —
+// getShellRadius falls back to Slater ratios for those.
+const ATOMIC_RADII_PM = {
+   1: 37,   2: 31,                                                              // H, He
+   3: 152,  4: 112,  5: 85,  6: 77,  7: 70,  8: 73,  9: 72,  10: 70,         // Li–Ne
+  11: 186, 12: 160, 13: 143, 14: 118, 15: 110, 16: 103, 17: 99,  18: 98,     // Na–Ar
+  19: 227, 20: 197,                                                              // K, Ca
+  21: 164, 22: 147, 23: 135, 24: 129, 25: 137, 26: 126, 27: 125, 28: 125, 29: 128, 30: 137, // Sc–Zn
+  31: 135, 32: 123, 33: 120, 34: 117, 35: 114, 36: 112,                        // Ga–Kr
+  37: 248, 38: 215,                                                              // Rb, Sr
+  47: 144, 48: 152,                                                              // Ag, Cd
+  49: 166, 50: 140, 51: 141, 52: 143, 53: 133, 54: 131,                        // In–Xe
+  55: 265, 56: 222,                                                              // Cs, Ba
+  81: 171, 82: 175, 83: 155, 84: 164, 85: 142, 86: 140,                        // Tl–Rn
+};
+
+// Van der Waals radii (pm). Used when radiusMode === 'vdw'.
+const VDW_RADII_PM = {
+   1: 120,  2: 140,
+   3: 182,  4: 153,  6: 170,  7: 155,  8: 152,  9: 147, 10: 143,  // Ne *
+  11: 227, 12: 173, 14: 210, 16: 180, 17: 175, 18: 173,           // Ar *
+  19: 275, 20: 231,
+  26: 194, 29: 140, 30: 139,
+  32: 211, 35: 185, 36: 182,                                       // Kr *
+};
+
+// Shannon ionic radii (pm). Used when radiusMode === 'vdw' and electron count matches the ion.
+const ION_RADII_VDW_PM = {
+   3: { e:  2, r:  76 },   // Li⁺
+   4: { e:  2, r:  45 },   // Be²⁺
+   7: { e: 10, r: 146 },   // N³⁻
+   8: { e: 10, r: 140 },   // O²⁻
+   9: { e: 10, r: 151 },   // F⁻ *
+  11: { e: 10, r: 102 },   // Na⁺
+  12: { e: 10, r:  72 },   // Mg²⁺
+  16: { e: 18, r: 184 },   // S²⁻
+  17: { e: 18, r: 181 },   // Cl⁻
+  19: { e: 18, r: 138 },   // K⁺
+  20: { e: 18, r: 100 },   // Ca²⁺
+  26: { e: 24, r:  78 },   // Fe²⁺
+  29: { e: 27, r:  73 },   // Cu²⁺
+  30: { e: 28, r:  74 },   // Zn²⁺
+  35: { e: 36, r: 196 },   // Br⁻
+};
+
+// Covalent ionic radii (pm): Shannon/vdW ratio × covalent neutral. Used when radiusMode === 'covalent'.
+const ION_RADII_COV_PM = {
+   3: { e:  2, r:  63 },   // Li⁺   (76/182 × 152)
+   4: { e:  2, r:  33 },   // Be²⁺  (45/153 × 112)
+   7: { e: 10, r:  66 },   // N³⁻   (146/155 × 70)
+   8: { e: 10, r:  67 },   // O²⁻   (140/152 × 73)
+   9: { e: 10, r:  74 },   // F⁻ *  (151/147 × 72)
+  11: { e: 10, r:  84 },   // Na⁺   (102/227 × 186)
+  12: { e: 10, r:  67 },   // Mg²⁺  (72/173 × 160)
+  16: { e: 18, r: 105 },   // S²⁻   (184/180 × 103)
+  17: { e: 18, r: 102 },   // Cl⁻   (181/175 × 99)
+  19: { e: 18, r: 114 },   // K⁺    (138/275 × 227)
+  20: { e: 18, r:  85 },   // Ca²⁺  (100/231 × 197)
+  26: { e: 24, r:  51 },   // Fe²⁺  (78/194 × 126)
+  29: { e: 27, r:  67 },   // Cu²⁺  (73/140 × 128)
+  30: { e: 28, r:  73 },   // Zn²⁺  (74/139 × 137)
+  35: { e: 36, r: 121 },   // Br⁻   (196/185 × 114)
+};
 
 // Shell radii in pm from Bohr model with Slater's rules: r_n = n²·52.9/Z_eff
 // Shell 0=n1, 1=n2, 2=n3 (3d for transition metals), 3=n4
@@ -2253,11 +2475,110 @@ const SHELL_RADII_PM = {
 };
 
 let shellBaseR = 15;  // px per pm — controls visual scale of all shells
+let radiusMode = 'covalent'; // 'covalent' | 'vdw'
+let showGrid   = false;
+let gridType   = 'square'; // 'square' | 'radial'
+
+function _gridSpacingPm() {
+  const rawPm = 80 / (shellBaseR * viewZoom);
+  for (const s of [5, 10, 25, 50, 100, 200, 500]) if (s >= rawPm) return s;
+  return 500;
+}
+
+function _drawGrid(ctx, nucX, nucY, wxMin, wxMax, wyMin, wyMax) {
+  if (!showGrid) return;
+  const spacingPm = _gridSpacingPm();
+  const spacingPx = spacingPm * shellBaseR;
+  const vz  = viewZoom;
+  const lw  = 1 / vz;
+  const fz  = Math.round(9 / vz);
+  ctx.save();
+  ctx.font = `${fz}px Lexend, sans-serif`;
+
+  if (gridType === 'square') {
+    const nxStart = Math.floor((wxMin - nucX) / spacingPx);
+    const nxEnd   = Math.ceil ((wxMax - nucX) / spacingPx);
+    for (let n = nxStart; n <= nxEnd; n++) {
+      const wx = nucX + n * spacingPx;
+      const axis = n === 0;
+      ctx.strokeStyle = axis ? 'rgba(100,160,220,0.4)' : 'rgba(100,150,200,0.13)';
+      ctx.lineWidth   = (axis ? 1.5 : 1) / vz;
+      ctx.beginPath(); ctx.moveTo(wx, wyMin); ctx.lineTo(wx, wyMax); ctx.stroke();
+      if (n !== 0) {
+        ctx.fillStyle    = 'rgba(120,170,230,0.45)';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(String(Math.abs(n * spacingPm)), wx, nucY + 4 / vz);
+      }
+    }
+    const nyStart = Math.floor((wyMin - nucY) / spacingPx);
+    const nyEnd   = Math.ceil ((wyMax - nucY) / spacingPx);
+    for (let n = nyStart; n <= nyEnd; n++) {
+      const wy = nucY + n * spacingPx;
+      const axis = n === 0;
+      ctx.strokeStyle = axis ? 'rgba(100,160,220,0.4)' : 'rgba(100,150,200,0.13)';
+      ctx.lineWidth   = (axis ? 1.5 : 1) / vz;
+      ctx.beginPath(); ctx.moveTo(wxMin, wy); ctx.lineTo(wxMax, wy); ctx.stroke();
+      if (n !== 0) {
+        ctx.fillStyle    = 'rgba(120,170,230,0.45)';
+        ctx.textAlign    = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(Math.abs(n * spacingPm)), nucX + 4 / vz, wy);
+      }
+    }
+    // "pm" label at origin crosshair
+    ctx.fillStyle = 'rgba(120,170,230,0.4)'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('pm', nucX + 4 / vz, nucY + 4 / vz);
+  } else {
+    // Radial
+    const maxR = Math.max(
+      Math.hypot(wxMax - nucX, wyMax - nucY), Math.hypot(wxMax - nucX, wyMin - nucY),
+      Math.hypot(wxMin - nucX, wyMax - nucY), Math.hypot(wxMin - nucX, wyMin - nucY)
+    );
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    for (let r = spacingPx; r <= maxR; r += spacingPx) {
+      const pm = Math.round(r / shellBaseR);
+      ctx.strokeStyle = 'rgba(100,150,200,0.15)';
+      ctx.lineWidth   = lw;
+      ctx.beginPath(); ctx.arc(nucX, nucY, r, 0, Math.PI * 2); ctx.stroke();
+      if (nucX + r < wxMax) {
+        ctx.fillStyle = 'rgba(120,170,230,0.45)';
+        ctx.fillText(`${pm} pm`, nucX + r + 3 / vz, nucY - 3 / vz);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function _anchorPm(z) {
+  if (radiusMode === 'vdw') return VDW_RADII_PM[z] ?? ATOMIC_RADII_PM[z];
+  return ATOMIC_RADII_PM[z];
+}
 
 function getShellRadius(s) {
   const Z = Math.max(customZ, 1);
   const table = SHELL_RADII_PM[Z];
-  const pm = (table && table[s] != null) ? table[s] : (s + 1) * (s + 1) * 53 / Z;
+  let pm;
+  if (table && table[s] != null) {
+    const ionTable = radiusMode === 'vdw' ? ION_RADII_VDW_PM : ION_RADII_COV_PM;
+    const ionData = ionTable[Z];
+    const isIon = ionData && electrons.length === ionData.e;
+
+    if (isIon) {
+      // Use the ionic radius directly as the anchor for the ion's outer shell.
+      // Inner shells scale proportionally from that same anchor via SHELL_RADII_PM.
+      const ionOuter = electrons.some(e => e.shell != null)
+        ? Math.max(...electrons.map(e => e.shell))
+        : table.length - 1;
+      const refPm = table[ionOuter] ?? table[table.length - 1];
+      pm = ionData.r * table[s] / refPm;
+    } else {
+      const neutral = radiusMode === 'vdw' ? (VDW_RADII_PM[Z] ?? ATOMIC_RADII_PM[Z]) : ATOMIC_RADII_PM[Z];
+      pm = neutral != null ? neutral * table[s] / table[table.length - 1] : table[s];
+    }
+  } else {
+    pm = (s + 1) * (s + 1) * 53 / Z;
+  }
   const px = pm * shellBaseR;
   // Inner shell must clear the nucleus
   if (s === 0 && animParent) return Math.max(px, animParent.sphereR * 1.4);
@@ -2518,6 +2839,7 @@ function drawForceVizShell() {
     effectiveSr = _fvPrevSr + (sr - _fvPrevSr) * ease;
     if (t >= 1) { _fvPrevSr = -1; _fvZoomStart = -1; }
   }
+  _fvEffectiveSr = effectiveSr;
   const scale = circleR / effectiveSr;
   const allShells = [...new Set(electrons.map(e => e.shell))].sort((a, b) => a - b);
   for (const s of allShells) {
@@ -2950,6 +3272,14 @@ function draw() {
   ctx.scale(viewZoom, viewZoom);
   ctx.translate(-_W / 2, -_H / 2);
 
+  if (animParent) {
+    const _wxMin = _W / 2 - _camX / viewZoom;
+    const _wxMax = _W / 2 + (_W - _camX) / viewZoom;
+    const _wyMin = _H / 2 - _centerY / viewZoom;
+    const _wyMax = _H / 2 + (_H - _centerY) / viewZoom;
+    _drawGrid(ctx, animParent.cx, animParent.cy, _wxMin, _wxMax, _wyMin, _wyMax);
+  }
+
   const showAtomicRadius = document.getElementById('showElectric').checked;
   if (showAtomicRadius && electrons.length) {
     const outerShell = Math.max(...electrons.map(e => e.shell));
@@ -2966,10 +3296,11 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
     const arPm = Math.round(outerR / shellBaseR);
+    const arSuffix = ((customZ === 9 && electrons.length === 10) || (radiusMode === 'vdw' && (customZ === 10 || customZ === 18 || customZ === 36))) ? '*' : '';
     ctx.font = `${13 / Z}px Lexend, sans-serif`;
     ctx.fillStyle = 'rgba(140,200,255,0.9)';
     ctx.textAlign = 'center';
-    ctx.fillText(`r = ${arPm} pm`, cx + outerR / 2, cy - 10 / Z);
+    ctx.fillText(`r = ${arPm}${arSuffix} pm`, cx + outerR / 2, cy - 10 / Z);
     ctx.restore();
   }
   if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
@@ -2992,13 +3323,11 @@ const MASS_ELECTRON = 0.000549;   // u
 
 function updateParticleCounters() {
   const p1P = document.getElementById('p1Protons');
-  const p1N = document.getElementById('p1Neutrons');
   if (!p1P) return;
   const Z = customZ;
   const N = autoNeutrons(Z);
   const E = electrons.length;
   p1P.textContent = Z;
-  p1N.textContent = N;
   const mass = Z * MASS_PROTON + N * MASS_NEUTRON + E * MASS_ELECTRON;
   const massEl = document.getElementById('atomMass');
   if (massEl) massEl.textContent = mass.toFixed(3);
@@ -3031,13 +3360,20 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 document.getElementById('autoscaleCheckbox').addEventListener('change', function() {
   autoScaleZoom = this.checked;
-  if (autoScaleZoom) { _lastAutoScaleShell = -1; applyAutoScale(); }
+  if (autoScaleZoom) { _lastAutoScalePeriod = -1; applyAutoScale(); }
 });
 
 document.getElementById('showElectric').addEventListener('change', function() {
   logAction('Atomic radius: ' + (this.checked ? 'on' : 'off'));
   heatmapDirty = true;
   draw();
+});
+
+document.getElementById('showGridCheckbox').addEventListener('change', function() {
+  showGrid = this.checked; draw();
+});
+document.getElementById('gridTypeSelect').addEventListener('change', function() {
+  gridType = this.value; draw();
 });
 
 
@@ -3108,9 +3444,10 @@ function syncElemBtnActive() {
 }
 let selectedElectronIdx = -1;
 let selectedShell = -1;
-let _fvPrevSr    = -1;    // world-radius of the shell being zoomed FROM
-let _fvZoomStart = -1;    // performance.now() when zoom began; -1 = not animating
-const FV_ZOOM_MS = 250;
+let _fvPrevSr      = -1;   // world-radius of the shell being zoomed FROM
+let _fvZoomStart   = -1;   // performance.now() when zoom began; -1 = not animating
+let _fvEffectiveSr = -1;   // last rendered effectiveSr — used as zoom-from on element switch
+const FV_ZOOM_MS = 375;
 let fvArrowExp = 0.13;  // exponent for shell-mode arrow length curve (lower = small forces bigger)
 
 // ─── Tab switching ────────────────────────────────────────────────────────────
@@ -3134,6 +3471,13 @@ function _syncDevSliders() {
 }
 _syncDevSliders();
 document.getElementById('devToggle').addEventListener('change', _syncDevSliders);
+
+document.getElementById('radiusModeSelect').addEventListener('change', function () {
+  radiusMode = this.value;
+  _lastAutoScalePeriod = -1;
+  applyAutoScale(true);
+  draw();
+});
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
@@ -3297,16 +3641,9 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   };
   syncShellDevSliders();
   // ─── Element picker grid ─────────────────────────────────────────────────────
-  const ELEM_DATA = [
-    [1,'H','Hydrogen','alkali',1,1],[2,'He','Helium','noble',8,1],
-    [3,'Li','Lithium','alkali',1,2],[4,'Be','Beryllium','alkaline',2,2],
-    [6,'C','Carbon','carbon-gp',6,2],[9,'F','Fluorine','halogen',7,2],[10,'Ne','Neon','noble',8,2],
-    [11,'Na','Sodium','alkali',1,3],[12,'Mg','Magnesium','alkaline',2,3],
-    [14,'Si','Silicon','carbon-gp',6,3],[17,'Cl','Chlorine','halogen',7,3],[18,'Ar','Argon','noble',8,3],
-    [19,'K','Potassium','alkali',1,4],[20,'Ca','Calcium','alkaline',2,4],
-    [26,'Fe','Iron','transition',3,4],[29,'Cu','Copper','transition',4,4],[30,'Zn','Zinc','transition',5,4],
-    [32,'Ge','Germanium','carbon-gp',6,4],[35,'Br','Bromine','halogen',7,4],[36,'Kr','Krypton','noble',8,4],
-  ];
+  const ELEM_DATA = Object.entries(ELEMENT_DATA)
+    .filter(([,d]) => d.col > 0)
+    .map(([z,d]) => [+z, d.sym, d.name, d.cat, d.col, d.row]);
   const elemGrid = document.getElementById('elemGrid');
   for (const [z, sym, name, cat, col, row] of ELEM_DATA) {
     const btn = document.createElement('button');
@@ -3316,48 +3653,39 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     btn.style.gridRow = row;
     btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
     btn.addEventListener('click', () => {
+      const _prevSr = _fvEffectiveSr;
       setNucleusFromZ(z);
-      if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-      autoSelectOuterShell();
+      syncNeutralElectrons();
+      autoSelectOuterShell(_prevSr);
       applyAutoScale();
       syncShellDevSliders();
       syncElemBtnActive();
+      syncFormButtons();
     });
     elemGrid.appendChild(btn);
   }
   syncElemBtnActive();
 
-  document.getElementById('addElectronBtn').addEventListener('click', () => {
-    document.getElementById('neutralCheckbox').checked = false;
-    addElectron();
-    syncShellDevSliders();
-  });
-  document.getElementById('removeElectronBtn').addEventListener('click', () => {
-    document.getElementById('neutralCheckbox').checked = false;
-    removeElectron();
-    syncShellDevSliders();
-  });
-  document.getElementById('neutralCheckbox').addEventListener('change', function () {
-    if (this.checked) syncNeutralElectrons();
-    autoSelectOuterShell();
-    syncShellDevSliders();
-  });
   const _pSlider = document.getElementById('protonSlider');
   function _stepProton(delta) {
     const v = Math.max(0, Math.min(82, parseInt(_pSlider.value) + delta));
     _pSlider.value = v;
+    const _prevSr = _fvEffectiveSr;
     setNucleusFromZ(v);
-    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-    autoSelectOuterShell();
+    syncNeutralElectrons();
+    autoSelectOuterShell(_prevSr);
     syncShellDevSliders();
     syncElemBtnActive();
+    syncFormButtons();
   }
   _pSlider.addEventListener('input', function () {
+    const _prevSr = _fvEffectiveSr;
     setNucleusFromZ(parseInt(this.value));
-    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-    autoSelectOuterShell();
+    syncNeutralElectrons();
+    autoSelectOuterShell(_prevSr);
     syncShellDevSliders();
     syncElemBtnActive();
+    syncFormButtons();
   });
   const _protonDown = document.getElementById('protonDown');
   const _protonUp = document.getElementById('protonUp');
@@ -3716,6 +4044,7 @@ syncNeutralElectrons();
 applyAutoScale();
 syncShellDevSliders();
 syncElemBtnActive();
+syncFormButtons();
 arrowMode = 2;
 setForceWheelActive(document.querySelector('.awheel-item[data-fmode="2"]'));
 fvShellMode = true;
