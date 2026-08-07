@@ -2983,8 +2983,9 @@ function syncForceVizCanvasSize() {
 function syncForceVizVisibility() {
   const showFV = arrowMode > 0 && (currentTab === 'shells');
   forceVizPanelEl.style.display = showFV ? 'block' : 'none';
-  document.getElementById('showForcesBtn').style.display  = arrowMode > 0 ? 'none' : '';
-  document.getElementById('forceActiveCtrl').style.display = (arrowMode > 0 && grabWireMode === 'grab') ? 'flex' : 'none';
+  const _isShells = currentTab === 'shells';
+  document.getElementById('showForcesBtn').style.display  = (!arrowMode && _isShells) ? '' : 'none';
+  document.getElementById('forceActiveCtrl').style.display = (arrowMode > 0 && grabWireMode === 'grab' && _isShells) ? 'flex' : 'none';
   if (showFV) { syncForceVizCanvasSize(); drawForceViz(); }
   draw();
 }
@@ -3156,11 +3157,9 @@ function drawForceVizShell() {
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
       fvc.textBaseline = 'middle';
-      const T = 0.1 * _FieNN;
       const nlx = -cosA, nly = -sinA;
       const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
       if (nucLabel) {
-        fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nlx > 0.3 ? 'left' : nlx < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, px + nlx * (nucLen + 4), py + nly * (nucLen + 4));
@@ -3170,7 +3169,6 @@ function drawForceVizShell() {
         if (repLabel) {
           const rnx = frex / fRep, rny = frey / fRep;
           const repLen = shellArrowLen(fRep);
-          fvc.globalAlpha = Math.min(1, (fRep / _FcVal * _FieNN) / T);
           fvc.fillStyle = FV_REP_COLOR;
           fvc.textAlign = rnx > 0.3 ? 'left' : rnx < -0.3 ? 'right' : 'center';
           fvc.fillText(repLabel, px + rnx * (repLen + 4), py + rny * (repLen + 4));
@@ -3295,9 +3293,9 @@ function drawForceVizElectron() {
     return fNN < T ? rawLen * (fNN / T) : rawLen;
   }
 
-  const fixedHead = MAX_LEN * 0.12;
+  const maxHead = MAX_LEN * 0.12;
   const nucArrowLen = arrowLen(fNuc);
-  fvArrowOnCtx(fvc, ePx, ePy, nxN, nyN, nucArrowLen, FV_NUC_COLOR, 3, fixedHead);
+  fvArrowOnCtx(fvc, ePx, ePy, nxN, nyN, nucArrowLen, FV_NUC_COLOR, 3, Math.min(maxHead, nucArrowLen * 0.4));
 
   // Smooth label positions toward arrow tips (molasses lag)
   const _nucTarget = { x: ePx + nxN * (nucArrowLen + 8), y: ePy + nyN * (nucArrowLen + 8) };
@@ -3308,7 +3306,7 @@ function drawForceVizElectron() {
   if (fRep > 0.001) {
     const nxR = frex / fRep, nyR = frey / fRep;
     const repArrowLen = arrowLen(fRep);
-    fvArrowOnCtx(fvc, ePx, ePy, nxR, nyR, repArrowLen, FV_REP_COLOR, 3, fixedHead);
+    fvArrowOnCtx(fvc, ePx, ePy, nxR, nyR, repArrowLen, FV_REP_COLOR, 3, Math.min(maxHead, repArrowLen * 0.4));
 
     const _repTarget = { x: ePx + nxR * (repArrowLen + 8), y: ePy + nyR * (repArrowLen + 8) };
     if (!_fvLabelRepSmooth) _fvLabelRepSmooth = { ..._repTarget };
@@ -3316,20 +3314,17 @@ function drawForceVizElectron() {
            _fvLabelRepSmooth.y += (_repTarget.y - _fvLabelRepSmooth.y) * FV_LABEL_LAG; }
 
     if (showForceValues && _FieNN) {
-      const T = 0.1 * _FieNN;
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
       fvc.textBaseline = 'middle';
       const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
       if (nucLabel) {
-        fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, _fvLabelNucSmooth.x, _fvLabelNucSmooth.y);
       }
       const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
       if (repLabel) {
-        fvc.globalAlpha = Math.min(1, (fRep / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_REP_COLOR;
         fvc.textAlign = nxR > 0.3 ? 'left' : nxR < -0.3 ? 'right' : 'center';
         fvc.fillText(repLabel, _fvLabelRepSmooth.x, _fvLabelRepSmooth.y);
@@ -3344,10 +3339,8 @@ function drawForceVizElectron() {
     fvc.fillText('(no other electrons)', panelCx, H - 38);
 
     if (showForceValues && _FieNN) {
-      const T = 0.1 * _FieNN;
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
-      fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
       fvc.fillStyle = FV_NUC_COLOR;
       fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
       fvc.textBaseline = 'middle';
