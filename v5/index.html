@@ -3017,7 +3017,11 @@ function drawForceVizShell() {
   const refR  = animParent ? getShellRadius(0) : shellBaseR * 10;
   const F_MAX = eK * Math.max(customZ, 1) / (refR * refR * 0.59);
   function shellArrowLen(f) {
-    return Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
+    const rawLen = Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
+    if (!_FieNN) return rawLen;
+    const fNN = f / _FcVal * _FieNN;
+    const T = 0.1 * _FieNN;
+    return fNN < T ? rawLen * (fNN / T) : rawLen;
   }
 
   // Animate zoom: interpolate from previous shell's world-radius to current
@@ -3152,9 +3156,11 @@ function drawForceVizShell() {
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
       fvc.textBaseline = 'middle';
+      const T = 0.1 * _FieNN;
       const nlx = -cosA, nly = -sinA;
       const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
       if (nucLabel) {
+        fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nlx > 0.3 ? 'left' : nlx < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, px + nlx * (nucLen + 4), py + nly * (nucLen + 4));
@@ -3164,6 +3170,7 @@ function drawForceVizShell() {
         if (repLabel) {
           const rnx = frex / fRep, rny = frey / fRep;
           const repLen = shellArrowLen(fRep);
+          fvc.globalAlpha = Math.min(1, (fRep / _FcVal * _FieNN) / T);
           fvc.fillStyle = FV_REP_COLOR;
           fvc.textAlign = rnx > 0.3 ? 'left' : rnx < -0.3 ? 'right' : 'center';
           fvc.fillText(repLabel, px + rnx * (repLen + 4), py + rny * (repLen + 4));
@@ -3281,8 +3288,11 @@ function drawForceVizElectron() {
   const _FcVal  = eK * Math.max(customZ, 1) / (_rValPx * _rValPx);
 
   function arrowLen(f) {
-    if (_FieNN && f / _FcVal * _FieNN < 1) return 0;
-    return Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
+    const rawLen = Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
+    if (!_FieNN) return rawLen;
+    const fNN = f / _FcVal * _FieNN;
+    const T = 0.1 * _FieNN;
+    return fNN < T ? rawLen * (fNN / T) : rawLen;
   }
 
   const fixedHead = MAX_LEN * 0.12;
@@ -3306,17 +3316,20 @@ function drawForceVizElectron() {
            _fvLabelRepSmooth.y += (_repTarget.y - _fvLabelRepSmooth.y) * FV_LABEL_LAG; }
 
     if (showForceValues && _FieNN) {
+      const T = 0.1 * _FieNN;
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
       fvc.textBaseline = 'middle';
       const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
       if (nucLabel) {
+        fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, _fvLabelNucSmooth.x, _fvLabelNucSmooth.y);
       }
       const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
       if (repLabel) {
+        fvc.globalAlpha = Math.min(1, (fRep / _FcVal * _FieNN) / T);
         fvc.fillStyle = FV_REP_COLOR;
         fvc.textAlign = nxR > 0.3 ? 'left' : nxR < -0.3 ? 'right' : 'center';
         fvc.fillText(repLabel, _fvLabelRepSmooth.x, _fvLabelRepSmooth.y);
@@ -3331,8 +3344,10 @@ function drawForceVizElectron() {
     fvc.fillText('(no other electrons)', panelCx, H - 38);
 
     if (showForceValues && _FieNN) {
+      const T = 0.1 * _FieNN;
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
+      fvc.globalAlpha = Math.min(1, (fNuc / _FcVal * _FieNN) / T);
       fvc.fillStyle = FV_NUC_COLOR;
       fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
       fvc.textBaseline = 'middle';
@@ -4190,6 +4205,9 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
       const _prevSr = _fvEffectiveSr;
       const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
         ? electrons[selectedElectronIdx].angle : null;
+      _fvLabelNucSmooth = null;
+      _fvLabelRepSmooth = null;
+      selectedElectronIdx = -1;
       setNucleusFromZ(z);
       if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
       autoSelectOuterShell(_prevSr, _prevAngle);
