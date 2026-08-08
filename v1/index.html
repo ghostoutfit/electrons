@@ -3641,7 +3641,7 @@ document.getElementById('radiusModeSelect').addEventListener('change', function 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
-  document.getElementById('forceModeRow').style.display = hideForce ? 'none' : '';
+  document.getElementById('forceCtrlBox').style.display = hideForce ? 'none' : '';
 }
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
@@ -4270,7 +4270,7 @@ function closeBugModal() {
   document.getElementById('bugModal').style.display = 'none';
   document.getElementById('bugModalFrame').src = 'about:blank';
 }
-document.getElementById('bugModal').addEventListener('click', e => {
+document.getElementById('bugModal')?.addEventListener('click', e => {
   if (e.target === document.getElementById('bugModal')) closeBugModal();
 });
 document.addEventListener('keydown', e => {
