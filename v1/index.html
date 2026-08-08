@@ -919,10 +919,16 @@
           <input type="checkbox" id="showElectric">
           <span class="field-label-electric">Show atomic radius</span>
         </label>
-        <label class="toggle-label" id="showGridRow">
-          <input type="checkbox" id="showGridCheckbox">
-          <span class="field-label-electric">Grid on</span>
-        </label>
+        <div style="display:flex;gap:10px" id="showGridRow">
+          <label class="toggle-label">
+            <input type="checkbox" id="showGridCheckbox">
+            <span class="field-label-electric">Grid</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="showForceValuesCheckbox">
+            <span class="field-label-electric">Force Values</span>
+          </label>
+        </div>
 
       </div>
       <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
@@ -990,10 +996,6 @@
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
     <span><span style="color:#00eeff">■</span><span style="color:#00eeff;text-shadow:0 0 4px #00eeff,0 0 10px rgba(0,238,255,0.5)">Repulsion from Electrons (electric)</span></span>
-    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;width:100%;margin-top:2px">
-      <input type="checkbox" id="showForceValuesCheckbox" style="accent-color:#ff4466;width:11px;height:11px;cursor:pointer">
-      <span style="color:rgba(255,100,150,0.75);font-size:11px;letter-spacing:0.5px;text-transform:uppercase">Show force values</span>
-    </label>
   </div>
   <canvas id="forceVizCanvas" width="333" height="180"></canvas>
 </div>
