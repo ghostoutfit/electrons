@@ -3406,6 +3406,17 @@ function _drawIEBar(fvc, W, H, ionEV, workEV, barColor, ordinal) {
     fvc.fillRect(barX, barBot - fillH, barW, fillH);
   }
 
+  // Current work value label at top of fill
+  if (fillH > 10 && workEV > 0.05) {
+    fvc.save();
+    fvc.font = 'bold 9px Lexend, sans-serif';
+    fvc.fillStyle = 'rgba(255,255,255,0.9)';
+    fvc.textAlign = 'center';
+    fvc.textBaseline = 'bottom';
+    fvc.fillText(workEV.toFixed(1), barX + barW / 2, barBot - fillH - 1);
+    fvc.restore();
+  }
+
 }
 
 function drawForceViz() {
@@ -4493,17 +4504,23 @@ window.addEventListener('mouseup', e => {
     const ddx = _draggedPos.x - cx, ddy = _draggedPos.y - cy;
     const d = Math.sqrt(ddx * ddx + ddy * ddy);
     const shellR = getShellRadius(el.shell);
-    el.free  = true;
-    el.freeX = _draggedPos.x;
-    el.freeY = _draggedPos.y;
     if (d > shellR * 8) {
       // Past ionization distance — electron escapes, does not return
+      el.free  = true;
+      el.freeX = _draggedPos.x;
+      el.freeY = _draggedPos.y;
       el.ionized = true;
       el.freeVX  = (ddx / d) * 0.6;
       el.freeVY  = (ddy / d) * 0.6;
     } else {
-      el.freeVX = 0;
-      el.freeVY = 0;
+      // Snap directly back to orbital mode at the release angle
+      el.ionized = false;
+      el.free    = false;
+      delete el.freeX; delete el.freeY; delete el.freeVX; delete el.freeVY;
+      el.angle        = Math.atan2(ddy, ddx);
+      el.radialOffset = 0;
+      el.dAngle       = SHELL_BASE_DA * (Math.random() > 0.5 ? 1 : -1);
+      el.dRadial      = 0;
     }
   }
   _draggedElectronIdx = -1;
