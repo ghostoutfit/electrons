@@ -1783,6 +1783,38 @@ function drawOrbit3D(ctx) {
 
   const showAR = document.getElementById('showElectric').checked;
 
+  // 3D grid — floor (XZ) plane + Y axis, 5pm major spacing only
+  if (showGrid && occupied.length) {
+    const _outerPm = Math.ceil(getShellRadius(Math.max(...occupied)) / shellBaseR / 5) * 5;
+    ctx.save();
+    // Floor grid lines (dim)
+    ctx.strokeStyle = 'rgba(100,180,255,0.10)';
+    ctx.lineWidth = 1;
+    for (let i = -_outerPm; i <= _outerPm; i += 5) {
+      if (i === 0) continue;
+      const [gx0,gy0] = proj3D(i, 0, -_outerPm, shellBaseR);
+      const [gx1,gy1] = proj3D(i, 0,  _outerPm, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke();
+      const [gx2,gy2] = proj3D(-_outerPm, 0, i, shellBaseR);
+      const [gx3,gy3] = proj3D( _outerPm, 0, i, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(gx2,gy2); ctx.lineTo(gx3,gy3); ctx.stroke();
+    }
+    // Three main axes (brighter)
+    ctx.strokeStyle = 'rgba(100,180,255,0.40)';
+    ctx.lineWidth = 1.5;
+    const axes = [
+      [[-_outerPm,0,0],[_outerPm,0,0]],
+      [[0,0,-_outerPm],[0,0,_outerPm]],
+      [[0,-_outerPm,0],[0,_outerPm,0]],
+    ];
+    for (const [[ax,ay,az],[bx,by,bz]] of axes) {
+      const [sx0,sy0] = proj3D(ax,ay,az, shellBaseR);
+      const [sx1,sy1] = proj3D(bx,by,bz, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(sx0,sy0); ctx.lineTo(sx1,sy1); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Shell reference rings
   if (showAR) {
     ctx.lineWidth = 1;
@@ -2746,8 +2778,9 @@ function stepElectronsShells() {
       continue;
     }
 
-    // Nuclear attraction — normalized by shellR² for consistent return time across atom sizes
-    const fMag = FREE_PULL_NORM * shellR * shellR * Math.max(customZ, 1) / (d * d);
+    // Nuclear attraction — amplified for grabbed electrons so return is visibly animated
+    const pullMult = e._pull || 1;
+    const fMag = FREE_PULL_NORM * pullMult * shellR * shellR * Math.max(customZ, 1) / (d * d);
     e.freeVX += fMag * dx / d;
     e.freeVY += fMag * dy / d;
     e.freeVX *= 0.94;
@@ -2757,11 +2790,12 @@ function stepElectronsShells() {
     // Snap back when within shell radius of target shell
     if (Math.abs(d - shellR) < shellR || d <= animParent.sphereR * 1.5) {
       e.angle        = Math.atan2(e.freeY - cy, e.freeX - cx);
-      e.radialOffset = d - shellR;
+      e.radialOffset = 0;
       e.dAngle       = SHELL_BASE_DA * (Math.random() > 0.5 ? 1 : -1);
       e.dRadial      = 0;
       e.free         = false;
       delete e.freeX; delete e.freeY; delete e.freeVX; delete e.freeVY;
+      delete e._pull;
     }
   }
 
@@ -4513,14 +4547,14 @@ window.addEventListener('mouseup', e => {
       el.freeVX  = (ddx / d) * 0.6;
       el.freeVY  = (ddy / d) * 0.6;
     } else {
-      // Snap directly back to orbital mode at the release angle
+      // Animate return via amplified nuclear pull — electron follows forces back to shell
       el.ionized = false;
-      el.free    = false;
-      delete el.freeX; delete el.freeY; delete el.freeVX; delete el.freeVY;
-      el.angle        = Math.atan2(ddy, ddx);
-      el.radialOffset = 0;
-      el.dAngle       = SHELL_BASE_DA * (Math.random() > 0.5 ? 1 : -1);
-      el.dRadial      = 0;
+      el.free    = true;
+      el.freeX   = _draggedPos.x;
+      el.freeY   = _draggedPos.y;
+      el.freeVX  = 0;
+      el.freeVY  = 0;
+      el._pull   = 5;
     }
   }
   _draggedElectronIdx = -1;

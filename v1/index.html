@@ -1727,6 +1727,38 @@ function drawOrbit3D(ctx) {
 
   const showAR = document.getElementById('showElectric').checked;
 
+  // 3D grid — floor (XZ) plane + Y axis, 5pm major spacing only
+  if (showGrid && occupied.length) {
+    const _outerPm = Math.ceil(getShellRadius(Math.max(...occupied)) / shellBaseR / 5) * 5;
+    ctx.save();
+    // Floor grid lines (dim)
+    ctx.strokeStyle = 'rgba(100,180,255,0.10)';
+    ctx.lineWidth = 1;
+    for (let i = -_outerPm; i <= _outerPm; i += 5) {
+      if (i === 0) continue;
+      const [gx0,gy0] = proj3D(i, 0, -_outerPm, shellBaseR);
+      const [gx1,gy1] = proj3D(i, 0,  _outerPm, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke();
+      const [gx2,gy2] = proj3D(-_outerPm, 0, i, shellBaseR);
+      const [gx3,gy3] = proj3D( _outerPm, 0, i, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(gx2,gy2); ctx.lineTo(gx3,gy3); ctx.stroke();
+    }
+    // Three main axes (brighter)
+    ctx.strokeStyle = 'rgba(100,180,255,0.40)';
+    ctx.lineWidth = 1.5;
+    const axes = [
+      [[-_outerPm,0,0],[_outerPm,0,0]],
+      [[0,0,-_outerPm],[0,0,_outerPm]],
+      [[0,-_outerPm,0],[0,_outerPm,0]],
+    ];
+    for (const [[ax,ay,az],[bx,by,bz]] of axes) {
+      const [sx0,sy0] = proj3D(ax,ay,az, shellBaseR);
+      const [sx1,sy1] = proj3D(bx,by,bz, shellBaseR);
+      ctx.beginPath(); ctx.moveTo(sx0,sy0); ctx.lineTo(sx1,sy1); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Shell reference rings
   if (showAR) {
     ctx.lineWidth = 1;
