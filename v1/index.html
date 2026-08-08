@@ -924,7 +924,7 @@
             <input type="checkbox" id="showGridCheckbox">
             <span class="field-label-electric">Grid</span>
           </label>
-          <label class="toggle-label">
+          <label class="toggle-label" id="forceValuesLabel" style="display:none">
             <input type="checkbox" id="showForceValuesCheckbox">
             <span class="field-label-electric">Force Values</span>
           </label>
@@ -933,16 +933,16 @@
       </div>
       <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
         <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="awheel-item active" data-tab="shells">Shells</button>
-          <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="display:none">iTunes Visualizer</button>
-          <button class="awheel-item" data-tab="orbit3d">Trails</button>
+          <button class="awheel-item active" data-tab="shells" style="padding:3px 18px;font-size:15px">Shells</button>
+          <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="display:none;padding:3px 18px;font-size:15px">iTunes Visualizer</button>
+          <button class="awheel-item" data-tab="orbit3d" style="padding:3px 18px;font-size:15px">Trails</button>
         </div>
         <div id="forceCtrlBox" style="display:flex;flex-direction:column;gap:4px">
-          <button id="showForcesBtn" class="force-show-btn" style="display:none">Show forces</button>
+          <button id="showForcesBtn" class="force-show-btn" style="display:none;min-height:72px">Show forces</button>
           <div id="forceActiveCtrl" style="display:flex;flex-direction:column;gap:4px">
             <button class="awheel-item" id="hideForcesBtn">Hide forces</button>
-            <button class="awheel-item active" data-fvmode="shell">Force on a Shell</button>
-            <button class="awheel-item" data-fvmode="electron">Force on an Electron</button>
+            <button class="awheel-item active" data-fvmode="shell">Force on Shell</button>
+            <button class="awheel-item" data-fvmode="electron">Force on Electron</button>
           </div>
         </div>
       </div>
@@ -2846,6 +2846,7 @@ function syncForceVizVisibility() {
   const _isShells = currentTab === 'shells';
   document.getElementById('showForcesBtn').style.display  = (!arrowMode && _isShells) ? '' : 'none';
   document.getElementById('forceActiveCtrl').style.display = (arrowMode > 0 && _isShells) ? 'flex' : 'none';
+  document.getElementById('forceValuesLabel').style.display = (arrowMode > 0) ? '' : 'none';
   if (showFV) { syncForceVizCanvasSize(); drawForceViz(); }
   draw();
 }
@@ -3007,7 +3008,7 @@ function drawForceVizShell() {
 
     if (fRep > 0.001) {
       const repLen = shellArrowLen(fRep, _FieNN, _FcVal);
-      fvArrowOnCtx(fvc, px, py, frex / fRep, frey / fRep, repLen, FV_REP_COLOR, 2, repLen * 0.35);
+      fvArrowOnCtx(fvc, px, py, cosA, sinA, repLen, FV_REP_COLOR, 2, repLen * 0.35);
     }
 
     // Labels on top-left sample point only (i=4, upper-left in canvas coords)
@@ -3025,11 +3026,10 @@ function drawForceVizShell() {
       if (fRep > 0.001) {
         const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
         if (repLabel) {
-          const rnx = frex / fRep, rny = frey / fRep;
           const repLen = shellArrowLen(fRep, _FieNN, _FcVal);
           fvc.fillStyle = FV_REP_COLOR;
-          fvc.textAlign = rnx > 0.3 ? 'left' : rnx < -0.3 ? 'right' : 'center';
-          fvc.fillText(repLabel, px + rnx * (repLen + 4), py + rny * (repLen + 4));
+          fvc.textAlign = cosA > 0.3 ? 'left' : cosA < -0.3 ? 'right' : 'center';
+          fvc.fillText(repLabel, px + cosA * (repLen + 4), py + sinA * (repLen + 4));
         }
       }
       fvc.restore();
