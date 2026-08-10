@@ -12,7 +12,7 @@ To run locally: `python3 -m http.server 8099 --directory /Users/jkremer/Projects
 | `v1/index.html` | `/v1/` | Primary sim — shells, trails, orbit3d tabs; force visualization panel (Force on Shell / Force on Electron modes); Show Forces button |
 | `v5/index.html` | `/v5/` | Extends v1 with wire-grab mode; electrons can be dragged via an interactive wire |
 | `v7/index.html` | `/v7/` | Alternate build (details TBD) |
-| `index.html` (root) | `/` | Landing / redirect page |
+| `index.html` (root) | `/` | Homepage — nav cards linking to v1, v5, v7 |
 
 **Active development targets: v1 and v5.** Changes to UI layout, force viz, or physics should be applied to both.
 
