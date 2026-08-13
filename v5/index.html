@@ -346,36 +346,23 @@
     position: relative;
   }
   .ctrl-box-pink input[type="range"] { width: 120px; }
-  #elemGrid {
-    display: grid;
-    grid-template-columns: repeat(8, 36px);
-    grid-template-rows: repeat(4, 34px);
-    gap: 2px;
+  #elemPicker { display:flex; flex-direction:column; gap:4px; width:190px; }
+  #elemSearch {
+    font-size:11px; font-family:'Lexend',sans-serif;
+    background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.85);
+    border:1px solid rgba(255,255,255,0.15); border-radius:4px;
+    padding:3px 7px; outline:none; width:100%;
   }
-  .elem-btn {
-    position: relative;
-    width: 36px;
-    height: 34px;
-    padding: 0;
-    border-radius: 5px;
-    border: 1px solid;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: filter 0.12s;
-    font-family: 'Lexend', sans-serif;
+  #elemSearch::placeholder { color:rgba(255,255,255,0.28); }
+  #elemSearch:focus { border-color:rgba(255,100,150,0.5); }
+  #elemSelect {
+    font-size:11px; font-family:monospace;
+    background:rgba(0,0,0,0.35); color:rgba(255,255,255,0.72);
+    border:1px solid rgba(255,255,255,0.12); border-radius:4px;
+    width:100%; outline:none; cursor:pointer;
   }
-  .elem-btn:hover { filter: brightness(1.35); }
-  .elem-btn.active { outline: 2px solid rgba(255,255,255,0.85); outline-offset: 1px; }
-  .elem-btn .el-num { position: absolute; top: 2px; left: 3px; font-size: 9px; line-height: 1; opacity: 0.55; }
-  .elem-btn .el-sym { font-size: 15px; font-weight: 700; line-height: 1; margin-top: 6px; }
-  .elem-btn.alkali     { background: rgba(20,70,200,0.25);  border-color: rgba(80,140,255,0.6);  color: #7ab0ff; }
-  .elem-btn.alkaline   { background: rgba(200,40,80,0.2);   border-color: rgba(255,90,130,0.6);  color: #ff9dbf; }
-  .elem-btn.transition { background: rgba(120,50,200,0.2);  border-color: rgba(170,90,255,0.6);  color: #c090ff; }
-  .elem-btn.carbon-gp  { background: rgba(160,130,0,0.2);   border-color: rgba(220,180,0,0.6);   color: #ddb800; }
-  .elem-btn.halogen    { background: rgba(0,160,140,0.2);   border-color: rgba(0,200,180,0.6);   color: #00c8b4; }
-  .elem-btn.noble      { background: rgba(200,40,140,0.2);  border-color: rgba(255,90,180,0.6);  color: #ff90c0; }
+  #elemSelect option { background:#0d0a1e; color:rgba(255,255,255,0.72); padding:1px 4px; }
+  #elemSelect option:checked { background:#1a2a5e; color:#fff; }
   .ctrl-box-label {
     position: absolute;
     bottom: 100%;
@@ -786,15 +773,26 @@
   .dev-row input[type=range] { flex: 1; accent-color: #eeff00; }
   .dev-val { width: 56px; text-align: right; color: #eeff00; font-variant-numeric: tabular-nums; }
 
+  /* ── Energy bar panel (left side) ──────────────────────────────────────── */
+  #energyBarPanel {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 180px;
+    z-index: 5;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #energyBarCanvas { display: block; width: 100%; height: 100%; }
+
   /* ── Force viz panel (draggable, resizable) ────────────────────────────── */
   #forceVizPanel {
     display: none;
     position: fixed;
     right: 20px;
-    top: 200px;
+    top: 40px;
     border-radius: 12px;
-    width: 424px;
-    height: 512px;
+    width: 357px;
+    height: 360px;
     background: rgba(8,6,24,0.90);
     border: 1px solid var(--accent2);
     z-index: 15;
@@ -873,6 +871,7 @@
 <body data-tab="builder">
 
 <canvas id="canvas"></canvas>
+<div id="energyBarPanel"><canvas id="energyBarCanvas"></canvas></div>
 
 
 
@@ -906,29 +905,11 @@
     <!-- Pink box: element picker grid -->
     <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:7px;">
       <span class="ctrl-box-label ctrl-box-label-pink">PARTICLES</span>
-      <div style="display:flex;gap:8px;align-items:flex-start">
-        <div id="elemGrid"></div>
-        <!-- Particle counts stacked to the right -->
-        <div style="display:flex;flex-direction:column;gap:6px;padding-top:2px">
-          <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:4px 7px;font-size:11px;color:var(--text-dim);line-height:1.7;white-space:nowrap;">
-            <div>P: <span id="p1Protons" style="color:var(--accent1)">0</span></div>
-            <div>N: <span id="p1Neutrons">0</span></div>
-            <div>e⁻: <span id="electronCount" style="color:#eeff00;text-shadow:0 0 8px rgba(238,255,0,0.6)">0</span></div>
-            <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:3px;padding-top:3px"><span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <button id="removeElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">−</button>
-              <span style="font-size:10px;color:rgba(238,255,0,0.6)">e⁻</span>
-              <button id="addElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">+</button>
-            </div>
-            <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:rgba(238,255,0,0.6);cursor:pointer;">
-              <input type="checkbox" id="neutralCheckbox" checked style="accent-color:#eeff00;width:12px;height:12px;">
-              neutral
-            </label>
-          </div>
-        </div>
+      <div id="elemPicker">
+        <input type="text" id="elemSearch" placeholder="Z, symbol, or name…" autocomplete="off" spellcheck="false">
+        <select id="elemSelect" size="5"></select>
       </div>
+      <input type="checkbox" id="neutralCheckbox" checked style="display:none">
       <!-- Hidden slider kept in DOM for setNucleusFromZ compatibility -->
       <input type="range" id="protonSlider" min="0" max="36" step="1" value="16" style="display:none">
       <span id="protonSliderVal" style="display:none">16</span>
@@ -942,40 +923,32 @@
           <span class="slider-icon" style="visibility:hidden"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
           <input type="range" id="zoomSlider" min="-1" max="1" step="0.01" value="0">
           <span class="slider-icon">🔍</span>
+          <div id="forceCtrlBox" style="display:flex;gap:4px;align-items:center;margin-left:8px">
+            <button id="showForcesBtn" class="force-show-btn" style="display:none">Show forces</button>
+            <button id="hideForcesBtn" class="awheel-item">hide forces</button>
+          </div>
         </div>
-        <label class="toggle-label" id="autoscaleRow">
-          <input type="checkbox" id="autoscaleCheckbox" checked>
-          <span class="field-label-electric">Autoscale</span>
-        </label>
-        <label class="toggle-label" id="showElectricRow">
-          <input type="checkbox" id="showElectric">
-          <span class="field-label-electric">Show atomic radius</span>
-        </label>
-        <div style="display:flex;gap:10px" id="showGridRow">
+        <div style="display:flex;justify-content:space-between">
+          <label class="toggle-label" id="autoscaleRow">
+            <input type="checkbox" id="autoscaleCheckbox" checked>
+            <span class="field-label-electric">Autoscale</span>
+          </label>
+          <label class="toggle-label" id="forceValuesLabel">
+            <input type="checkbox" id="showForceValuesCheckbox" checked>
+            <span class="field-label-electric">Force Values</span>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:space-between" id="showGridRow">
+          <label class="toggle-label" id="showElectricRow">
+            <input type="checkbox" id="showElectric">
+            <span class="field-label-electric">Atomic Radius</span>
+          </label>
           <label class="toggle-label">
             <input type="checkbox" id="showGridCheckbox">
             <span class="field-label-electric">Grid</span>
           </label>
-          <label class="toggle-label" id="forceValuesLabel" style="display:none">
-            <input type="checkbox" id="showForceValuesCheckbox">
-            <span class="field-label-electric">Force Values</span>
-          </label>
         </div>
 
-      </div>
-      <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="awheel-item active" data-tab="shells" style="padding:3px 18px;font-size:15px">Shells</button>
-          <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="padding:3px 18px;font-size:15px">Trails</button>
-        </div>
-        <div id="forceCtrlBox" style="display:flex;flex-direction:column;gap:4px">
-          <button id="showForcesBtn" class="force-show-btn" style="display:none;min-height:72px">Show forces</button>
-          <div id="forceActiveCtrl" style="display:none;flex-direction:column;gap:4px">
-            <button class="awheel-item" id="hideForcesBtn">Hide forces</button>
-            <button class="awheel-item" data-fvmode="shell">Force on Shell</button>
-            <button class="awheel-item active" data-fvmode="electron">Force on Electron</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1004,6 +977,11 @@
         <option value="square">square grid</option>
         <option value="radial">radial grid</option>
       </select>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:1px;">
+        <span style="font-size:9px;letter-spacing:0.06em;color:rgba(255,255,255,0.35);font-weight:600;white-space:nowrap;">IE dist</span>
+        <input type="range" id="slIonDist" min="0.3" max="1.2" step="0.05" value="0.5" style="width:64px;accent-color:rgba(255,255,255,0.5);cursor:pointer;">
+        <span class="dev-val" id="slIonDistVal" style="font-size:9px;color:rgba(255,255,255,0.4);min-width:24px;">0.50</span>
+      </div>
     </div>
 
     <!-- Dev toggle -->
@@ -1100,6 +1078,7 @@ const canvas   = document.getElementById('canvas');
 const ctx      = canvas.getContext('2d');
 const egCanvas = document.getElementById('energyGraph');
 const egCtx    = egCanvas.getContext('2d');
+const energyBarCv  = document.getElementById('energyBarCanvas');
 
 // ─── Heatmap buffers ──────────────────────────────────────────────────────────
 const hmCanvas    = document.createElement('canvas');
@@ -1160,6 +1139,9 @@ function resize() {
   canvas.height  = window.innerHeight;
   egCanvas.width  = Math.max(1, egCanvas.offsetWidth || (window.innerWidth - 112));
   egCanvas.height = 110;
+  const _epEl = document.getElementById('energyBarPanel');
+  energyBarCv.width  = _epEl.offsetWidth  || 180;
+  energyBarCv.height = _epEl.offsetHeight || window.innerHeight;
   heatmapDirty   = true;
 }
 resize();
@@ -1650,6 +1632,7 @@ let _wireEjectFired = 0;         // 0, 1, or 2 — how many ejections have fired
 let _wireLockedShell = -1;       // shell locked at first ejection; both ejects come from here
 let _wireEjecting   = [];        // active ejection animations: {x,y,vx,vy,alpha}
 let eK = 140000, eRepulse = 50000, eDamp = 1, eMinR = 80, eMaxR = 90, eDt = 1.45;
+let eIonDistMult = 0.5; // multiplier on the shellR*8 escape threshold
 let eTrailLen = 105;
 const SHELL_COLORS = ['#ff4488', '#00ddff', '#ff8800', '#88ff00'];
 let shellK          = [140000, 11000, 91000, 140000]; // per-shell nuclear k
@@ -2066,12 +2049,19 @@ function syncOrb3dShellSliders() {
 
 function getShellForNewElectron() {
   const n = electrons.length;
-  if (n < 2)  return 0;  // shell 0: 1s (2e)
-  if (n < 10) return 1;  // shell 1: 2s2p (8e)
-  if (n < 18) return 2;  // shell 2: 3s3p (8e, Ar core)
-  if (n < 20) return 3;  // shell 3: 4s (K, Ca — 2e before d-fill)
-  if (n < 30) return 2;  // shell 2: 3d fill (transition metals — up to 18e total)
-  return 3;              // shell 3: 4p (Ga–Kr — resumes from 3e)
+  if (n <  2) return 0;  // 1s²              → shell 0 (2e)
+  if (n < 10) return 1;  // 2s²2p⁶           → shell 1 (8e)
+  if (n < 18) return 2;  // 3s²3p⁶           → shell 2 (8e, Ar core)
+  if (n < 20) return 3;  // 4s¹⁻²            → shell 3 (K, Ca)
+  if (n < 30) return 2;  // 3d¹⁰             → shell 2 (fills to 18e)
+  if (n < 36) return 3;  // 4p⁶              → shell 3 (Ga–Kr, fills to 8e)
+  if (n < 38) return 4;  // 5s¹⁻²            → shell 4 (Rb, Sr)
+  if (n < 48) return 3;  // 4d¹⁰             → shell 3 (Y–Cd, fills to 18e)
+  if (n < 54) return 4;  // 5p⁶              → shell 4 (In–Xe, fills to 8e)
+  if (n < 56) return 5;  // 6s¹⁻²            → shell 5 (Cs, Ba)
+  if (n < 70) return 4;  // 4f¹⁴             → shell 4 (La–Yb, inner; fills to 22e)
+  if (n < 80) return 4;  // 5d¹⁰             → shell 4 (Hf–Hg, inner; fills to 32e)
+  return 5;              // 6p⁶              → shell 5 (Tl–Rn)
 }
 
 // Offscreen glow image — built once, reused for all electrons
@@ -2317,6 +2307,7 @@ function autoNeutrons(Z) {
 let customZ = 0; // proton count driven by the slider
 let autoScaleZoom = true;
 let _lastAutoScalePeriod = -1;
+let _lastAutoScaleIonMult = -1;
 
 function _sliderFromZoom(z) {
   if (z <= 0.55) return -Math.log(z / 0.55) / Math.log(0.006 / 0.55);
@@ -2352,11 +2343,13 @@ function _periodMaxOuterR(Z) {
 function applyAutoScale(force) {
   if (!autoScaleZoom || !electrons.length) return;
   const period = _periodForZ(customZ);
-  if (!force && period === _lastAutoScalePeriod) return;
+  if (!force && period === _lastAutoScalePeriod && eIonDistMult === _lastAutoScaleIonMult) return;
   _lastAutoScalePeriod = period;
+  _lastAutoScaleIonMult = eIonDistMult;
   const outerR = _periodMaxOuterR(customZ);
+  const ionDistMax = outerR * 8 * eIonDistMult;
   const H = canvas.height;
-  const targetZoom = Math.min((H * 0.283) / outerR, 2.0);
+  const targetZoom = Math.min((H * 0.42) / ionDistMax * 1.8, 2.0);
   viewZoom = targetZoom;
   const sl = document.getElementById('zoomSlider');
   if (sl) sl.value = _sliderFromZoom(targetZoom).toFixed(3);
@@ -2398,7 +2391,7 @@ const ELEMENT_DATA = {
   13: { sym:'Al', name:'Aluminium',  emp:125, calc:118, vdw:184, cov:126, met:143,  cat:'post-trans',col:0, row:0 },
   14: { sym:'Si', name:'Silicon',    emp:110, calc:111, vdw:210, cov:116, met:null, cat:'carbon-gp', col:6, row:3 },
   15: { sym:'P',  name:'Phosphorus', emp:100, calc:98,  vdw:180, cov:111, met:null, cat:'nonmetal',  col:0, row:0 },
-  16: { sym:'S',  name:'Sulfur',     emp:100, calc:88,  vdw:180, cov:103, met:null, cat:'nonmetal',  col:0, row:0 },
+  16: { sym:'S',  name:'Sulfur',     emp:100, calc:88,  vdw:180, cov:103, met:null, cat:'carbon-gp',  col:6, row:3 },
   17: { sym:'Cl', name:'Chlorine',   emp:100, calc:79,  vdw:175, cov:99,  met:null, cat:'halogen',   col:7, row:3 },
   18: { sym:'Ar', name:'Argon',      emp:71,  calc:71,  vdw:188, cov:96,  met:null, cat:'noble',     col:8, row:3 },
   19: { sym:'K',  name:'Potassium',  emp:220, calc:243, vdw:275, cov:196, met:227,  cat:'alkali',    col:1, row:4 },
@@ -2419,6 +2412,22 @@ const ELEMENT_DATA = {
   34: { sym:'Se', name:'Selenium',   emp:115, calc:103, vdw:190, cov:116, met:null, cat:'nonmetal',  col:0, row:0 },
   35: { sym:'Br', name:'Bromine',    emp:115, calc:94,  vdw:185, cov:114, met:null, cat:'halogen',   col:7, row:4 },
   36: { sym:'Kr', name:'Krypton',    emp:null,calc:88,  vdw:202, cov:117, met:null, cat:'noble',     col:8, row:4 },
+  37: { sym:'Rb', name:'Rubidium',   emp:248, calc:265, vdw:303, cov:220, met:235, cat:'alkali',    col:0, row:0 },
+  38: { sym:'Sr', name:'Strontium',  emp:215, calc:219, vdw:249, cov:195, met:215, cat:'alkaline',  col:0, row:0 },
+  49: { sym:'In', name:'Indium',     emp:155, calc:156, vdw:193, cov:142, met:167, cat:'post-trans',col:0, row:0 },
+  50: { sym:'Sn', name:'Tin',        emp:145, calc:145, vdw:217, cov:139, met:141, cat:'carbon-gp', col:0, row:0 },
+  51: { sym:'Sb', name:'Antimony',   emp:145, calc:133, vdw:206, cov:139, met:null,cat:'metalloid', col:0, row:0 },
+  52: { sym:'Te', name:'Tellurium',  emp:140, calc:123, vdw:206, cov:138, met:null,cat:'nonmetal',  col:0, row:0 },
+  53: { sym:'I',  name:'Iodine',     emp:140, calc:115, vdw:198, cov:139, met:null,cat:'halogen',   col:0, row:0 },
+  54: { sym:'Xe', name:'Xenon',      emp:null,calc:108, vdw:216, cov:140, met:null,cat:'noble',     col:0, row:0 },
+  55: { sym:'Cs', name:'Caesium',    emp:265, calc:298, vdw:343, cov:244, met:265, cat:'alkali',    col:0, row:0 },
+  56: { sym:'Ba', name:'Barium',     emp:215, calc:253, vdw:268, cov:215, met:224, cat:'alkaline',  col:0, row:0 },
+  81: { sym:'Tl', name:'Thallium',   emp:190, calc:156, vdw:196, cov:145, met:170, cat:'post-trans',col:0, row:0 },
+  82: { sym:'Pb', name:'Lead',       emp:180, calc:154, vdw:202, cov:146, met:175, cat:'carbon-gp', col:0, row:0 },
+  83: { sym:'Bi', name:'Bismuth',    emp:160, calc:143, vdw:207, cov:148, met:154, cat:'post-trans',col:0, row:0 },
+  84: { sym:'Po', name:'Polonium',   emp:190, calc:135, vdw:197, cov:140, met:null,cat:'metalloid', col:0, row:0 },
+  85: { sym:'At', name:'Astatine',   emp:null,calc:127, vdw:202, cov:150, met:null,cat:'halogen',   col:0, row:0 },
+  86: { sym:'Rn', name:'Radon',      emp:null,calc:120, vdw:220, cov:150, met:null,cat:'noble',     col:0, row:0 },
 };
 
 // ─── Atomic radii in pm (main-group / non-transition metals only) ─────────────
@@ -2525,6 +2534,24 @@ const SHELL_RADII_PM = {
   34: [ 2,   7,  37, 147],
   35: [ 2,   7,  34, 132],
   36: [ 1,   7,  32, 120],
+  // Period 5 main-group (Slater's rules; n=4 shell includes 4d for In–Xe)
+  37: [ 1,   6,  30, 105, 601],
+  38: [ 1,   6,  28,  94, 464],
+  49: [ 1,   5,  17,  86, 348],
+  50: [ 1,   5,  17,  78, 297],
+  51: [ 1,   5,  16,  71, 259],
+  52: [ 1,   5,  15,  66, 230],
+  53: [ 1,   4,  15,  61, 207],
+  54: [ 1,   4,  14,  57, 188],
+  // Period 6 main-group (n=4 shell includes 4f; n=5 shell includes 5d for Tl–Rn)
+  55: [ 1,   4,  14,  53, 164, 865],
+  56: [ 1,   4,  14,  50, 146, 668],
+  81: [ 1,   3,   8,  28, 134, 501],
+  82: [ 1,   3,   8,  27, 122, 428],
+  83: [ 1,   3,   8,  26, 112, 373],
+  84: [ 1,   3,   8,  25, 103, 331],
+  85: [ 1,   3,   7,  25,  96, 298],
+  86: [ 1,   3,   7,  24,  89, 270],
 };
 
 // First ionization energies in eV (neutral atoms), used for force value labels
@@ -2540,7 +2567,7 @@ const IE_EV = {
   49: 5.786, 50: 7.344, 51: 8.608, 52: 9.010, 53:10.451, 54:12.130,
   55: 3.894, 56: 5.212,
   72: 6.825, 73: 7.550, 74: 7.864, 75: 7.833, 76: 8.438, 77: 8.967, 78: 8.959, 79: 9.226, 80:10.438,
-  81: 6.108, 82: 7.417, 83: 7.286, 84: 8.418, 85: 9.500, 86:10.745,
+  81: 6.108, 82: 7.417, 83: 7.286, 84: 8.418, 85: 9.316, 86:10.749,
 };
 
 function fmtNNLabel(nN) {
@@ -2554,7 +2581,7 @@ let shellBaseR = 15;  // px per pm — controls visual scale of all shells
 let radiusMode = 'covalent'; // 'covalent' | 'vdw'
 let showGrid   = false;
 let gridType   = 'square'; // 'square' | 'radial'
-let showForceValues = false;
+let showForceValues = true;
 
 function _drawGrid(ctx, nucX, nucY, wxMin, wxMax, wyMin, wyMax) {
   if (!showGrid) return;
@@ -2778,21 +2805,30 @@ function stepElectronsShells() {
       continue;
     }
 
-    // Nuclear attraction — amplified for grabbed electrons so return is visibly animated
+    // Nuclear attraction — amplified for grabbed electrons so return is visibly animated.
+    // No Z factor: large-Z atoms have proportionally large shellR and d, so acceleration
+    // is already consistent across atom sizes via shellR²/d². eIonDistMult makes snap-back
+    // time proportional to the ionization distance (larger IE dist → softer return).
     const pullMult = e._pull || 1;
-    const fMag = FREE_PULL_NORM * pullMult * shellR * shellR * Math.max(customZ, 1) / (d * d);
+    const fMag = FREE_PULL_NORM * pullMult * shellR * shellR * eIonDistMult / (d * d);
     e.freeVX += fMag * dx / d;
     e.freeVY += fMag * dy / d;
     e.freeVX *= 0.94;
     e.freeVY *= 0.94;
     e.freeX  += e.freeVX;
     e.freeY  += e.freeVY;
-    // Snap back when within shell radius of target shell
-    if (Math.abs(d - shellR) < shellR || d <= animParent.sphereR * 1.5) {
-      e.angle        = Math.atan2(e.freeY - cy, e.freeX - cx);
-      e.radialOffset = 0;
-      e.dAngle       = SHELL_BASE_DA * (Math.random() > 0.5 ? 1 : -1);
-      e.dRadial      = 0;
+    // Snap to shell mode when electron is close to the ring
+    const ndx = e.freeX - cx, ndy = e.freeY - cy;
+    const d2  = Math.sqrt(ndx * ndx + ndy * ndy);
+    if (Math.abs(d2 - shellR) < shellR * 0.22 || d2 <= animParent.sphereR * 1.5) {
+      const ssc = 1 + e.shell * 0.5;
+      const hw  = eShellBandHW + shellR * 0.5;
+      const vr  = (e.freeVX * ndx + e.freeVY * ndy) / Math.max(d2, 1);
+      const vt  = (-e.freeVX * ndy + e.freeVY * ndx) / Math.max(d2, 1);
+      e.angle        = Math.atan2(ndy, ndx);
+      e.radialOffset = Math.max(-hw * 0.85 * ssc, Math.min(hw * 0.85 * ssc, d2 - shellR));
+      e.dAngle       = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, vt / Math.max(shellR, 1)));
+      e.dRadial      = Math.max(-hw * 0.25 * ssc, Math.min(hw * 0.25 * ssc, vr));
       e.free         = false;
       delete e.freeX; delete e.freeY; delete e.freeVX; delete e.freeVY;
       delete e._pull;
@@ -2997,11 +3033,13 @@ function fvArrowOnCtx(c, fromX, fromY, nx, ny, len, color, lw, headLen) {
 
 // Horizontal camera shift so nucleus centers in the space left of the force panel.
 function getCameraShiftX() {
+  const EP = energyBarCv.offsetWidth || 180;
+  let shift = EP / 2 + 60;
   if (currentTab === 'shells') {
     const panelW = forceVizPanelEl.offsetWidth || 424;
-    return -(panelW + 20) / 2 - 200;
+    shift += -(panelW + 20) / 2 - 200;
   }
-  return 0;
+  return shift;
 }
 
 function syncForceVizCanvasSize() {
@@ -3020,9 +3058,8 @@ function syncForceVizVisibility() {
   const showFV = arrowMode > 0 && (currentTab === 'shells');
   forceVizPanelEl.style.display = showFV ? 'block' : 'none';
   const _isShells = currentTab === 'shells';
-  document.getElementById('showForcesBtn').style.display  = (!arrowMode && _isShells) ? '' : 'none';
-  document.getElementById('forceActiveCtrl').style.display = (arrowMode > 0 && grabWireMode === 'grab' && _isShells) ? 'flex' : 'none';
-  document.getElementById('forceValuesLabel').style.display = (arrowMode > 0) ? '' : 'none';
+  document.getElementById('showForcesBtn').style.display = (!arrowMode && _isShells) ? '' : 'none';
+  document.getElementById('hideForcesBtn').style.display = (arrowMode > 0 && _isShells) ? '' : 'none';
   if (showFV) { syncForceVizCanvasSize(); drawForceViz(); }
   draw();
 }
@@ -3221,23 +3258,6 @@ function drawForceVizShell() {
     }
   }
 
-  // ── IE bar for wire mode ─────────────────────────────────────────────────
-  if (grabWireMode === 'wire' && electrons.length) {
-    const valShell = Math.max(...electrons.map(e => e.shell));
-    const neutralValence = NEUTRAL_VALENCE_COUNT[customZ] || 1;
-    const currentValence = electrons.filter(e => e.shell === valShell).length;
-    const ionNum  = Math.max(0, neutralValence - currentValence);
-    const ieTable = SEQUENTIAL_IE_EV[customZ] || [10];
-    const ionEV   = ieTable[Math.min(ionNum, ieTable.length - 1)];
-    const barColor = IE_BAR_COLORS[Math.min(ionNum, IE_BAR_COLORS.length - 1)];
-    const ordinal  = ['IE₁','IE₂','IE₃','IE₄'][Math.min(ionNum, 3)];
-    // Wire charge drives bar: full at first ejection threshold
-    const wireFrac = Math.min(1, wireCharge / WIRE_EJECT_THRESH1);
-    const workEV   = ionEV * wireFrac;
-    fvc.save();
-    _drawIEBar(fvc, W, H, ionEV, workEV, barColor, ordinal);
-    fvc.restore();
-  }
 }
 
 function drawForceVizElectron() {
@@ -3321,16 +3341,26 @@ function drawForceVizElectron() {
   const _FieNN  = _ie ? _ie / _rValPm * 160.2 : null;
   const _FcVal  = eK * Math.max(customZ, 1) / (_rValPx * _rValPx);
 
-  function arrowLen(f, fieNN, fcVal) {
-    const rawLen = Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp));
-    if (!fieNN) return rawLen;
-    const fNN = f / fcVal * fieNN;
-    const T = 0.1 * fieNN;
-    return fNN < T ? rawLen * (fNN / T) : rawLen;
+  // Shrink arrows/text as electron approaches ionization distance.
+  // Zero at _fAtIon (force at ionDist); full at 4× that (= half the spatial distance to ionDist).
+  // Both thresholds scale with eIonDistMult so the shrink zone grows proportionally with ionDist.
+  const _ionDist   = shellR * 8 * eIonDistMult;
+  const _fAtIon    = eK * Math.max(customZ, 1) / (_ionDist * _ionDist);
+  const _fAtIonNN  = (_FieNN && _FcVal) ? _fAtIon / _FcVal * _FieNN : 0;
+  const _fNN       = (_FieNN && _FcVal) ? fNuc    / _FcVal * _FieNN : Infinity;
+  // Update nuclear value smoother early so textFade can use it
+  if (_fvValueNucSmooth === null) _fvValueNucSmooth = _fNN === Infinity ? 0 : _fNN;
+  else _fvValueNucSmooth += ((_fNN === Infinity ? _fvValueNucSmooth : _fNN) - _fvValueNucSmooth) * FV_LABEL_LAG;
+  const distFade   = (_fAtIonNN > 0 && _FieNN > _fAtIonNN)
+    ? (_fNN >= _FieNN ? 1 : _fNN <= _fAtIonNN ? 0 : (_fNN - _fAtIonNN) / (_FieNN - _fAtIonNN))
+    : Math.max(0, 1 - Math.max(0, distN - shellR) / Math.max(1, _ionDist - shellR));
+
+  function arrowLen(f) {
+    return Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp)) * distFade;
   }
 
   const maxHead = MAX_LEN * 0.12;
-  const nucArrowLen = arrowLen(fNuc, _FieNN, _FcVal);
+  const nucArrowLen = arrowLen(fNuc);
   fvArrowOnCtx(fvc, ePx, ePy, nxN, nyN, nucArrowLen, FV_NUC_COLOR, 3, Math.min(maxHead, nucArrowLen * 0.4));
 
   // Smooth label positions toward arrow tips (molasses lag)
@@ -3341,7 +3371,7 @@ function drawForceVizElectron() {
 
   if (fRep > 0.001) {
     const nxR = frex / fRep, nyR = frey / fRep;
-    const repArrowLen = arrowLen(fRep, _FieNN, _FcVal);
+    const repArrowLen = arrowLen(fRep);
     fvArrowOnCtx(fvc, ePx, ePy, nxR, nyR, repArrowLen, FV_REP_COLOR, 3, Math.min(maxHead, repArrowLen * 0.4));
 
     const _repTarget = { x: ePx + nxR * (repArrowLen + 8), y: ePy + nyR * (repArrowLen + 8) };
@@ -3349,40 +3379,43 @@ function drawForceVizElectron() {
     else { _fvLabelRepSmooth.x += (_repTarget.x - _fvLabelRepSmooth.x) * FV_LABEL_LAG;
            _fvLabelRepSmooth.y += (_repTarget.y - _fvLabelRepSmooth.y) * FV_LABEL_LAG; }
 
-    if (showForceValues && _FieNN) {
-      fvc.save();
-      fvc.font = 'bold 9px Lexend, sans-serif';
+    // Smooth the repulsion value (nuclear already smoothed above)
+    const _rawRepNN = fRep / _FcVal * _FieNN;
+    if (_fvValueRepSmooth === null) _fvValueRepSmooth = _rawRepNN;
+    else _fvValueRepSmooth += (_rawRepNN - _fvValueRepSmooth) * FV_LABEL_LAG;
+
+    if (showForceValues && _FieNN && distFade > 0) {
+      const _fontSize = Math.max(1, Math.round(20 * Math.min(1, distFade / 0.1)));
+      fvc.font = `bold ${_fontSize}px Lexend, sans-serif`;
       fvc.textBaseline = 'middle';
-      const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
+      const nucLabel = fmtNNLabel(_fvValueNucSmooth);
       if (nucLabel) {
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, _fvLabelNucSmooth.x, _fvLabelNucSmooth.y);
       }
-      const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
+      const repLabel = fmtNNLabel(_fvValueRepSmooth);
       if (repLabel) {
         fvc.fillStyle = FV_REP_COLOR;
         fvc.textAlign = nxR > 0.3 ? 'left' : nxR < -0.3 ? 'right' : 'center';
         fvc.fillText(repLabel, _fvLabelRepSmooth.x, _fvLabelRepSmooth.y);
       }
-      fvc.restore();
     }
   } else {
-    _fvLabelRepSmooth = null; // reset when no repulsion
+    _fvLabelRepSmooth = null; _fvValueRepSmooth = null; // reset when no repulsion
     fvc.fillStyle = 'rgba(0,238,255,0.3)';
     fvc.font = '11px Lexend, sans-serif';
     fvc.textAlign = 'center'; fvc.textBaseline = 'top';
     fvc.fillText('(no other electrons)', panelCx, H - 38);
 
-    if (showForceValues && _FieNN) {
-      fvc.save();
-      fvc.font = 'bold 9px Lexend, sans-serif';
+    if (showForceValues && _FieNN && distFade > 0) {
+      const _fontSize = Math.max(1, Math.round(20 * Math.min(1, distFade / 0.1)));
+      fvc.font = `bold ${_fontSize}px Lexend, sans-serif`;
       fvc.fillStyle = FV_NUC_COLOR;
       fvc.textAlign = nxN > 0.3 ? 'left' : nxN < -0.3 ? 'right' : 'center';
       fvc.textBaseline = 'middle';
-      const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
+      const nucLabel = fmtNNLabel(_fvValueNucSmooth);
       if (nucLabel) fvc.fillText(nucLabel, _fvLabelNucSmooth.x, _fvLabelNucSmooth.y);
-      fvc.restore();
     }
   }
 
@@ -3395,63 +3428,123 @@ function drawForceVizElectron() {
   fvc.fillText('Arrow lengths are scaled so all forces stay visible.', W / 2, H - 1);
   fvc.restore();
 
-  // ── Work / ionization energy bar — valence shell only ────────────────────
-  const valenceShell = electrons.length ? Math.max(...electrons.map(e => e.shell)) : -1;
-  if (se.shell !== valenceShell) return; // no bar for inner-shell electrons
-
-  // Which ionization are we on? (0-indexed: 0=first, 1=second, ...)
-  const neutralValence  = NEUTRAL_VALENCE_COUNT[customZ] || 1;
-  const currentValence  = electrons.filter(e => e.shell === valenceShell).length;
-  const ionNum          = Math.max(0, neutralValence - currentValence);
-  const ieTable         = SEQUENTIAL_IE_EV[customZ] || [10];
-  const ionEV           = ieTable[Math.min(ionNum, ieTable.length - 1)];
-  const barColor        = IE_BAR_COLORS[Math.min(ionNum, IE_BAR_COLORS.length - 1)];
-
-  const ordinal = ['IE₁','IE₂','IE₃','IE₄'][Math.min(ionNum, 3)];
-
-  // Asymptotic: W = IE × (1 − r₀/r), approaches IE as r → ∞
-  const fraction = Math.max(0, 1 - shellR / distN);
-  const workEV   = ionEV * fraction;
-
-  fvc.save();
-  _drawIEBar(fvc, W, H, ionEV, workEV, barColor, ordinal);
-  fvc.restore();
 }
 
-function _drawIEBar(fvc, W, H, ionEV, workEV, barColor, ordinal) {
-  // Constant 50 eV scale; autoscale above if IE > 50
-  const BAR_SCALE = Math.max(50, ionEV);
-  const fraction  = ionEV > 0 ? workEV / ionEV : 0; // how full (0–1)
-  const fillFrac  = workEV / BAR_SCALE;        // fill height relative to bar
+function drawEnergyBarPanel() {
+  const _epEl = document.getElementById('energyBarPanel');
+  const pw = _epEl.offsetWidth || 180, ph = _epEl.offsetHeight || window.innerHeight;
+  if (energyBarCv.width !== pw)  energyBarCv.width  = pw;
+  if (energyBarCv.height !== ph) energyBarCv.height = ph;
+  const W = energyBarCv.width, H = energyBarCv.height;
+  if (!W || !H) return;
+  const epc = energyBarCv.getContext('2d');
+  epc.clearRect(0, 0, W, H);
 
-  const barW   = 26, barPad = 8;
-  const barX   = W - barW - barPad;
-  const barTop = 24, barBot = H - 32;
-  const barH   = barBot - barTop;
-  const fillH  = barH * fillFrac;
+  // Panel background
+  epc.fillStyle = 'rgba(4,3,20,0.92)';
+  epc.fillRect(0, 0, W, H);
 
-  // Track background
-  fvc.fillStyle = 'rgba(255,255,255,0.07)';
-  fvc.fillRect(barX, barTop, barW, barH);
+  // Right border glow
+  epc.save();
+  epc.shadowColor = 'rgba(120,100,255,0.4)'; epc.shadowBlur = 14;
+  epc.strokeStyle = 'rgba(120,100,255,0.22)'; epc.lineWidth = 1;
+  epc.beginPath(); epc.moveTo(W - 0.5, 0); epc.lineTo(W - 0.5, H); epc.stroke();
+  epc.restore();
 
-  // Solid fill
-  if (fillH > 0) {
-    fvc.fillStyle = barColor;
-    fvc.fillRect(barX, barBot - fillH, barW, fillH);
+  // Compute workEV for active electron (drag, free, or selected)
+  const ionEV = IE_EV[customZ] || 0;
+  let workEV = 0;
+  const freeIdx = electrons.findIndex(e => e.free);
+  const activeIdx = _draggedElectronIdx >= 0 ? _draggedElectronIdx : freeIdx >= 0 ? freeIdx : -1;
+  if (activeIdx >= 0 && activeIdx < electrons.length && animParent) {
+    const se = electrons[activeIdx];
+    const cx = animParent.cx, cy = animParent.cy;
+    const shellR = getShellRadius(se.shell);
+    let distN;
+    if (_draggedElectronIdx === activeIdx && _draggedPos) {
+      distN = Math.sqrt((_draggedPos.x - cx) ** 2 + (_draggedPos.y - cy) ** 2);
+    } else {
+      distN = Math.sqrt((se.freeX - cx) ** 2 + (se.freeY - cy) ** 2);
+    }
+    const _ionDist = shellR * 8 * eIonDistMult;
+    const _ionFrac = 1 - shellR / _ionDist;
+    const fraction = Math.max(0, 1 - shellR / distN);
+    workEV = _ionFrac > 0 ? ionEV * Math.min(1, fraction / _ionFrac) : 0;
   }
 
-  // Current work value label at top of fill
-  if (fillH > 10 && workEV > 0.05) {
-    fvc.save();
-    fvc.font = 'bold 9px Lexend, sans-serif';
-    fvc.fillStyle = 'rgba(255,255,255,0.9)';
-    fvc.textAlign = 'center';
-    fvc.textBaseline = 'bottom';
-    fvc.fillText(workEV.toFixed(1), barX + barW / 2, barBot - fillH - 1);
-    fvc.restore();
+  // Layout
+  const tbH = document.getElementById('toolbar').offsetHeight || 48;
+  const titleY = tbH + 14;
+  const padB = 52;   // label area below baseline
+  const padT = tbH + 28;
+  const barAreaH = H - padT - padB;
+  const baseline = padT + barAreaH;
+  const BAR_SCALE = 25;
+  const barPx = Math.max(0, Math.min(barAreaH, (workEV / BAR_SCALE) * barAreaH));
+  const bw = 104, bx = (W - bw) / 2;
+  const barTop = baseline - barPx;
+  const r = Math.min(6, bw / 2, Math.max(barPx, 1) / 2);
+
+  // Grid lines every 5 eV (0, 5, 10, 15, 20, 25)
+  epc.save();
+  for (let ev = 0; ev <= BAR_SCALE; ev += 5) {
+    const py = baseline - (ev / BAR_SCALE) * barAreaH;
+    if (py < padT - 2) break;
+    const isBase = ev === 0;
+    epc.strokeStyle = isBase ? 'rgba(120,100,255,0.55)' : 'rgba(120,100,255,0.2)';
+    epc.lineWidth   = isBase ? 2 : 1;
+    epc.shadowColor = isBase ? 'rgba(120,100,255,0.7)' : 'rgba(0,0,0,0)';
+    epc.shadowBlur  = isBase ? 6 : 0;
+    epc.beginPath(); epc.moveTo(10, py); epc.lineTo(W - 10, py); epc.stroke();
+    if (ev > 0) {
+      epc.shadowBlur = 0;
+      epc.fillStyle = 'rgba(160,140,255,0.35)';
+      epc.font = '8px Lexend, sans-serif';
+      epc.textAlign = 'left'; epc.textBaseline = 'middle';
+      epc.fillText(ev + ' eV', W - bx + 2, py);
+    }
+  }
+  epc.restore();
+
+  // Bar
+  if (barPx > 0) {
+    const color = '#7b6fff', glow = 'rgba(120,100,255,0.9)';
+    epc.save(); epc.fillStyle = color; epc.globalAlpha = 0.18;
+    epc.beginPath(); epc.roundRect(bx, barTop, bw, barPx, [r, r, 2, 2]); epc.fill(); epc.restore();
+    epc.save(); epc.shadowColor = glow; epc.shadowBlur = 22; epc.strokeStyle = color; epc.lineWidth = 3; epc.globalAlpha = 0.5;
+    epc.beginPath(); epc.roundRect(bx, barTop, bw, barPx, [r, r, 2, 2]); epc.stroke(); epc.restore();
+    epc.save(); epc.shadowColor = glow; epc.shadowBlur = 6; epc.strokeStyle = color; epc.lineWidth = 2;
+    epc.beginPath(); epc.roundRect(bx, barTop, bw, barPx, [r, r, 2, 2]); epc.stroke(); epc.restore();
+    // Value above bar
+    if (workEV > 0.05) {
+      epc.save();
+      epc.shadowColor = glow; epc.shadowBlur = 6;
+      epc.fillStyle = '#7b6fff'; epc.font = 'bold 12px Lexend, sans-serif';
+      epc.textAlign = 'center'; epc.textBaseline = 'bottom';
+      epc.fillText(workEV.toFixed(1) + ' eV', W / 2, barTop - 3);
+      epc.restore();
+    }
   }
 
+  // Label below baseline
+  epc.save();
+  epc.font = 'bold 14px Lexend, sans-serif';
+  epc.fillStyle = 'rgba(120,100,255,0.65)';
+  epc.shadowColor = 'rgba(120,100,255,0.4)'; epc.shadowBlur = 6;
+  epc.textAlign = 'center'; epc.textBaseline = 'top';
+  epc.fillText('Energy', W / 2, baseline + 8);
+  epc.fillText('in Fields', W / 2, baseline + 24);
+  epc.restore();
+
+  // Panel title
+  epc.save();
+  epc.font = '10px Lexend, sans-serif';
+  epc.fillStyle = 'rgba(160,140,255,0.45)';
+  epc.textAlign = 'center'; epc.textBaseline = 'middle';
+  epc.fillText('energy in fields', W / 2, titleY);
+  epc.restore();
 }
+
 
 function drawForceViz() {
   if (currentTab !== 'shells') return;
@@ -3761,8 +3854,8 @@ function drawWire(ctx) {
 function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  if (currentTab === 'orbit3d') { drawOrbit3D(ctx); return; }
-  if (!animParent) { drawEnergyGraph(); return; }
+  if (currentTab === 'orbit3d') { drawOrbit3D(ctx); drawEnergyBarPanel(); return; }
+  if (!animParent) { drawEnergyGraph(); drawEnergyBarPanel(); return; }
 
   ctx.save();
   const _W = canvas.width, _H = canvas.height;
@@ -3808,16 +3901,14 @@ function draw() {
   }
   if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
   if (showParticles) drawParticles(animParent.particles, 1);
-
-  if (currentTab === 'trails') drawShellRings(ctx);
-  if (currentTab === 'trails') drawElectrons(ctx);
-  else drawElectronsShells(ctx);
+  drawElectronsShells(ctx);
 
   ctx.restore();
   drawWire(ctx);
   drawEnergyGraph();
   updateParticleCounters();
   drawForceViz();
+  drawEnergyBarPanel();
 }
 
 // ─── Particle counter + mass ───────────────────────────────────────────────────
@@ -3964,8 +4055,7 @@ document.getElementById('energyGraphToggle').addEventListener('click', function(
 let idleParticleRAF = null;
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
-  if (currentTab === 'trails') stepElectrons();
-  else if (currentTab === 'orbit3d') { if (!orb3dPaused) stepOrbit3D(); }
+  if (currentTab === 'orbit3d') { if (!orb3dPaused) stepOrbit3D(); }
   else { stepElectronsShells(); stepWireEjecting(); }
   if (animParent || currentTab === 'orbit3d') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
@@ -3979,7 +4069,9 @@ let fvShellMode = false;
 let selectedElectronIdx = -1;
 let _fvLabelNucSmooth = null;
 let _fvLabelRepSmooth = null;
-const FV_LABEL_LAG = 0.07;
+let _fvValueNucSmooth = null;
+let _fvValueRepSmooth = null;
+const FV_LABEL_LAG = 0.03;
 let _draggedElectronIdx = -1;
 let _draggedPos = null;
 let _eDragMoved = false;
@@ -3988,9 +4080,11 @@ let grabWireMode = 'grab'; // 'grab' | 'wire'
 const FREE_PULL_NORM = 0.55; // produces ~80 frame return from 2× shell radius for H
 
 function syncElemBtnActive() {
-  document.querySelectorAll('.elem-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.z) === customZ);
-  });
+  const sel = document.getElementById('elemSelect');
+  if (!sel) return;
+  for (const opt of sel.options) {
+    if (parseInt(opt.value) === customZ) { sel.value = opt.value; return; }
+  }
 }
 let selectedShell = -1;
 let _fvPrevSr      = -1;
@@ -4030,8 +4124,7 @@ document.getElementById('radiusModeSelect').addEventListener('change', function 
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
-  document.getElementById('forceCtrlBox').style.display = hideForce ? 'none' : '';
+  document.getElementById('forceCtrlBox').style.display = (currentTab === 'orbit3d') ? 'none' : '';
 }
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
@@ -4091,13 +4184,7 @@ function _syncGrabWireMode() {
   // Show/hide wire key in force legend
   const keyEl = document.getElementById('fvKeyWire');
   if (keyEl) keyEl.style.display = (isWire && wireCharge > 0) ? 'flex' : 'none';
-  // In wire mode always use shell view
-  if (isWire) { fvShellMode = true; }
-  // In grab mode use electron view by default
-  else {
-    fvShellMode = false;
-    document.querySelectorAll('[data-fvmode]').forEach(b => b.classList.toggle('active', b.dataset.fvmode === 'electron'));
-  }
+  fvShellMode = false;
   document.querySelectorAll('[data-gwmode]').forEach(b => b.classList.toggle('active', b.dataset.gwmode === grabWireMode));
   syncForceVizVisibility();
 }
@@ -4176,6 +4263,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   bind('slTrail',  'slTrailVal',  v => { eTrailLen = Math.round(v); for (const e of electrons) { if (e.trail.length > eTrailLen) e.trail.splice(0, e.trail.length - eTrailLen); } }, v => Math.round(v));
   bind('slBaseR',  'slBaseRVal',  v => { shellBaseR  = v; }, v => v.toFixed(0));
   bind('slElectronDot', 'slElectronDotVal', v => { electronDotR = v; }, v => v.toFixed(1));
+  bind('slIonDist',     'slIonDistVal',     v => { eIonDistMult = v; applyAutoScale(true); }, v => v.toFixed(2));
   bind('slFvExp', 'slFvExpVal', v => { fvArrowExp = v; drawForceViz(); }, v => v.toFixed(2));
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
@@ -4229,42 +4317,85 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     syncOrb3dShellSliders();
   };
   syncShellDevSliders();
-  // ─── Element picker grid ─────────────────────────────────────────────────────
-  const ELEM_DATA = Object.entries(ELEMENT_DATA)
-    .filter(([,d]) => d.col > 0)
-    .map(([z,d]) => [+z, d.sym, d.name, d.cat, d.col, d.row]);
-  const elemGrid = document.getElementById('elemGrid');
-  for (const [z, sym, name, cat, col, row] of ELEM_DATA) {
-    const btn = document.createElement('button');
-    btn.className = `elem-btn ${cat}`;
-    btn.dataset.z = z;
-    btn.style.gridColumn = col;
-    btn.style.gridRow = row;
-    btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
-    btn.addEventListener('click', () => {
-      const _prevSr = _fvEffectiveSr;
-      const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
-        ? electrons[selectedElectronIdx].angle : null;
-      _fvLabelNucSmooth = null;
-      _fvLabelRepSmooth = null;
-      selectedElectronIdx = -1;
-      setNucleusFromZ(z);
-      if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-      autoSelectOuterShell(_prevSr, _prevAngle);
-      applyAutoScale();
-      syncShellDevSliders();
-      syncElemBtnActive();
-    });
-    elemGrid.appendChild(btn);
+  // ─── Element picker (search + select) ────────────────────────────────────────
+  const _MAIN_GROUP_Z = [
+    1,2,3,4,5,6,7,8,9,10,
+    11,12,13,14,15,16,17,18,
+    19,20,31,32,33,34,35,36,
+    37,38,49,50,51,52,53,54,
+    55,56,81,82,83,84,85,86
+  ];
+  const _ALL_ELEMS = _MAIN_GROUP_Z
+    .filter(z => ELEMENT_DATA[z])
+    .map(z => ({ z, ...ELEMENT_DATA[z] }));
+
+  const elemSearch = document.getElementById('elemSearch');
+  const elemSelect = document.getElementById('elemSelect');
+
+  function _filterElems(q) {
+    const t = q.trim().toLowerCase();
+    if (!t) return _ALL_ELEMS;
+    if (/^\d/.test(t)) return _ALL_ELEMS.filter(e => String(e.z).startsWith(t));
+    return _ALL_ELEMS.filter(e =>
+      e.sym.toLowerCase().startsWith(t) || e.name.toLowerCase().startsWith(t)
+    );
   }
+
+  function _populateElemSelect(q) {
+    const list = _filterElems(q || '');
+    elemSelect.innerHTML = '';
+    for (const e of list) {
+      const opt = document.createElement('option');
+      opt.value = e.z;
+      opt.textContent = `${String(e.z).padStart(2)}  ${e.sym.padEnd(3)}  ${e.name}`;
+      elemSelect.appendChild(opt);
+    }
+    syncElemBtnActive();
+  }
+
+  function _clearFreeElectrons() {
+    electrons.forEach(e => {
+      e.free = false; e.ionized = false;
+      delete e.freeX; delete e.freeY; delete e.freeVX; delete e.freeVY; delete e._pull;
+    });
+  }
+
+  function _applyElem(z) {
+    if (!z) return;
+    const _prevSr = _fvEffectiveSr;
+    const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
+      ? electrons[selectedElectronIdx].angle : null;
+    _fvLabelNucSmooth = null; _fvLabelRepSmooth = null;
+    _fvValueNucSmooth = null; _fvValueRepSmooth = null;
+    selectedElectronIdx = -1;
+    _clearFreeElectrons();
+    setNucleusFromZ(z);
+    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
+    autoSelectOuterShell(_prevSr, _prevAngle);
+    applyAutoScale();
+    syncShellDevSliders();
+    syncElemBtnActive();
+  }
+
+  elemSearch.addEventListener('input', () => _populateElemSelect(elemSearch.value));
+  elemSearch.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { elemSelect.focus(); e.preventDefault(); }
+    if (e.key === 'Enter' && elemSelect.options.length > 0) {
+      _applyElem(parseInt(elemSelect.options[0].value));
+      elemSearch.value = ''; _populateElemSelect('');
+    }
+  });
+  elemSelect.addEventListener('change', () => _applyElem(parseInt(elemSelect.value)));
+
+  _populateElemSelect('');
   syncElemBtnActive();
 
-  document.getElementById('addElectronBtn').addEventListener('click', () => {
+  document.getElementById('addElectronBtn')?.addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     addElectron();
     syncShellDevSliders();
   });
-  document.getElementById('removeElectronBtn').addEventListener('click', () => {
+  document.getElementById('removeElectronBtn')?.addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
     removeElectron();
     syncShellDevSliders();
@@ -4281,6 +4412,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     const _prevSr = _fvEffectiveSr;
     const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
       ? electrons[selectedElectronIdx].angle : null;
+    _clearFreeElectrons();
     setNucleusFromZ(v);
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
     autoSelectOuterShell(_prevSr, _prevAngle);
@@ -4291,6 +4423,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     const _prevSr = _fvEffectiveSr;
     const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
       ? electrons[selectedElectronIdx].angle : null;
+    _clearFreeElectrons();
     setNucleusFromZ(parseInt(this.value));
     if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
     autoSelectOuterShell(_prevSr, _prevAngle);
@@ -4501,12 +4634,14 @@ canvas.addEventListener('mousedown', e => {
   if (grabWireMode !== 'grab' || fvShellMode || currentTab !== 'shells' || !animParent || !electrons.length) return;
   const { x: wx, y: wy } = _screenToWorld(e.clientX, e.clientY);
   const cx = animParent.cx, cy = animParent.cy;
+  const hasFree = electrons.some(e2 => e2.free);
   const valenceShell = Math.max(...electrons.map(e2 => e2.shell));
   const HIT_R = 60 / viewZoom;
   let best = -1, bestD2 = HIT_R * HIT_R;
   for (let i = 0; i < electrons.length; i++) {
     const ei = electrons[i];
-    if (ei.shell !== valenceShell) continue; // inner-shell electrons not grabbable
+    if (hasFree && !ei.free) continue; // if one is already out, only re-grab that one
+    if (!hasFree && ei.shell !== valenceShell) continue; // inner-shell electrons not grabbable
     let ex, ey;
     if (ei.free) { ex = ei.freeX; ey = ei.freeY; }
     else { const r = getShellRadius(ei.shell) + (ei.radialOffset || 0); ex = cx + Math.cos(ei.angle) * r; ey = cy + Math.sin(ei.angle) * r; }
@@ -4538,7 +4673,7 @@ window.addEventListener('mouseup', e => {
     const ddx = _draggedPos.x - cx, ddy = _draggedPos.y - cy;
     const d = Math.sqrt(ddx * ddx + ddy * ddy);
     const shellR = getShellRadius(el.shell);
-    if (d > shellR * 8) {
+    if (d > shellR * 8 * eIonDistMult) {
       // Past ionization distance — electron escapes, does not return
       el.free  = true;
       el.freeX = _draggedPos.x;
@@ -4589,26 +4724,32 @@ canvas.addEventListener('click', e => {
       ? _closestInShell(best, _prevAngle)
       : _rightmostInShell(best);
   } else {
-    const distFromNucleus = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
-    const SHELL_HIT_R = 40 / viewZoom;
-    const occupied = [...new Set(electrons.map(e => e.shell))];
-    let clickedShell = -1, bestShellD = SHELL_HIT_R;
-    for (const s of occupied) {
-      const d = Math.abs(distFromNucleus - getShellRadius(s));
-      if (d < bestShellD) { bestShellD = d; clickedShell = s; }
-    }
-    if (clickedShell >= 0) {
-      let best = -1, bestD2 = Infinity;
-      for (let i = 0; i < electrons.length; i++) {
-        if (electrons[i].shell !== clickedShell) continue;
-        const r = getShellRadius(clickedShell) + (electrons[i].radialOffset || 0);
-        let ex, ey;
-        if (electrons[i].free) { ex = electrons[i].freeX; ey = electrons[i].freeY; }
-        else { ex = cx + Math.cos(electrons[i].angle) * r; ey = cy + Math.sin(electrons[i].angle) * r; }
-        const d2 = (wx - ex) ** 2 + (wy - ey) ** 2;
-        if (d2 < bestD2) { bestD2 = d2; best = i; }
+    // If an electron is free, lock selection to it — don't allow clicking others
+    const freeIdx = electrons.findIndex(e2 => e2.free);
+    if (freeIdx >= 0) {
+      selectedElectronIdx = freeIdx;
+    } else {
+      const distFromNucleus = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
+      const SHELL_HIT_R = 40 / viewZoom;
+      const occupied = [...new Set(electrons.map(e => e.shell))];
+      let clickedShell = -1, bestShellD = SHELL_HIT_R;
+      for (const s of occupied) {
+        const d = Math.abs(distFromNucleus - getShellRadius(s));
+        if (d < bestShellD) { bestShellD = d; clickedShell = s; }
       }
-      selectedElectronIdx = best;
+      if (clickedShell >= 0) {
+        let best = -1, bestD2 = Infinity;
+        for (let i = 0; i < electrons.length; i++) {
+          if (electrons[i].shell !== clickedShell) continue;
+          const r = getShellRadius(clickedShell) + (electrons[i].radialOffset || 0);
+          let ex, ey;
+          if (electrons[i].free) { ex = electrons[i].freeX; ey = electrons[i].freeY; }
+          else { ex = cx + Math.cos(electrons[i].angle) * r; ey = cy + Math.sin(electrons[i].angle) * r; }
+          const d2 = (wx - ex) ** 2 + (wy - ey) ** 2;
+          if (d2 < bestD2) { bestD2 = d2; best = i; }
+        }
+        selectedElectronIdx = best;
+      }
     }
   }
 
@@ -4731,7 +4872,7 @@ initNuclei();
   // else stays 'hi-res' (default)
 }());
 
-setNucleusFromZ(10);
+setNucleusFromZ(16);
 syncNeutralElectrons();
 autoSelectOuterShell();
 applyAutoScale();
