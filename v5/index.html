@@ -791,7 +791,7 @@
     right: 20px;
     top: 40px;
     border-radius: 12px;
-    width: 357px;
+    width: 393px;
     height: 360px;
     background: rgba(8,6,24,0.90);
     border: 1px solid var(--accent2);
@@ -915,8 +915,8 @@
       <span id="protonSliderVal" style="display:none">16</span>
     </div>
 
-    <!-- Blue box: stacked sliders + electric field + particles + forces -->
-    <div class="ctrl-box-blue">
+    <!-- VISUALS box (grab mode) -->
+    <div class="ctrl-box-blue" id="visualsCtrlBox">
       <span class="ctrl-box-label ctrl-box-label-blue">VISUALS</span>
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch">
         <div class="slider-group" id="zoomSliderRow">
@@ -948,21 +948,15 @@
             <span class="field-label-electric">Grid</span>
           </label>
         </div>
-
       </div>
     </div>
 
-    <!-- Wire control box -->
-    <div class="ctrl-box-blue" id="wireCtrlBox" style="min-width:110px">
+    <!-- ELECTRODE box (wire mode) -->
+    <div class="ctrl-box-blue" id="wireCtrlBox" style="display:none">
       <span class="ctrl-box-label ctrl-box-label-blue" style="color:rgba(255,110,110,0.95)">ELECTRODE</span>
-      <div style="display:flex;flex-direction:column;gap:6px;align-self:stretch;justify-content:center">
-        <div class="slider-group">
-          <span class="slider-icon" style="font-size:12px;color:rgba(255,80,80,0.6)">○</span>
-          <input type="range" id="wireSlider" min="0" max="1" step="0.01" value="0" style="accent-color:rgba(255,80,80,0.85)">
-          <span class="slider-icon" style="font-size:13px;color:rgba(255,80,80,0.9)">⊕</span>
-        </div>
-        <div style="font-size:10px;color:rgba(255,100,100,0.65);text-align:center;letter-spacing:0.04em" id="wireChargeLabel">charge: 0%</div>
-        <button id="wireResetBtn" class="btn" style="font-size:10px;padding:2px 8px;background:rgba(255,80,80,0.10);border-color:rgba(255,80,80,0.35);color:rgba(255,110,110,0.9)">Reset atom</button>
+      <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch;align-items:center">
+        <canvas id="wireDialCanvas" width="80" height="80" style="cursor:pointer;touch-action:none;display:block"></canvas>
+        <div style="font-size:16px;font-weight:600;color:rgba(255,60,60,0.95);text-align:center;letter-spacing:0.03em;font-variant-numeric:tabular-nums;margin-top:-20px" id="wireChargeLabel">0.0 V</div>
       </div>
     </div>
 
@@ -1019,7 +1013,6 @@
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
     <span><span style="color:#00eeff">■</span><span style="color:#00eeff;text-shadow:0 0 4px #00eeff,0 0 10px rgba(0,238,255,0.5)">Repulsion from Electrons (electric)</span></span>
-    <span id="fvKeyWire" style="display:none"><span style="color:#ff4444">■</span><span style="color:#ff4444;text-shadow:0 0 4px #ff4444,0 0 10px rgba(255,60,60,0.5)">Force of positive electrode (electric)</span></span>
   </div>
   <canvas id="forceVizCanvas" width="333" height="180"></canvas>
 </div>
@@ -1624,9 +1617,7 @@ let electrons = [];
 
 // ─── Wire (positive charge source) ────────────────────────────────────────────
 let wireCharge = 0;              // 0–1 dial value
-const WIRE_K            = 0.008; // leftward angular force coefficient
-const WIRE_EJECT_THRESH1  = 0.62; // first valence electron ejects here
-const WIRE_EJECT_THRESH2  = 0.85; // second valence electron ejects here
+const WIRE_K = 0.008; // leftward angular force coefficient
 const _wirePlusSeeds = Array.from({length: 55}, () => ({fx: Math.random(), fy: Math.random()}));
 let _wireEjectFired = 0;         // 0, 1, or 2 — how many ejections have fired
 let _wireLockedShell = -1;       // shell locked at first ejection; both ejects come from here
@@ -2770,16 +2761,17 @@ function stepElectronsShells() {
     e.radialOffset = Math.max(-hw * 0.85 * ssc, Math.min(hw * 0.85 * ssc, (e.radialOffset || 0) + e.dRadial));
   }
 
-  // Ejection threshold checks — wire mode only
-  if (grabWireMode === 'wire' && wireCharge > 0) {
-    const valElec = electrons.filter(e => e.shell === _valenceShell);
-    if (wireCharge >= WIRE_EJECT_THRESH1 && _wireEjectFired === 0 && valElec.length > 0) {
-      _wireLockedShell = _valenceShell;
-      _ejectValenceElectron(valElec);
-      _wireEjectFired = 1;
-    } else if (wireCharge >= WIRE_EJECT_THRESH2 && _wireEjectFired === 1) {
-      const lockedElec = electrons.filter(e => e.shell === _wireLockedShell);
-      if (lockedElec.length > 0) { _ejectValenceElectron(lockedElec); _wireEjectFired = 2; }
+  // Ejection threshold check — wire mode only; one electron max, at IE voltage
+  if (grabWireMode === 'wire' && wireCharge > 0 && _wireEjectFired === 0) {
+    const ieV = IE_EV[customZ];
+    const thresh = ieV ? ieV / 25 : 999;
+    if (wireCharge >= thresh) {
+      const valElec = electrons.filter(e => e.shell === _valenceShell);
+      if (valElec.length > 0) {
+        _wireLockedShell = _valenceShell;
+        _ejectValenceElectron(valElec);
+        _wireEjectFired = 1;
+      }
     }
   }
 
@@ -3055,7 +3047,8 @@ function syncForceVizCanvasSize() {
 }
 
 function syncForceVizVisibility() {
-  const showFV = arrowMode > 0 && (currentTab === 'shells');
+  const isWire = grabWireMode === 'wire';
+  const showFV = isWire || (arrowMode > 0 && currentTab === 'shells');
   forceVizPanelEl.style.display = showFV ? 'block' : 'none';
   const _isShells = currentTab === 'shells';
   document.getElementById('showForcesBtn').style.display = (!arrowMode && _isShells) ? '' : 'none';
@@ -3250,12 +3243,6 @@ function drawForceVizShell() {
       fvc.restore();
     }
 
-    // Wire electric force — rightward arrow at each sample point
-    if (grabWireMode === 'wire' && wireCharge > 0 && selectedShell === _valenceShellForViz) {
-      const fWire = wireCharge * 0.6 * F_MAX;
-      const wireLen = shellArrowLen(fWire, _FieNN, _FcVal);
-      if (wireLen > 1) fvArrowOnCtx(fvc, px, py, 1, 0, wireLen, 'rgba(255,60,60,0.92)', 2, wireLen * 0.35);
-    }
   }
 
 }
@@ -3419,6 +3406,15 @@ function drawForceVizElectron() {
     }
   }
 
+  // Wire electrode force — horizontal red arrow to the right
+  if (grabWireMode === 'wire' && wireCharge > 0.005) {
+    const fWire = wireCharge * wireCharge * F_MAX * 0.6;
+    const wireArrowLen = arrowLen(fWire);
+    if (wireArrowLen > 1) {
+      fvArrowOnCtx(fvc, ePx, ePy, 1, 0, wireArrowLen, 'rgba(255,55,55,0.92)', 2.5, Math.min(maxHead, wireArrowLen * 0.4));
+    }
+  }
+
   // Disclaimer
   fvc.save();
   fvc.font = '8px Lexend, sans-serif';
@@ -3451,25 +3447,40 @@ function drawEnergyBarPanel() {
   epc.beginPath(); epc.moveTo(W - 0.5, 0); epc.lineTo(W - 0.5, H); epc.stroke();
   epc.restore();
 
-  // Compute workEV for active electron (drag, free, or selected)
+  // Compute workEV — tracks flying electron distance in both grab and wire modes
   const ionEV = IE_EV[customZ] || 0;
   let workEV = 0;
-  const freeIdx = electrons.findIndex(e => e.free);
-  const activeIdx = _draggedElectronIdx >= 0 ? _draggedElectronIdx : freeIdx >= 0 ? freeIdx : -1;
-  if (activeIdx >= 0 && activeIdx < electrons.length && animParent) {
-    const se = electrons[activeIdx];
-    const cx = animParent.cx, cy = animParent.cy;
-    const shellR = getShellRadius(se.shell);
-    let distN;
-    if (_draggedElectronIdx === activeIdx && _draggedPos) {
-      distN = Math.sqrt((_draggedPos.x - cx) ** 2 + (_draggedPos.y - cy) ** 2);
+  if (grabWireMode === 'wire' && _wireEjecting.length > 0 && animParent) {
+    const ej = _wireEjecting[0];
+    if (ej.phase && ej.phase >= 1) {
+      // Electron reached the wire — full IE
+      workEV = ionEV;
     } else {
-      distN = Math.sqrt((se.freeX - cx) ** 2 + (se.freeY - cy) ** 2);
+      // Flying: linear progress from startX to wire x0
+      const { x0 } = _wireRect();
+      const startX = ej.startX ?? ej.x;
+      const travel = x0 - startX;
+      const progress = travel > 0 ? Math.max(0, Math.min(1, (ej.x - startX) / travel)) : 0;
+      workEV = ionEV * progress;
     }
-    const _ionDist = shellR * 8 * eIonDistMult;
-    const _ionFrac = 1 - shellR / _ionDist;
-    const fraction = Math.max(0, 1 - shellR / distN);
-    workEV = _ionFrac > 0 ? ionEV * Math.min(1, fraction / _ionFrac) : 0;
+  } else if (grabWireMode !== 'wire') {
+    const freeIdx = electrons.findIndex(e => e.free);
+    const activeIdx = _draggedElectronIdx >= 0 ? _draggedElectronIdx : freeIdx >= 0 ? freeIdx : -1;
+    if (activeIdx >= 0 && activeIdx < electrons.length && animParent) {
+      const se = electrons[activeIdx];
+      const cx = animParent.cx, cy = animParent.cy;
+      const shellR = getShellRadius(se.shell);
+      let distN;
+      if (_draggedElectronIdx === activeIdx && _draggedPos) {
+        distN = Math.sqrt((_draggedPos.x - cx) ** 2 + (_draggedPos.y - cy) ** 2);
+      } else {
+        distN = Math.sqrt((se.freeX - cx) ** 2 + (se.freeY - cy) ** 2);
+      }
+      const _ionDist = shellR * 8 * eIonDistMult;
+      const _ionFrac = 1 - shellR / _ionDist;
+      const fraction = Math.max(0, 1 - shellR / distN);
+      workEV = _ionFrac > 0 ? ionEV * Math.min(1, fraction / _ionFrac) : 0;
+    }
   }
 
   // Layout
@@ -3548,7 +3559,7 @@ function drawEnergyBarPanel() {
 
 function drawForceViz() {
   if (currentTab !== 'shells') return;
-  if (grabWireMode === 'wire' || fvShellMode) { drawForceVizShell(); return; }
+  if (fvShellMode) { drawForceVizShell(); return; }
   drawForceVizElectron();
 }
 
@@ -3769,13 +3780,13 @@ drawOutlineIcon();
 
 // ─── Electrode helpers ───────────────────────────────────────────────────────
 function _wireRect() {
-  const tbH   = document.getElementById('toolbar').offsetHeight;
-  const sbEl  = document.getElementById('scrubBar');
-  const sbH   = sbEl.classList.contains('visible') ? sbEl.offsetHeight : 0;
-  const panelW = forceVizPanelEl ? (forceVizPanelEl.offsetWidth || 424) : 424;
-  const wW    = 96;
-  const x0    = canvas.width - panelW - wW - 12; // hugs left edge of force panel
-  return { x0, y0: tbH + 10, wW, wH: canvas.height - tbH - sbH - 20 };
+  const sbEl = document.getElementById('scrubBar');
+  const sbH  = sbEl.classList.contains('visible') ? sbEl.offsetHeight : 0;
+  const wW   = 96;
+  const wcEl = document.getElementById('wireCtrlBox');
+  const rect = wcEl ? wcEl.getBoundingClientRect() : null;
+  const x0   = rect ? Math.round(rect.left + (rect.width - wW) / 2) : Math.round(canvas.width / 2 - wW / 2);
+  return { x0, y0: 0, wW, wH: canvas.height - sbH - 10 };
 }
 
 function _ejectValenceElectron(valElec) {
@@ -3802,17 +3813,46 @@ function _ejectValenceElectron(valElec) {
   const idx = electrons.indexOf(best);
   if (idx >= 0) electrons.splice(idx, 1);
   // Start ejection animation
-  _wireEjecting.push({ x: sx, y: sy, vx: 2.5, vy: (Math.random() - 0.5) * 1.2, alpha: 1.0 });
+  _wireEjecting.push({ x: sx, y: sy, startX: sx, vx: 2.5, vy: (Math.random() - 0.5) * 1.2, alpha: 1.0 });
 }
 
 function stepWireEjecting() {
+  const { x0, wW } = _wireRect();
   for (let i = _wireEjecting.length - 1; i >= 0; i--) {
     const ej = _wireEjecting[i];
-    ej.x  += ej.vx;
-    ej.y  += ej.vy;
-    ej.vx += 0.18;   // accelerate toward wire (right side)
-    ej.alpha -= 0.012;
-    if (ej.alpha <= 0 || ej.x > canvas.width + 20) _wireEjecting.splice(i, 1);
+    const ph = ej.phase || 0;
+    if (ph === 0) {
+      // Flying toward wire
+      ej.x  += ej.vx;
+      ej.y  += ej.vy;
+      ej.vx += 0.18;
+      if (ej.x >= x0) {
+        // Entered wire — snap into electrode and settle
+        ej.phase = 1;
+        ej.x = x0 + wW * (0.2 + Math.random() * 0.6);
+        ej.settleY = ej.y;
+        ej.settleTick = 0;
+        ej.vx = 0; ej.vy = 0;
+      }
+    } else if (ph === 1) {
+      // Settling — gentle oscillation, then transition to upward drift
+      ej.settleTick++;
+      ej.x += Math.sin(ej.settleTick * 0.18) * 0.5;
+      if (ej.settleTick > 40) {
+        ej.phase = 2;
+        ej.vx = (Math.random() - 0.5) * 0.7;
+        ej.vy = -(0.5 + Math.random() * 0.7);
+      }
+    } else {
+      // Wandering upward through electrode
+      ej.x += ej.vx + Math.sin(ej.y * 0.05) * 0.5;
+      ej.y += ej.vy;
+      ej.vy -= 0.025;
+      // Bounce off electrode side walls
+      if (ej.x < x0 + 6)      { ej.x = x0 + 6;      ej.vx =  Math.abs(ej.vx) * 0.6; }
+      if (ej.x > x0 + wW - 6) { ej.x = x0 + wW - 6; ej.vx = -Math.abs(ej.vx) * 0.6; }
+      if (ej.y < -20) { _wireEjecting.splice(i, 1); continue; }
+    }
   }
 }
 
@@ -3821,33 +3861,32 @@ function drawWire(ctx) {
   const { x0, y0, wW, wH } = _wireRect();
   if (wH < 20) return;
 
+  // Electrode body + plus signs (clipped)
   ctx.save();
   ctx.fillStyle   = `rgba(255,55,55,${0.07 + wireCharge * 0.18})`;
   ctx.strokeStyle = `rgba(255,80,80,${0.3 + wireCharge * 0.55})`;
   ctx.lineWidth   = 1.5;
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x0, y0, wW, wH, 6); else ctx.rect(x0, y0, wW, wH);
-  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.rect(x0, y0, wW, wH); ctx.fill(); ctx.stroke();
 
+  ctx.beginPath(); ctx.rect(x0, y0, wW, wH); ctx.clip();
   const count = Math.round(wireCharge * _wirePlusSeeds.length);
   ctx.fillStyle = 'rgba(255,90,90,0.95)';
   ctx.font = 'bold 48px Lexend, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (let i = 0; i < count; i++) {
     const s = _wirePlusSeeds[i];
-    const px = x0 + 28 + s.fx * (wW - 56);
-    const py = y0 + 28 + s.fy * (wH - 56);
     ctx.shadowColor = 'rgba(255,80,80,0.7)'; ctx.shadowBlur = 5;
-    ctx.fillText('+', px, py);
+    ctx.fillText('+', x0 + s.fx * wW, y0 + s.fy * wH);
   }
   ctx.shadowBlur = 0;
+  ctx.restore(); // release clip
 
+  // Ejected electrons — drawn outside clip so they're visible during flight
   for (const ej of _wireEjecting) {
     ctx.beginPath(); ctx.arc(ej.x, ej.y, 7, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(238,255,0,${ej.alpha})`;
+    ctx.fillStyle = 'rgba(238,255,0,1.0)';
     ctx.shadowColor = '#eeff00'; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
   }
-  ctx.restore();
 }
 
 // ─── Main draw function ─────────────────────────────────────────────────────
@@ -3944,50 +3983,113 @@ document.getElementById('zoomSlider').addEventListener('input', function () {
   draw();
 });
 
-document.getElementById('wireSlider').addEventListener('input', function () {
-  wireCharge = parseFloat(this.value);
-  document.getElementById('wireChargeLabel').textContent = `charge: ${Math.round(wireCharge * 100)}%`;
-  const keyEl = document.getElementById('fvKeyWire');
-  if (keyEl) keyEl.style.display = wireCharge > 0 ? 'flex' : 'none';
-});
+function drawWireDial() {
+  const cv = document.getElementById('wireDialCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const cx = W / 2, cy = H / 2;
+  const r = W * 0.34;
 
-document.getElementById('wireResetBtn').addEventListener('click', function () {
-  // Lock thresholds so physics doesn't re-fire during the slide-down
-  _wireEjectFired = 2; _wireLockedShell = -1; _wireEjecting = [];
-  // Restore atom immediately
-  syncNeutralElectrons();
+  ctx.clearRect(0, 0, W, H);
 
-  // Animate slider back to zero
-  const startCharge = wireCharge;
-  const DURATION = 500;
-  const t0 = performance.now();
-  const sl = document.getElementById('wireSlider');
-  function slideDown(now) {
-    const frac = Math.min((now - t0) / DURATION, 1);
-    const eased = 1 - (1 - frac) * (1 - frac);
-    wireCharge = startCharge * (1 - eased);
-    if (sl) sl.value = wireCharge;
-    document.getElementById('wireChargeLabel').textContent = `charge: ${Math.round(wireCharge * 100)}%`;
-    if (frac < 1) {
-      requestAnimationFrame(slideDown);
-    } else {
-      wireCharge = 0;
-      if (sl) sl.value = 0;
-      document.getElementById('wireChargeLabel').textContent = 'charge: 0%';
-      const keyEl = document.getElementById('fvKeyWire');
-      if (keyEl) keyEl.style.display = 'none';
-      _wireEjectFired = 0;
-    }
+  const startA = 0.75 * Math.PI;
+  const totalSweep = 1.5 * Math.PI;
+  const fillA = startA + totalSweep * wireCharge;
+  const endA = startA + totalSweep;
+
+  // Track arc (dim steel)
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startA, endA);
+  ctx.strokeStyle = 'rgba(130,140,150,0.22)';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Fill arc + glow (cold grey-blue highlight)
+  if (wireCharge > 0.005) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, startA, fillA);
+    ctx.strokeStyle = 'rgba(160,175,195,0.30)';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, startA, fillA);
+    ctx.strokeStyle = 'rgba(190,205,220,0.90)';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
   }
-  requestAnimationFrame(slideDown);
+
+  // Center face — dark brushed metal look
+  const grad = ctx.createRadialGradient(cx - r * 0.14, cy - r * 0.14, 0, cx, cy, r * 0.52);
+  grad.addColorStop(0, 'rgba(72,80,90,0.98)');
+  grad.addColorStop(1, 'rgba(28,32,38,0.98)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.52, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(160,175,185,0.20)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Pointer line from center
+  const pLen = r * 0.38;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(fillA) * pLen, cy + Math.sin(fillA) * pLen);
+  ctx.strokeStyle = wireCharge > 0.005 ? 'rgba(215,225,235,0.95)' : 'rgba(140,150,165,0.45)';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function _applyWireCharge() {
+  drawWireDial();
+  document.getElementById('wireChargeLabel').textContent = `${(wireCharge * 25).toFixed(1)} V`;
+  if (animParent) draw();
+}
+
+// Dial interaction — drag up to increase voltage
+let _wireDialDragging = false, _wireDialStartY = 0, _wireDialStartCharge = 0;
+const _wireDialCv = document.getElementById('wireDialCanvas');
+_wireDialCv.addEventListener('mousedown', function (e) {
+  _wireDialDragging = true;
+  _wireDialStartY = e.clientY;
+  _wireDialStartCharge = wireCharge;
+  e.preventDefault();
 });
+_wireDialCv.addEventListener('wheel', function (e) {
+  e.preventDefault();
+  wireCharge = Math.max(0, Math.min(1, wireCharge - e.deltaY / 1500));
+  _applyWireCharge();
+}, { passive: false });
+window.addEventListener('mousemove', function (e) {
+  if (!_wireDialDragging) return;
+  const dy = _wireDialStartY - e.clientY;
+  wireCharge = Math.max(0, Math.min(1, _wireDialStartCharge + dy / 120));
+  _applyWireCharge();
+});
+window.addEventListener('mouseup', function () { _wireDialDragging = false; });
+
+drawWireDial();
+
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   logAction('Pressed Reset');
   heatmapDirty = true;
   currentSeed = Math.floor(Math.random() * 1e9);
-  clearElectrons();
-  initNuclei();
+  if (customZ > 0 && animParent) {
+    // Reset electrons for current atom, preserving element
+    clearElectrons();
+    syncNeutralElectrons();
+    autoSelectOuterShell(null, null);
+  } else {
+    clearElectrons();
+    initNuclei();
+  }
   draw();
 });
 
@@ -4179,13 +4281,13 @@ document.getElementById('showForceValuesCheckbox').addEventListener('change', fu
 
 function _syncGrabWireMode() {
   const isWire = grabWireMode === 'wire';
-  // Show/hide wire electrode controls in toolbar
-  document.getElementById('wireCtrlBox').style.display = isWire ? '' : 'none';
-  // Show/hide wire key in force legend
-  const keyEl = document.getElementById('fvKeyWire');
-  if (keyEl) keyEl.style.display = (isWire && wireCharge > 0) ? 'flex' : 'none';
+  document.getElementById('wireCtrlBox').style.display = isWire ? 'flex' : 'none';
+  if (!isWire) { _wireEjectFired = 0; _wireLockedShell = -1; _wireEjecting = []; }
   fvShellMode = false;
   document.querySelectorAll('[data-gwmode]').forEach(b => b.classList.toggle('active', b.dataset.gwmode === grabWireMode));
+  forceVizPanelEl.style.left  = 'auto';
+  forceVizPanelEl.style.right = '20px';
+  forceVizPanelEl.style.top   = '40px';
   syncForceVizVisibility();
 }
 
@@ -4699,6 +4801,7 @@ window.addEventListener('mouseup', e => {
 // ─── Canvas click: select electron or shell for force display ────────────────
 canvas.addEventListener('click', e => {
   if (currentTab !== 'shells' || !animParent || !electrons.length) return;
+  if (grabWireMode === 'wire' && _wireEjectFired) return;
   if (_eDragMoved) { _eDragMoved = false; return; } // was a drag, not a click
   const { x: wx, y: wy } = _screenToWorld(e.clientX, e.clientY);
   const cx = animParent.cx, cy = animParent.cy;
