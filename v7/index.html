@@ -2603,13 +2603,8 @@ function _drawBondElecTrails(ctx, cxA, cxB, centerY) {
       ctx.lineTo(sx(i1), sy(i1));
       ctx.stroke();
     }
-    // Glow dot at head
+    // Arrowhead at head (no dot — arrow shows direction of motion)
     const hx = sx(n - 1), hy = sy(n - 1);
-    const glow = _getElectronGlow(color);
-    const gr = E_GLOW_R;
-    ctx.globalAlpha = 1;
-    ctx.drawImage(glow, hx - gr, hy - gr);
-    // Arrowhead pointing in direction of motion
     if (n >= 2) {
       const ddx = (fracs[n-1].frac - fracs[n-2].frac) * sepScreen;
       const ddy = (fracs[n-1].perp - fracs[n-2].perp) * sepScreen;
