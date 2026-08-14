@@ -991,7 +991,7 @@
     <div class="dev-row" style="display:none"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slRadialJitterVal">1.000</span></div>
     <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
-    <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="0.84"><span class="dev-val" id="slBondSepVal">0.84</span></div>
+    <div class="dev-row"><label>bond sep (pm)</label><input type="range" id="slBondSep" min="20" max="400" step="1" value="200"><span class="dev-val" id="slBondSepVal">200</span></div>
     <div class="dev-row" style="display:none"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.30" step="0.005" value="0.1"><span class="dev-val" id="slBondSpeedVal">0.100</span></div>
     <div class="dev-row" style="display:none"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="-0.5"><span class="dev-val" id="slBondArcVal">-0.50</span></div>
     <div class="dev-row" style="display:none"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="400" step="5" value="190"><span class="dev-val" id="slBondTrailVal">190</span></div>
@@ -1659,7 +1659,7 @@ let bondConfineSectorRangeB  = 320; // total arc width for atom B sector
 // ─── Per-pair bond config persistence ────────────────────────────────────────
 const _bondPairConfigs = {};
 const _BOND_CFG = [
-  { key:'bondSepMult',         default:0.84,   get:()=>bondSepMult,         set:v=>{bondSepMult=v;}                  },
+  { key:'bondSepMult',         default:null,   get:()=>bondSepMult,         set:v=>{bondSepMult=v;}                  },
   { key:'bondSpeed',           default:0.1,    get:()=>bondSpeed,           set:v=>{bondSpeed=v;}                    },
   { key:'bondCycleOverride',   default:null,   get:()=>bondCycleOverride,   set:v=>{bondCycleOverride=Array.isArray(v)?v:null;} },
   { key:'bondRadial',          default:-0.5,   get:()=>bondRadial,          set:v=>{bondRadial=v;}                   },
@@ -1698,7 +1698,7 @@ function _loadBondConfig(key) {
 // O-H shells defaults — pre-seeded so first load applies immediately
 // Pb-Cl: ΔEN=0.83; Pb has 3 non-bonding valence e, 1 shared. Both bond electrons orbit Cl only (gIsB=true so sphere-G = Cl).
 _bondPairConfigs['82,17'] = {
-  bondSepMult: 0.81,
+  bondSepMult: 246,
   bondDotCenterFrac: 0.60,
   bondDotColor0: '#aa55ff',  // Pb — violet
   bondDotColor1: '#44ff44',  // Cl — green
@@ -1709,7 +1709,7 @@ _bondPairConfigs['82,17'] = {
   bondCycleOverride: ['sphere-G'],  // both electrons orbit Cl only (G=Cl since Cl more EN)
 };
 _bondPairConfigs['8,1'] = {
-  bondSepMult: 0.77,
+  bondSepMult: 93,
   bondDotCenterFrac: 0.65,
   bondDotColor0: '#ff5522',  // O's red-orange (from atom A)
   bondDotColor1: '#ffffff',  // H's white (from atom B)
@@ -1720,7 +1720,7 @@ _bondPairConfigs['8,1'] = {
 };
 // H-H: both electrons in bond, no non-bonding valence on either side
 _bondPairConfigs['1,1'] = {
-  bondSepMult: 1.45,
+  bondSepMult: 62,
   bondDotCenterFrac: 0.5,
   bondShellsSubtractA: true,
   bondShellsSubtractB: true,
@@ -1729,15 +1729,15 @@ _bondPairConfigs['1,1'] = {
 };
 // He-He: noble gas, all electrons solo on own atom — no bond electrons
 _bondPairConfigs['2,2'] = {
-  bondSepMult: 1.45,
+  bondSepMult: 160,
 };
 // Ne-Ne: noble gas, all electrons solo on own atom — no bond electrons
 _bondPairConfigs['10,10'] = {
-  bondSepMult: 1.45,
+  bondSepMult: 233,
 };
 // Sn-Cl: ΔEN=1.20 → n=4; Sn has 3 non-bonding valence e, Cl has 6
 _bondPairConfigs['50,17'] = {
-  bondSepMult: 0.80,
+  bondSepMult: 236,
   bondRadial: 0.15,
   bondDotCenterFrac: 0.60,
   bondDotColor0: '#ff44cc',  // Sn — magenta
@@ -1750,7 +1750,7 @@ _bondPairConfigs['50,17'] = {
 };
 // Cu-Cl: ΔEN=1.26 → n=4; Cu has 1 valence e used in bond, no non-bonding valence, Cl has 6 non-bonding
 _bondPairConfigs['29,17'] = {
-  bondSepMult: 0.82,
+  bondSepMult: 210,
   bondDotCenterFrac: 0.53,
   bondDotColor0: '#00ddff',  // Cu — cyan (matches Cu valence shell color)
   bondDotColor1: '#44ff44',  // Cl — green
@@ -1766,7 +1766,7 @@ let _bondTargetRadial = 0.0;  // random radial target picked each new visit
 let _bondTargetWander = 0.0;  // random wander target picked each new visit
 let _bondSoftSteerN   = 0;    // frames remaining of reduced steer after sphere→fig8 transition
 let _bondSoftSteerN2  = 0;
-let bondSepMult  = 0.84; // multiplier on the computed atom-to-atom separation
+let bondSepMult  = null; // bond separation in pm (sim pm: multiply by shellBaseR to get world pixels)
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
@@ -2917,7 +2917,7 @@ function syncOrb3dShellSliders() {
     bondElecFracs2=[]; bondOrbitPhase2=0; bondOrbitVisit2=0; bondElecX2=0; bondElecY2=0; bondElecVX2=0; bondElecVY2=0; _prevBondVisit2=-1; _bondTargetRadial2=0; _bondTargetWander2=0; _bondEffRadial2=0; _bondEffWander2=0; _bondSoftSteerN2=0;
   }
   const _bondDefs = [
-    { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
+    { lbl:'sep',   min:20,    max:400, step:1,     val:()=>bondSepMult??200, fmt:v=>Math.round(v).toString(), set:v=>{ bondSepMult=Math.round(v); _resetBondElec(); } },
     { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
     { lbl:'radial',min:-0.9,  max:1,   step:0.05,  val:()=>bondRadial,        fmt:v=>v.toFixed(2), set:v=>{ bondRadial=v;          bondElecFracs=[]; } },
     { lbl:'slow',  min:0,     max:2,   step:0.05,  val:()=>bondCrossSlowMin,  fmt:v=>v.toFixed(2), set:v=>{ bondCrossSlowMin=v; } },
@@ -3271,12 +3271,15 @@ function nucleusSphereR(Z) {
   return Math.cbrt(vol * 3 / (4 * Math.PI));
 }
 
-function getTwoAtomSep() {
+function _getTwoAtomSepNatural() {
   const outerA = electrons.length ? Math.max(...electrons.map(e => e.shell)) : 0;
   const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
   const rA = getShellRadius(outerA);
   const rB = getShellRadiusForZ(outerB, Math.max(atomBZ, 1));
-  return Math.max(rA + rB + Math.max(rA, rB) * 0.4, 120) * bondSepMult;
+  return Math.max(rA + rB + Math.max(rA, rB) * 0.4, 120);
+}
+function getTwoAtomSep() {
+  return (bondSepMult ?? 200) * shellBaseR;
 }
 
 // ─── Shells tab: orbital physics with radial band and long-range repulsion ────
@@ -4415,7 +4418,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   bind('slRadialJitter', 'slRadialJitterVal', v => { eRadialJitter = v; }, v => v.toFixed(3));
   bind('slAngularJitter', 'slAngularJitterVal', v => { SHELL_JITTER = v; }, v => v.toFixed(4));
   bind('slBandHW', 'slBandHWVal', v => { eShellBandHW = v; }, v => Math.round(v));
-  bind('slBondSep',   'slBondSepVal',   v => { bondSepMult = v; bondElecFracs = []; }, v => v.toFixed(2));
+  bind('slBondSep',   'slBondSepVal',   v => { bondSepMult = Math.round(v); bondElecFracs = []; }, v => Math.round(v).toString());
   bind('slBondSpeed', 'slBondSpeedVal', v => { bondSpeed = v; bondElecFracs = []; }, v => v.toFixed(3));
   bind('slBondArc',   'slBondArcVal',   v => { bondRadial = v; bondElecFracs = []; document.getElementById('bondArcDisplay').textContent = bondRadial.toFixed(2); }, v => v.toFixed(2));
 
@@ -4502,7 +4505,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   // ─── Bond pair dropdown ───────────────────────────────────────────────────
   function _syncBondConfigSliders() {
     const defs = [
-      { sl:'slBondSep',      vl:'slBondSepVal',      fmt:v=>v.toFixed(2),  val:()=>bondSepMult      },
+      { sl:'slBondSep',      vl:'slBondSepVal',      fmt:v=>Math.round(v).toString(), val:()=>bondSepMult },
       { sl:'slBondSpeed',    vl:'slBondSpeedVal',     fmt:v=>v.toFixed(3),  val:()=>bondSpeed        },
       { sl:'slBondArc',      vl:'slBondArcVal',       fmt:v=>v.toFixed(2),  val:()=>bondRadial       },
       { sl:'slBondTrail',    vl:'slBondTrailVal',     fmt:v=>Math.round(v), val:()=>bondTrailLen     },
@@ -4531,6 +4534,10 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     setAtomBFromZ(zB);
     applyAutoScale();
     if (!skipLoad) _loadBondConfig(`${zA},${zB}`);  // restore this pair's settings (if any saved)
+    // bondSepMult is now in pm; if no preseeded value, compute from natural sep
+    if (bondSepMult === null) {
+      bondSepMult = Math.round(_getTwoAtomSepNatural() * 0.84 / shellBaseR);
+    }
     // Force-clear outer shell orbit groups so they regrow with fresh, well-separated axes
     if (electrons.length) {
       const outerS = Math.max(...electrons.map(e => e.shell));
