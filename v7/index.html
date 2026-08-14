@@ -3163,20 +3163,24 @@ function stepElectronsShellsFor(elecs, Z, confineSector = false) {
   const outerS = confineSector && elecs.length ? Math.max(...elecs.map(e => e.shell)) : -1;
 
   for (const e of elecs) {
+    const confined = confineSector && e.shell === outerS;
+    const minDA = confined ? SHELL_BASE_DA * 0.3  : SHELL_BASE_DA;
+    const maxDA = confined ? SHELL_MAX_DA * 0.35  : SHELL_MAX_DA;
+
     // Enforce minimum orbital speed — always cruising
     const dir = e.dAngle >= 0 ? 1 : -1;
-    if (Math.abs(e.dAngle) < SHELL_BASE_DA) {
-      e.dAngle += dir * (SHELL_BASE_DA - Math.abs(e.dAngle)) * 0.12;
+    if (Math.abs(e.dAngle) < minDA) {
+      e.dAngle += dir * (minDA - Math.abs(e.dAngle)) * 0.12;
     }
 
     e.dAngle += (Math.random() - 0.5) * SHELL_JITTER;
     e.dAngle *= SHELL_ANGULAR_DAMP;
-    e.dAngle = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, e.dAngle));
+    e.dAngle = Math.max(-maxDA, Math.min(maxDA, e.dAngle));
     e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
 
     // Confine outer-shell electrons to 5–1 o'clock arc (left side, away from bond region)
     // Sector [π/3, 5π/3] in [0,2π]: from 5 o'clock through 6/7/8/9/10/11 to 1 o'clock
-    if (confineSector && e.shell === outerS) {
+    if (confined) {
       if (e.angle < Math.PI / 3) {
         e.angle = Math.PI / 3;
         e.dAngle = Math.abs(e.dAngle);    // bounce clockwise toward 5 o'clock
@@ -3190,9 +3194,11 @@ function stepElectronsShellsFor(elecs, Z, confineSector = false) {
     const shellR = getShellRadiusForZ(e.shell, Z);
     const hw = eShellBandHW + shellR * 0.5;
     const ssc = 1 + e.shell * 0.5;
+    const radJitter  = confined ? eRadialJitter * 4.0       : eRadialJitter;
+    const radRestore = confined ? SHELL_RADIAL_RESTORE * 0.25 : SHELL_RADIAL_RESTORE;
     if (!e.dRadial) e.dRadial = 0;
-    e.dRadial += (Math.random() - 0.5) * eRadialJitter * ssc;
-    e.dRadial -= e.radialOffset * (SHELL_RADIAL_RESTORE / ssc);
+    e.dRadial += (Math.random() - 0.5) * radJitter * ssc;
+    e.dRadial -= e.radialOffset * (radRestore / ssc);
     e.dRadial *= SHELL_RADIAL_DAMP;
     e.dRadial = Math.max(-hw * 0.25 * ssc, Math.min(hw * 0.25 * ssc, e.dRadial));
     e.radialOffset = Math.max(-hw * 0.85 * ssc, Math.min(hw * 0.85 * ssc, (e.radialOffset || 0) + e.dRadial));
