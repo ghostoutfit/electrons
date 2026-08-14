@@ -3190,14 +3190,15 @@ function stepElectronsShells() {
   stepElectronsShellsFor(electrons, customZ);
 }
 
-function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false) {
+function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false, bondSubtracted = false) {
   if (!elecs.length) return;
   if (!_eGlowImg) _buildElectronGlow();
   const vz = viewZoom;
 
   const trueOuterS = Math.max(...elecs.map(e => e.shell));
-  // When bonded in shells view, wandering bond dots replace the outer shell electron dots.
-  // We still draw the outer shell BAND (cloud) but skip the individual dot markers.
+  // When bonded in shells view and the caller has NOT already removed the bond electron,
+  // filter out outer-shell dots (bond dots replace them). If bondSubtracted=true the
+  // caller already sliced the bond electron out, so show the remaining outer-shell dots.
   const hasBondDots = _bondDots.length > 0 && animParentB && currentTab === 'shells';
 
   ctx.save();
@@ -3221,8 +3222,9 @@ function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false) {
     ctx.fill();
   }
 
-  // Electron glow dots — skip outer shell when bond dots are taking over
-  const dotElecs = hasBondDots ? elecs.filter(e => e.shell !== trueOuterS) : elecs;
+  // Electron glow dots — skip outer shell when bond dots are taking over,
+  // unless caller already subtracted the bond electron (then show what's left)
+  const dotElecs = (hasBondDots && !bondSubtracted) ? elecs.filter(e => e.shell !== trueOuterS) : elecs;
   const worldR = electronDotR / vz;
   ctx.globalAlpha = 1;
   if (electronDotR > 0) {
@@ -3816,7 +3818,7 @@ nucleusIconLoop(0);
 drawOutlineIcon();
 
 // ─── Main draw function ─────────────────────────────────────────────────────
-function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false) {
+function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false, bondSubtracted = false) {
   const cx=ap.cx, cy=ap.cy;
   if (showAR && elecs.length) {
     const outerShell=Math.max(...elecs.map(e=>e.shell));
@@ -3831,7 +3833,7 @@ function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false) {
   }
   if (!showParticles) drawCloudOutline(cx, cy, ap.sphereR);
   else drawParticles(ap.particles, 1);
-  drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuter);
+  drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuter, bondSubtracted);
 }
 
 function draw() {
@@ -3861,17 +3863,17 @@ function draw() {
 
   // ── Atom A ──────────────────────────────────────────────────────────────────
   // In shells bond mode, optionally hide 1 outer electron (shown as bond dot instead)
-  const _elecsA = (animParentB && bondShellsSubtractA && electrons.length > 0)
-    ? electrons.slice(0, -1) : electrons;
-  _drawAtomInCtx(ctx, animParent, _elecsA, customZ, showAR, vz, _hideOuter);
+  const _subtractA = !!(animParentB && bondShellsSubtractA);
+  const _elecsA = (_subtractA && electrons.length > 0) ? electrons.slice(0, -1) : electrons;
+  _drawAtomInCtx(ctx, animParent, _elecsA, customZ, showAR, vz, _hideOuter, _subtractA);
 
   // ── Atom B ──────────────────────────────────────────────────────────────────
   if (animParentB) {
-    const _elecsB = (bondShellsSubtractB && electronsB.length > 0)
-      ? electronsB.slice(0, -1) : electronsB;
+    const _subtractB = !!bondShellsSubtractB;
+    const _elecsB = (_subtractB && electronsB.length > 0) ? electronsB.slice(0, -1) : electronsB;
     ctx.save();
     ctx.translate(sep, 0);
-    _drawAtomInCtx(ctx, animParentB, _elecsB, atomBZ, showAR, vz, _hideOuter);
+    _drawAtomInCtx(ctx, animParentB, _elecsB, atomBZ, showAR, vz, _hideOuter, _subtractB);
     ctx.restore();
   }
 
