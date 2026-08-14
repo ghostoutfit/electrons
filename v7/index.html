@@ -3138,7 +3138,7 @@ const SHELL_RADIAL_DAMP   = 0.92;    // radial velocity damping
 const SHELL_RADIAL_RESTORE = 0.018;  // restoring spring toward shell center radius
 let eRadialJitter = 1.0;             // stochastic radial kick magnitude
 
-function stepElectronsShellsFor(elecs, Z) {
+function stepElectronsShellsFor(elecs, Z, confineSector = false) {
   // Same-shell repulsion: angular (1/dA, longer range) + radial (one in, one out)
   for (let i = 0; i < elecs.length; i++) {
     for (let j = i + 1; j < elecs.length; j++) {
@@ -3160,6 +3160,8 @@ function stepElectronsShellsFor(elecs, Z) {
     }
   }
 
+  const outerS = confineSector && elecs.length ? Math.max(...elecs.map(e => e.shell)) : -1;
+
   for (const e of elecs) {
     // Enforce minimum orbital speed — always cruising
     const dir = e.dAngle >= 0 ? 1 : -1;
@@ -3171,6 +3173,18 @@ function stepElectronsShellsFor(elecs, Z) {
     e.dAngle *= SHELL_ANGULAR_DAMP;
     e.dAngle = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, e.dAngle));
     e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
+
+    // Confine outer-shell electrons to 1–5 o'clock sector (right side, away from lone-pair region)
+    if (confineSector && e.shell === outerS) {
+      const a = e.angle > Math.PI ? e.angle - 2 * Math.PI : e.angle;  // to [-π, π]
+      if (a < -Math.PI / 3) {
+        e.angle = (-Math.PI / 3 + 2 * Math.PI) % (2 * Math.PI);
+        e.dAngle = Math.abs(e.dAngle);
+      } else if (a > Math.PI / 3) {
+        e.angle = Math.PI / 3;
+        e.dAngle = -Math.abs(e.dAngle);
+      }
+    }
 
     // Radial offset within the band — outer shells get more variation and weaker spring
     const shellR = getShellRadiusForZ(e.shell, Z);
@@ -3187,7 +3201,8 @@ function stepElectronsShellsFor(elecs, Z) {
 
 function stepElectronsShells() {
   if (!animParent || !electrons.length) return;
-  stepElectronsShellsFor(electrons, customZ);
+  const _confine = currentTab === 'shells' && !!animParentB && bondShellsSubtractA;
+  stepElectronsShellsFor(electrons, customZ, _confine);
 }
 
 function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false, bondSubtracted = false) {
@@ -3869,11 +3884,11 @@ function draw() {
 
   // ── Atom B ──────────────────────────────────────────────────────────────────
   if (animParentB) {
-    const _subtractB = !!bondShellsSubtractB;
-    const _elecsB = (_subtractB && electronsB.length > 0) ? electronsB.slice(0, -1) : electronsB;
     ctx.save();
     ctx.translate(sep, 0);
-    _drawAtomInCtx(ctx, animParentB, _elecsB, atomBZ, showAR, vz, _hideOuter, _subtractB);
+    // Pass full electronsB with bondSubtracted=false: cloud ring draws, and the
+    // hasBondDots filter inside drawElectronsShellsFor suppresses the outer-shell dot.
+    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, _hideOuter, false);
     ctx.restore();
   }
 
