@@ -1625,6 +1625,31 @@ let bondOrbitWander = -0.4; // amplitude of perpendicular wander oscillation (0 
 let bondDotUDWander = 0.012;  // shells-view bond dot vertical jitter strength
 let bondDotLRWander = 0.005;  // shells-view bond dot horizontal jitter strength
 let bondDotDamp     = 0.93;   // velocity damping per frame (higher = more fluid/faster)
+
+// ─── Per-pair bond config persistence ────────────────────────────────────────
+const _bondPairConfigs = {};
+const _BOND_CFG = [
+  { key:'bondSepMult',      get:()=>bondSepMult,      set:v=>{bondSepMult=v;}                          },
+  { key:'bondSpeed',        get:()=>bondSpeed,         set:v=>{bondSpeed=v;}                            },
+  { key:'bondRadial',       get:()=>bondRadial,        set:v=>{bondRadial=v;}                           },
+  { key:'bondCrossSlowMin', get:()=>bondCrossSlowMin,  set:v=>{bondCrossSlowMin=v;}                     },
+  { key:'bondOrbitSteer',   get:()=>bondOrbitSteer,    set:v=>{bondOrbitSteer=v;}                       },
+  { key:'bondOrbitWander',  get:()=>bondOrbitWander,   set:v=>{bondOrbitWander=v;}                      },
+  { key:'bondTrailLen',     get:()=>bondTrailLen,      set:v=>{bondTrailLen=Math.round(v);}             },
+  { key:'bondDotUDWander',  get:()=>bondDotUDWander,   set:v=>{bondDotUDWander=v;}                      },
+  { key:'bondDotLRWander',  get:()=>bondDotLRWander,   set:v=>{bondDotLRWander=v;}                      },
+  { key:'bondDotDamp',      get:()=>bondDotDamp,       set:v=>{bondDotDamp=v;}                          },
+];
+function _saveBondConfig(key) {
+  _bondPairConfigs[key] = {};
+  for (const p of _BOND_CFG) _bondPairConfigs[key][p.key] = p.get();
+}
+function _loadBondConfig(key) {
+  const cfg = _bondPairConfigs[key];
+  if (!cfg) return;
+  for (const p of _BOND_CFG) { if (cfg[p.key] !== undefined) p.set(cfg[p.key]); }
+}
+
 let _prevBondVisit    = -1;   // last bondOrbitVisit — detect visit boundary
 let _bondTargetRadial = 0.0;  // random radial target picked each new visit
 let _bondTargetWander = 0.0;  // random wander target picked each new visit
@@ -1918,11 +1943,11 @@ function drawOrbit3D(ctx) {
     ctx.restore();
   }
 
-  // Orbit trails — suppressed in bond mode; bond electrons drawn separately below
+  // Orbit trails — for atom A, orb3dShellGroups already has bond electron removed
+  // (syncOrb3dShellSliders subtracts 1 from outer shell in bond mode), so H-H
+  // naturally shows nothing and O-H shows 2 inner + 5 valence electrons.
   const showAR = document.getElementById('showElectric').checked;
-  if (!animParentB) {
-    if (animParent && electrons.length) _drawOrbit3DCore(ctx, cxA, centerY, electrons, orb3dShellGroups, customZ, showAR);
-  }
+  if (animParent && electrons.length) _drawOrbit3DCore(ctx, cxA, centerY, electrons, orb3dShellGroups, customZ, showAR);
 
   // Atomic radius lines
   function _drawARLine(cx, cy, outerR, arPm) {
@@ -2605,8 +2630,11 @@ function _drawBondElecTrails(ctx, cxA, cxB, centerY) {
     ctx.restore();
   }
 
-  _drawOneTrail(bondElecFracs,  '#aaaaaa');
-  _drawOneTrail(bondElecFracs2, '#aaaaaa');
+  // Color each bond electron by its atom's valence color
+  const _colorA = electrons.length  ? _valenceColorForZ(customZ) : '#aaaaaa';
+  const _colorB = electronsB.length ? _valenceColorForZ(atomBZ)  : '#aaaaaa';
+  _drawOneTrail(bondElecFracs,  _colorA);
+  _drawOneTrail(bondElecFracs2, _colorB);
 }
 
 function _growOrb3dShell(s, newCount) {
@@ -2656,9 +2684,17 @@ function syncOrb3dShellSliders() {
   if (!container) return;
   container.innerHTML = '';
 
-  // Recount electrons per shell and update orbit state incrementally
+  // Recount electrons per shell and update orbit state incrementally.
+  // In bond mode, subtract 1 from the outer shell (that electron is the bond electron
+  // shown separately as the figure-8 trail). For H-H this reduces shell 0 to 0 → no
+  // per-atom trails. For O-H it reduces shell 1 from 6 to 5 (lone pairs only).
   const countPerShell = {};
   for (const e of electrons) countPerShell[e.shell] = (countPerShell[e.shell] || 0) + 1;
+  if (animParentB && Object.keys(countPerShell).length) {
+    const outerS = Math.max(...Object.keys(countPerShell).map(Number));
+    countPerShell[outerS]--;
+    if (countPerShell[outerS] === 0) delete countPerShell[outerS];
+  }
   for (let s = 0; s < ORB3D_N; s++) {
     const newCount = countPerShell[s] || 0;
     const oldCount = orb3dShellCounts[s];
@@ -4215,14 +4251,37 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   };
   syncShellDevSliders();
   // ─── Bond pair dropdown ───────────────────────────────────────────────────
+  function _syncBondConfigSliders() {
+    const defs = [
+      { sl:'slBondSep',      vl:'slBondSepVal',      fmt:v=>v.toFixed(2),  val:()=>bondSepMult      },
+      { sl:'slBondSpeed',    vl:'slBondSpeedVal',     fmt:v=>v.toFixed(3),  val:()=>bondSpeed        },
+      { sl:'slBondArc',      vl:'slBondArcVal',       fmt:v=>v.toFixed(2),  val:()=>bondRadial       },
+      { sl:'slBondTrail',    vl:'slBondTrailVal',     fmt:v=>Math.round(v), val:()=>bondTrailLen     },
+      { sl:'slBondDotUD',    vl:'slBondDotUDVal',     fmt:v=>v.toFixed(4),  val:()=>bondDotUDWander  },
+      { sl:'slBondDotLR',    vl:'slBondDotLRVal',     fmt:v=>v.toFixed(4),  val:()=>bondDotLRWander  },
+      { sl:'slBondDotSpeed', vl:'slBondDotSpeedVal',  fmt:v=>v.toFixed(2),  val:()=>bondDotDamp      },
+    ];
+    for (const d of defs) {
+      const sl = document.getElementById(d.sl); if (sl) sl.value = d.val();
+      const vl = document.getElementById(d.vl); if (vl) vl.textContent = d.fmt(d.val());
+    }
+    const arcDisp = document.getElementById('bondArcDisplay'); if (arcDisp) arcDisp.textContent = bondRadial.toFixed(2);
+    const radDisp = document.getElementById('bondRadDisplay'); if (radDisp) radDisp.textContent = bondOrbitWander.toFixed(2);
+  }
+
   function _applyBondCombo(value) {
+    _saveBondConfig(`${customZ},${atomBZ}`);  // save current pair before changing atoms
     const [zA, zB] = value.split(',').map(Number);
     setNucleusFromZ(zA);
     syncNeutralElectrons();
     setAtomBFromZ(zB);
     applyAutoScale();
-    syncShellDevSliders();
+    _loadBondConfig(`${zA},${zB}`);           // restore this pair's settings (if any saved)
+    bondElecFracs = []; bondElecFracs2 = [];   // reset trails since sep/speed may have changed
+    bondOrbitPhase = 0; bondOrbitVisit = 0; bondOrbitPhase2 = 0; bondOrbitVisit2 = 0;
+    syncShellDevSliders();                    // rebuilds orbit3d overlay with loaded values
     _initBondDots();
+    _syncBondConfigSliders();                 // sync HTML panel sliders to loaded values
     _syncDevSliders();
     draw();
   }
