@@ -3174,15 +3174,15 @@ function stepElectronsShellsFor(elecs, Z, confineSector = false) {
     e.dAngle = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, e.dAngle));
     e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
 
-    // Confine outer-shell electrons to 1–5 o'clock sector (right side, away from lone-pair region)
+    // Confine outer-shell electrons to 5–1 o'clock arc (left side, away from bond region)
+    // Sector [π/3, 5π/3] in [0,2π]: from 5 o'clock through 6/7/8/9/10/11 to 1 o'clock
     if (confineSector && e.shell === outerS) {
-      const a = e.angle > Math.PI ? e.angle - 2 * Math.PI : e.angle;  // to [-π, π]
-      if (a < -Math.PI / 3) {
-        e.angle = (-Math.PI / 3 + 2 * Math.PI) % (2 * Math.PI);
-        e.dAngle = Math.abs(e.dAngle);
-      } else if (a > Math.PI / 3) {
+      if (e.angle < Math.PI / 3) {
         e.angle = Math.PI / 3;
-        e.dAngle = -Math.abs(e.dAngle);
+        e.dAngle = Math.abs(e.dAngle);    // bounce clockwise toward 5 o'clock
+      } else if (e.angle > 5 * Math.PI / 3) {
+        e.angle = 5 * Math.PI / 3;
+        e.dAngle = -Math.abs(e.dAngle);   // bounce counterclockwise toward 1 o'clock
       }
     }
 
