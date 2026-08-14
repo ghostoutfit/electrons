@@ -883,55 +883,50 @@
       <button id="clearBtn" class="btn" style="flex:1">Reset</button>
     </div>
 
-    <!-- Pink box: element picker grid -->
-    <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:7px;">
-      <span class="ctrl-box-label ctrl-box-label-pink">PARTICLES</span>
-      <div style="display:flex;gap:8px;align-items:flex-start">
-        <div id="elemGrid"></div>
-        <!-- Particle counts stacked to the right -->
-        <div style="display:flex;flex-direction:column;gap:6px;padding-top:2px">
-          <div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:4px 7px;font-size:11px;color:var(--text-dim);line-height:1.7;white-space:nowrap;">
-            <div>P: <span id="p1Protons" style="color:var(--accent1)">0</span></div>
-            <div>N: <span id="p1Neutrons">0</span></div>
-            <div>e⁻: <span id="electronCount" style="color:#eeff00;text-shadow:0 0 8px rgba(238,255,0,0.6)">0</span></div>
-            <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:3px;padding-top:3px"><span id="atomMass" style="color:rgba(200,220,255,0.85);font-variant-numeric:tabular-nums">0.000</span> <span style="font-size:9px;opacity:0.6">u</span></div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <div style="display:flex;align-items:center;gap:4px;">
-              <button id="removeElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">−</button>
-              <span style="font-size:10px;color:rgba(238,255,0,0.6)">e⁻</span>
-              <button id="addElectronBtn" style="background:rgba(238,255,0,0.08);border:1px solid rgba(238,255,0,0.28);color:#eeff00;border-radius:5px;width:22px;height:22px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1;padding:0;">+</button>
-            </div>
-            <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:rgba(238,255,0,0.6);cursor:pointer;">
-              <input type="checkbox" id="neutralCheckbox" checked style="accent-color:#eeff00;width:12px;height:12px;">
-              neutral
-            </label>
-          </div>
-        </div>
-      </div>
-      <!-- Hidden slider kept in DOM for setNucleusFromZ compatibility -->
-      <input type="range" id="protonSlider" min="0" max="36" step="1" value="16" style="display:none">
-      <span id="protonSliderVal" style="display:none">16</span>
-    </div>
-
-    <!-- Pink box: atom B element picker -->
-    <div class="ctrl-box-pink" style="flex-direction:column;align-items:flex-start;gap:7px;">
-      <span class="ctrl-box-label ctrl-box-label-pink" style="right:auto;left:14px;">ATOM B</span>
-      <div id="elemGridB"></div>
-      <div style="display:flex;gap:10px;align-items:center;margin-top:2px;">
+    <!-- Bond pair selector -->
+    <div class="ctrl-box-pink" style="flex-direction:column;gap:8px;justify-content:center;">
+      <span class="ctrl-box-label ctrl-box-label-pink">BOND PAIR</span>
+      <select id="bondComboSelect" style="font-size:13px;font-family:inherit;background:rgba(255,45,120,0.10);color:var(--text-bright);border:1px solid rgba(255,45,120,0.35);border-radius:6px;padding:5px 8px;cursor:pointer;">
+        <option value="82,17">Pb–Cl</option>
+        <option value="50,17">Sn–Cl</option>
+        <option value="29,17">Cu–Cl</option>
+        <option value="11,17">Na–Cl</option>
+        <option value="6,6">C–C</option>
+        <option value="6,1">C–H</option>
+        <option value="8,1">O–H</option>
+        <option value="6,8">C–O</option>
+        <option value="1,1" selected>H–H</option>
+        <option value="10,10">Ne–Ne</option>
+        <option value="2,2">He–He</option>
+        <option value="82,8">Pb–O</option>
+        <option value="11,8">Na–O</option>
+      </select>
+      <div style="display:flex;gap:10px;align-items:center;">
         <div style="display:flex;align-items:center;gap:3px;">
           <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">radial</span>
           <button id="bondArcMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.10</span>
+          <span id="bondArcDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.50</span>
           <button id="bondArcPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
         <div style="display:flex;align-items:center;gap:3px;">
           <span style="font-size:10px;color:rgba(255,68,204,0.75);letter-spacing:0.06em;">wander</span>
           <button id="bondRadMinus" style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">−</button>
-          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.50</span>
+          <span id="bondRadDisplay" style="font-size:10px;color:#ff88dd;min-width:28px;text-align:center;font-variant-numeric:tabular-nums;">-0.40</span>
           <button id="bondRadPlus"  style="background:rgba(255,68,204,0.1);border:1px solid rgba(255,68,204,0.35);color:#ff88dd;border-radius:4px;width:20px;height:20px;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:inherit;">+</button>
         </div>
       </div>
+      <!-- Hidden elements kept for JS compatibility -->
+      <span id="p1Protons" style="display:none">0</span>
+      <span id="p1Neutrons" style="display:none">0</span>
+      <span id="electronCount" style="display:none">0</span>
+      <span id="atomMass" style="display:none">0</span>
+      <input type="checkbox" id="neutralCheckbox" checked style="display:none">
+      <input type="range" id="protonSlider" min="0" max="82" step="1" value="0" style="display:none">
+      <span id="protonSliderVal" style="display:none">0</span>
+      <button id="addElectronBtn" style="display:none">+</button>
+      <button id="removeElectronBtn" style="display:none">-</button>
+      <div id="elemGrid" style="display:none"></div>
+      <div id="elemGridB" style="display:none"></div>
     </div>
 
     <!-- Blue box: stacked sliders + electric field + particles + forces -->
@@ -956,7 +951,6 @@
       <div style="display:flex;gap:10px;align-self:stretch;align-items:center">
         <div style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-tab="shells">Shells</button>
-          <button class="awheel-item" data-tab="trails" id="trailsTabBtn" style="display:none">iTunes Visualizer</button>
           <button class="awheel-item" data-tab="orbit3d">Trails</button>
         </div>
         <div id="forceModeRow" style="display:flex;flex-direction:column;gap:4px">
@@ -981,16 +975,19 @@
     <div class="dev-row" style="display:none"><label>dt</label><input type="range" id="slDt" min="0.05" max="2.0" step="0.05" value="1.45"><span class="dev-val" id="slDtVal">1.45</span></div>
     <div class="dev-row" style="display:none"><label>Trail</label><input type="range" id="slTrail" min="0" max="300" step="5" value="105"><span class="dev-val" id="slTrailVal">105</span></div>
     <div class="dev-row"><label>px/pm</label><input type="range" id="slBaseR" min="2" max="50" step="1" value="15"><span class="dev-val" id="slBaseRVal">15</span></div>
-    <div class="dev-row"><label>dot size</label><input type="range" id="slElectronDot" min="0" max="20" step="0.5" value="9"><span class="dev-val" id="slElectronDotVal">9.0</span></div>
+    <div class="dev-row"><label>dot size</label><input type="range" id="slElectronDot" min="0" max="30" step="0.5" value="16.5"><span class="dev-val" id="slElectronDotVal">16.5</span></div>
     <div class="dev-row" style="display:none"><label>shrink</label><input type="range" id="slShrink" min="0" max="1" step="0.01" value="0.05"><span class="dev-val" id="slShrinkVal">0.05</span></div>
     <div class="dev-row" style="display:none"><label>arrow exp</label><input type="range" id="slFvExp" min="0.05" max="0.5" step="0.01" value="0.13"><span class="dev-val" id="slFvExpVal">0.20</span></div>
     <div class="dev-row" style="display:none"><label>r-jitter</label><input type="range" id="slRadialJitter" min="0" max="2" step="0.05" value="1"><span class="dev-val" id="slRadialJitterVal">1.000</span></div>
     <div class="dev-row" style="display:none"><label>a-jitter</label><input type="range" id="slAngularJitter" min="0" max="0.1" step="0.001" value="0.05"><span class="dev-val" id="slAngularJitterVal">0.0500</span></div>
     <div class="dev-row" style="display:none"><label>band hw</label><input type="range" id="slBandHW" min="-300" max="500" step="5" value="60"><span class="dev-val" id="slBandHWVal">60</span></div>
-    <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="1"><span class="dev-val" id="slBondSepVal">1.00</span></div>
-    <div class="dev-row"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.30" step="0.005" value="0.15"><span class="dev-val" id="slBondSpeedVal">0.150</span></div>
-    <div class="dev-row"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="-0.1"><span class="dev-val" id="slBondArcVal">-0.10</span></div>
-    <div class="dev-row"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="400" step="5" value="190"><span class="dev-val" id="slBondTrailVal">190</span></div>
+    <div class="dev-row"><label>bond sep</label><input type="range" id="slBondSep" min="0.5" max="4" step="0.01" value="0.84"><span class="dev-val" id="slBondSepVal">0.84</span></div>
+    <div class="dev-row" style="display:none"><label>bond spd</label><input type="range" id="slBondSpeed" min="0.005" max="0.30" step="0.005" value="0.1"><span class="dev-val" id="slBondSpeedVal">0.100</span></div>
+    <div class="dev-row" style="display:none"><label>bond radial</label><input type="range" id="slBondArc" min="-0.9" max="1" step="0.05" value="-0.5"><span class="dev-val" id="slBondArcVal">-0.50</span></div>
+    <div class="dev-row" style="display:none"><label>bond trail</label><input type="range" id="slBondTrail" min="0" max="400" step="5" value="190"><span class="dev-val" id="slBondTrailVal">190</span></div>
+    <div class="dev-row shells-bond-dot-row"><label>ud wander</label><input type="range" id="slBondDotUD" min="0" max="0.03" step="0.0005" value="0.012"><span class="dev-val" id="slBondDotUDVal">0.0120</span></div>
+    <div class="dev-row shells-bond-dot-row"><label>lr wander</label><input type="range" id="slBondDotLR" min="0" max="0.02" step="0.0005" value="0.005"><span class="dev-val" id="slBondDotLRVal">0.0050</span></div>
+    <div class="dev-row shells-bond-dot-row"><label>dot speed</label><input type="range" id="slBondDotSpeed" min="0.80" max="0.99" step="0.01" value="0.93"><span class="dev-val" id="slBondDotSpeedVal">0.93</span></div>
     <div id="shellDevSliders"></div>
   </div>
 </div>
@@ -1608,19 +1605,30 @@ let _imgParentB = null;
 let electronsB = [];
 let bondOrbitVisit = 0;     // index into current orbit cycle
 let bondOrbitPhase = 0;     // phase within current visit (0..2π sphere, 0..π fig8)
-let bondCrossSlowMin = 1.2; // speed multiplier at fig8 crossing (>1 = faster there)
+let bondCrossSlowMin = 0.5; // speed multiplier at fig8 crossing (>1 = faster there)
 let bondElecX = 0, bondElecY = 0;   // actual electron position in bond-midpoint frame
 let bondElecVX = 0, bondElecVY = 0; // actual velocity; steered toward ideal each frame
 let bondOrbitSteer = 0.3;            // velocity steering rate (0=no correction, 1=instant snap)
 let bondElecFracs = []; // bond electron trail: [{frac, perp}] where frac 0=atomA, 1=atomB
-let bondSpeed    = 0.15; // phase advance per frame
-let bondTrailLen = 190;
-let bondRadial      = -0.1; // amplitude of along-bond radial oscillation (0 = none)
-let bondOrbitWander = -0.5; // amplitude of perpendicular wander oscillation (0 = none)
+// Second bond electron — independent phase, starts on opposite visit of the cycle
+let bondOrbitVisit2 = 0, bondOrbitPhase2 = 0;
+let bondElecX2 = 0, bondElecY2 = 0;
+let bondElecVX2 = 0, bondElecVY2 = 0;
+let bondElecFracs2 = [];
+let _prevBondVisit2 = -1;
+let _bondTargetRadial2 = 0, _bondTargetWander2 = 0;
+let _bondEffRadial2 = 0, _bondEffWander2 = 0;
+let bondSpeed    = 0.1;  // phase advance per frame
+let bondTrailLen = 300;
+let bondRadial      = -0.5; // amplitude of along-bond radial oscillation (0 = none)
+let bondOrbitWander = -0.4; // amplitude of perpendicular wander oscillation (0 = none)
+let bondDotUDWander = 0.012;  // shells-view bond dot vertical jitter strength
+let bondDotLRWander = 0.005;  // shells-view bond dot horizontal jitter strength
+let bondDotDamp     = 0.93;   // velocity damping per frame (higher = more fluid/faster)
 let _prevBondVisit    = -1;   // last bondOrbitVisit — detect visit boundary
 let _bondTargetRadial = 0.0;  // random radial target picked each new visit
 let _bondTargetWander = 0.0;  // random wander target picked each new visit
-let bondSepMult  = 1.0;  // multiplier on the computed atom-to-atom separation
+let bondSepMult  = 0.84; // multiplier on the computed atom-to-atom separation
 
 // ─── Electron physics ─────────────────────────────────────────────────────────
 // Each electron: { x, y, vx, vy, trail: [{x,y}] }
@@ -1628,6 +1636,33 @@ let electrons = [];
 let eK = 140000, eRepulse = 50000, eDamp = 1, eMinR = 80, eMaxR = 90, eDt = 1.45;
 let eTrailLen = 105;
 const SHELL_COLORS = ['#ff4488', '#00ddff', '#ff8800', '#88ff00'];
+
+// Valence shell color per element; falls back to gray for unknowns
+const ELEMENT_VALENCE_COLORS = {
+   1: '#ffffff',   // H  — white
+   2: '#888888',   // He — gray (noble)
+   6: '#ffee00',   // C  — yellow
+   8: '#ff5522',   // O  — red-orange
+  10: '#888888',   // Ne — gray (noble)
+  11: '#4488ff',   // Na — blue
+  17: '#44ff44',   // Cl — green
+  18: '#888888',   // Ar — gray (noble)
+  29: '#00ddff',   // Cu — cyan
+  36: '#888888',   // Kr — gray (noble)
+  50: '#ff44cc',   // Sn — magenta
+  82: '#aa55ff',   // Pb — violet
+};
+const _INNER_E_COLOR = '#666677';
+
+function _valenceColorForZ(Z) {
+  return ELEMENT_VALENCE_COLORS[Z] ?? '#aaaaaa';
+}
+function _shellColorForZ(shell, Z, outerShell) {
+  return shell >= outerShell ? _valenceColorForZ(Z) : _INNER_E_COLOR;
+}
+function _outerShellOf(elecs) {
+  return elecs.length ? Math.max(...elecs.map(e => e.shell)) : 0;
+}
 // ─── Master element table ────────────────────────────────────────────────────
 // Radii in pm. null = no data. cat/col/row: grid button position (col=0 → not in grid).
 const ELEMENT_DATA = {
@@ -1667,6 +1702,8 @@ const ELEMENT_DATA = {
   34: { sym:'Se', name:'Selenium',   emp:115, calc:103, vdw:190, cov:116, met:null, cat:'nonmetal',  col:0, row:0 },
   35: { sym:'Br', name:'Bromine',    emp:115, calc:94,  vdw:185, cov:114, met:null, cat:'halogen',   col:7, row:4 },
   36: { sym:'Kr', name:'Krypton',    emp:null,calc:88,  vdw:202, cov:117, met:null, cat:'noble',     col:8, row:4 },
+  50: { sym:'Sn', name:'Tin',       emp:145, calc:145, vdw:217, cov:140, met:151,  cat:'post-trans', col:0, row:0 },
+  82: { sym:'Pb', name:'Lead',      emp:180, calc:154, vdw:202, cov:146, met:175,  cat:'post-trans', col:0, row:0 },
 };
 
 const BOND_ELEM_DATA = Object.entries(ELEMENT_DATA)
@@ -1675,9 +1712,10 @@ const BOND_ELEM_DATA = Object.entries(ELEMENT_DATA)
 
 // Pauling electronegativity values; null = noble gas (no bond data)
 const ELECTRONEGATIVITY = {
-  1: 2.20, 2: null, 3: 0.98, 4: 1.57, 6: 2.55, 9: 3.98, 10: null,
+  1: 2.20, 2: null, 3: 0.98, 4: 1.57, 6: 2.55, 8: 3.44, 9: 3.98, 10: null,
   11: 0.93, 12: 1.31, 14: 1.90, 17: 3.16, 18: null, 19: 0.82, 20: 1.00,
   26: 1.83, 29: 1.90, 30: 1.65, 32: 2.01, 35: 2.96, 36: null,
+  50: 1.96, 82: 1.87,
 };
 
 function getBondRatio() {
@@ -1714,7 +1752,7 @@ const SHELLS = [
 ];
 const E_MAX_TOTAL = SHELLS.reduce((s, sh) => s + sh.capacity, 0); // 278
 
-let electronDotR = 9.0;  // electron dot radius (shells mode); 0 = hidden
+let electronDotR = 16.5; // electron dot radius (shells mode); 0 = hidden
 
 // ─── Orbit 3D simulation ──────────────────────────────────────────────────────
 const ORB3D_N = 4;  // max shells supported
@@ -1801,12 +1839,13 @@ function _drawOrbit3DCore(ctx, cx, cy, elecs, shellGroups, Z, showAR) {
     return [cx+rx, cy-(ry*cosEL-rz*sinEL)];
   }
   const occupied = [...new Set(elecs.map(e => e.shell))].sort((a,b)=>a-b);
+  const _outerS3D = occupied.length ? occupied[occupied.length - 1] : 0;
   // Shell reference rings
   if (showAR) {
     ctx.lineWidth = 1;
     for (const s of occupied) {
       const r3d = getShellRadiusForZ(s, Z) * orb3dRadScale * viewZoom;
-      ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length] + '28';
+      ctx.strokeStyle = _shellColorForZ(s, Z, _outerS3D) + '28';
       ctx.beginPath();
       for (let a=0; a<=360; a+=5) { const rad=a*Math.PI/180; const [sx,sy]=proj3D(Math.cos(rad),0,Math.sin(rad),r3d); a===0?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); }
       ctx.stroke();
@@ -1821,7 +1860,7 @@ function _drawOrbit3DCore(ctx, cx, cy, elecs, shellGroups, Z, showAR) {
   for (const s of occupied) {
     const r3d = getShellRadiusForZ(s, Z) * orb3dRadScale * viewZoom;
     const _shellOffScreen = r3d > _visHH * 1.2;
-    const col = SHELL_COLORS[s % SHELL_COLORS.length];
+    const col = _shellColorForZ(s, Z, _outerS3D);
     for (const grp of shellGroups[s]) {
       for (let ei=0; ei<grp.count; ei++) {
         const trail = grp.trails[ei], n = trail.length;
@@ -1879,10 +1918,11 @@ function drawOrbit3D(ctx) {
     ctx.restore();
   }
 
-  // Orbit trails
+  // Orbit trails — suppressed in bond mode; bond electrons drawn separately below
   const showAR = document.getElementById('showElectric').checked;
-  if (animParent && electrons.length) _drawOrbit3DCore(ctx, cxA, centerY, electrons, orb3dShellGroups, customZ, showAR);
-  if (animParentB && electronsB.length) _drawOrbit3DCore(ctx, cxB, centerY, electronsB, orb3dShellGroupsB, atomBZ, showAR);
+  if (!animParentB) {
+    if (animParent && electrons.length) _drawOrbit3DCore(ctx, cxA, centerY, electrons, orb3dShellGroups, customZ, showAR);
+  }
 
   // Atomic radius lines
   function _drawARLine(cx, cy, outerR, arPm) {
@@ -1904,7 +1944,7 @@ function drawOrbit3D(ctx) {
   }
 
   // Bond electron + EN stats label
-  drawBondElectronOrbit(ctx, cxA, cxB, centerY);
+  _drawBondElecTrails(ctx, cxA, cxB, centerY);
   drawBondENLabel(ctx);
 
   // Paused indicator
@@ -2073,19 +2113,19 @@ function _bondCycle(deltaEN, moreEN) {
 // Effective per-frame wander/radial offsets — updated once per step, read by _orbitPos
 let _bondEffRadial = 0, _bondEffWander = 0;
 
-function _orbitPos(visitType, phase, gIsB, rG, rL, d) {
+function _orbitPos(visitType, phase, gIsB, rG, rL, d, effR = _bondEffRadial, effW = _bondEffWander) {
   const isG   = visitType.endsWith('-G');
   const isFig8 = visitType.startsWith('fig8');
-  const a     = (isG ? rG : rL) * (1 + _bondEffRadial) + d;
+  const a     = (isG ? rG : rL) * (1 + effR) + d;
   if (isFig8) {
     const t     = isG ? (gIsB ? phase : phase + Math.PI)
                       : (gIsB ? phase + Math.PI : phase);
     const denom = 1 + Math.cos(t) ** 2;
-    return { lx: a * Math.sin(t) / denom, ly: (1 + _bondEffWander) * a * Math.sin(t) * Math.cos(t) / denom };
+    return { lx: a * Math.sin(t) / denom, ly: (1 + effW) * a * Math.sin(t) * Math.cos(t) / denom };
   }
   // Teardrop: passes through crossing (0,0) at phase=0 and 2π, tip at atom at phase=π
   const sign = isG ? (gIsB ? 1 : -1) : (gIsB ? -1 : 1);
-  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * (1 + _bondEffWander) * a * Math.sin(phase) / 2 };
+  return { lx: sign * a * (1 - Math.cos(phase)) / 2, ly: sign * (1 + effW) * a * Math.sin(phase) / 2 };
 }
 
 // ─── Bond electron (shared, hot-pink) ────────────────────────────────────────
@@ -2168,6 +2208,175 @@ function stepBondElectron() {
   if (bondElecFracs.length > maxLen) bondElecFracs.splice(0, bondElecFracs.length - maxLen);
 }
 
+function _stepBondElecSecond() {
+  if (!animParent || !animParentB) { bondElecFracs2 = []; return; }
+  const ratio = getBondRatio();
+  if (!ratio) { bondElecFracs2 = []; return; }
+
+  if (bondOrbitVisit2 !== _prevBondVisit2) {
+    _prevBondVisit2    = bondOrbitVisit2;
+    _bondTargetRadial2 = (Math.random() * 2 - 1) * bondRadial;
+    _bondTargetWander2 = -Math.random() * Math.abs(bondOrbitWander);
+  }
+  _bondEffRadial2 += (_bondTargetRadial2 - _bondEffRadial2) * 0.08;
+  _bondEffWander2 += (_bondTargetWander2 - _bondEffWander2) * 0.08;
+
+  const { deltaEN, moreEN } = ratio;
+  const cycle = _bondCycle(deltaEN, moreEN);
+  const visitType = cycle[bondOrbitVisit2 % cycle.length];
+
+  const sep = getTwoAtomSep();
+  const d   = sep / 2;
+
+  const outerA = electrons.length  ? Math.max(...electrons.map(e => e.shell)) : 0;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, atomBZ);
+
+  const gIsB = moreEN >= 0;
+  const rG = gIsB ? rB : rA;
+  const rL = gIsB ? rA : rB;
+
+  const isFig8    = visitType.startsWith('fig8');
+  const isG       = visitType.endsWith('-G');
+  const maxPhase  = isFig8 ? Math.PI : 2 * Math.PI;
+
+  const a_curr = (isG ? rG : rL) * (1 + _bondEffRadial2) + d;
+  let speed = bondSpeed * (d / a_curr);
+  if (isFig8) {
+    const localT = isG ? (gIsB ? bondOrbitPhase2 : bondOrbitPhase2 + Math.PI)
+                       : (gIsB ? bondOrbitPhase2 + Math.PI : bondOrbitPhase2);
+    speed *= bondCrossSlowMin + (1 - bondCrossSlowMin) * Math.abs(Math.sin(localT));
+  }
+
+  // Negate ly to make electron 2 go the opposite rotational direction (CW vs CCW)
+  const _op2 = (...a) => { const r = _orbitPos(...a); return { lx: r.lx, ly: -r.ly }; };
+  const p0        = _op2(visitType, bondOrbitPhase2, gIsB, rG, rL, d, _bondEffRadial2, _bondEffWander2);
+  const phaseNext = bondOrbitPhase2 + speed;
+  const p1        = phaseNext >= maxPhase
+    ? _op2(cycle[(bondOrbitVisit2 + 1) % cycle.length], phaseNext - maxPhase, gIsB, rG, rL, d, _bondEffRadial2, _bondEffWander2)
+    : _op2(visitType, phaseNext, gIsB, rG, rL, d, _bondEffRadial2, _bondEffWander2);
+  const idealVX = p1.lx - p0.lx;
+  const idealVY = p1.ly - p0.ly;
+
+  bondOrbitPhase2 += speed;
+  if (bondOrbitPhase2 >= maxPhase) {
+    bondOrbitPhase2  -= maxPhase;
+    bondOrbitVisit2   = (bondOrbitVisit2 + 1) % cycle.length;
+  }
+
+  const sr = bondElecFracs2.length === 0 ? 1.0 : bondOrbitSteer;
+  bondElecVX2 += sr * (idealVX - bondElecVX2);
+  bondElecVY2 += sr * (idealVY - bondElecVY2);
+
+  bondElecX2 += bondElecVX2 + 0.06 * (p0.lx - bondElecX2);
+  bondElecY2 += bondElecVY2 + 0.06 * (p0.ly - bondElecY2);
+
+  bondElecFracs2.push({ frac: 0.5 + bondElecX2 / sep, perp: bondElecY2 / sep });
+  const maxLen2 = Math.max(bondTrailLen, 1);
+  if (bondElecFracs2.length > maxLen2) bondElecFracs2.splice(0, bondElecFracs2.length - maxLen2);
+}
+
+function _hexToRgbArr(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+// ─── Wandering bond electron dots (shells view) ───────────────────────────────
+let _bondDots = [];  // [{x, y, vx, vy}] world coords
+
+function _initBondDots() {
+  if (!animParent || !animParentB) { _bondDots = []; return; }
+  const cx = animParent.cx, cy = animParent.cy;
+  const sep = getTwoAtomSep();
+  // Start one near each atom so they immediately explore
+  const outerA = electrons.length  ? Math.max(...electrons.map(e => e.shell)) : 0;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, atomBZ);
+  const midX = cx + sep / 2;
+  const spread = (rA + rB) / 2 * 0.3;
+  _bondDots = [
+    { x: midX, y: cy - spread, vx: 0, vy: 0 },
+    { x: midX, y: cy + spread, vx: 0, vy: 0 },
+  ];
+}
+
+function _stepBondDots() {
+  if (!animParent || !animParentB || !_bondDots.length || currentTab !== 'shells') return;
+  const cx = animParent.cx, cy = animParent.cy;
+  const sep = getTwoAtomSep();
+  const cxB = cx + sep;
+  const outerA = electrons.length  ? Math.max(...electrons.map(e => e.shell)) : 0;
+  const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
+  const rA = getShellRadius(outerA);
+  const rB = getShellRadiusForZ(outerB, atomBZ);
+  // Confinement radius = outer edge of the thick valence band — this region overlaps between atoms
+  const hwA = (eShellBandHW + rA * 0.1) * 3;
+  const hwB = (eShellBandHW + rB * 0.1) * 3;
+  const confA = rA + hwA;
+  const confB = rB + hwB;
+  const avgConf = (confA + confB) / 2;
+  const midX = (cx + cxB) / 2;
+  // Fixed vertical spread — one dot always above cy, one always below (fake algorithm)
+  const spread = (rA + rB) / 2 * 0.3;
+
+  for (let dotIdx = 0; dotIdx < _bondDots.length; dotIdx++) {
+    const dot = _bondDots[dotIdx];
+    const yTarget = cy + (dotIdx === 0 ? -spread : spread);
+    // Small horizontal jitter, larger vertical jitter — dots should drift up/down not left/right
+    dot.vx += (Math.random() - 0.5) * avgConf * bondDotLRWander;
+    dot.vy += (Math.random() - 0.5) * avgConf * bondDotUDWander;
+    // Strong x anchor to midpoint between atoms — keeps dots in the bond region
+    dot.vx += (midX - dot.x) * 0.025;
+    // Strong y anchor — each dot locked to its own side (above/below bond axis)
+    dot.vy += (yTarget - dot.y) * 0.08;
+    // Electron–electron repulsion so they don't stack
+    for (const other of _bondDots) {
+      if (other === dot) continue;
+      const dx = dot.x - other.x, dy = dot.y - other.y;
+      const d2 = dx * dx + dy * dy + 1;
+      const rep = avgConf * avgConf * 0.04 / d2;
+      dot.vx += rep * dx / Math.sqrt(d2);
+      dot.vy += rep * dy / Math.sqrt(d2);
+    }
+    // Moderate damping — keeps motion smooth without killing traversal
+    dot.vx *= bondDotDamp; dot.vy *= bondDotDamp;
+    dot.x += dot.vx; dot.y += dot.vy;
+    // Confine to the union of the two valence-band outer edges
+    const dA2 = (dot.x - cx)  ** 2 + (dot.y - cy) ** 2;
+    const dB2 = (dot.x - cxB) ** 2 + (dot.y - cy) ** 2;
+    if (dA2 > confA * confA && dB2 > confB * confB) {
+      if (dA2 < dB2) {
+        const d = Math.sqrt(dA2);
+        dot.x = cx  + (dot.x - cx)  / d * confA * 0.97;
+        dot.y = cy  + (dot.y - cy)  / d * confA * 0.97;
+      } else {
+        const d = Math.sqrt(dB2);
+        dot.x = cxB + (dot.x - cxB) / d * confB * 0.97;
+        dot.y = cy  + (dot.y - cy)  / d * confB * 0.97;
+      }
+      dot.vx *= 0.2; dot.vy *= 0.2;
+    }
+  }
+}
+
+function _drawBondDots(ctx) {
+  if (!_bondDots.length || currentTab !== 'shells') return;
+  const vz = viewZoom;
+  const worldR = electronDotR / vz;
+  const glow = _getElectronGlow('#aaaaaa');
+  for (const dot of _bondDots) {
+    ctx.drawImage(glow, dot.x - worldR, dot.y - worldR, worldR * 2, worldR * 2);
+  }
+  const coreR = electronDotR / 6 / vz;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  for (const dot of _bondDots) {
+    ctx.beginPath();
+    ctx.arc(dot.x, dot.y, coreR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function drawBondCloud(ctx) {
   if (!animParent || !animParentB) return;
   const ratio = getBondRatio();
@@ -2184,6 +2393,11 @@ function drawBondCloud(ctx) {
   const rA = getShellRadius(outerA);
   const rB = getShellRadiusForZ(outerB, atomBZ);
 
+  const colA = _valenceColorForZ(customZ);
+  const colB = _valenceColorForZ(atomBZ);
+  const [rA_,gA_,bA_] = _hexToRgbArr(colA);
+  const [rB_,gB_,bB_] = _hexToRgbArr(colB);
+
   // EN weighting: ionicFraction 0 = 50/50, 1 = all on more-EN atom
   const gIsB = moreEN >= 0;
   const wG   = 0.5 + ionicFraction * 0.5;
@@ -2196,40 +2410,43 @@ function drawBondCloud(ctx) {
 
   ctx.save();
 
-  // ── Ring cloud around each atom (same shape as shell bands, in pink) ──────
-  const drawRing = (atomCx, r, w) => {
+  // ── Ring cloud around each atom in that atom's valence color ─────────────
+  const drawRing = (atomCx, r, w, rv, gv, bv) => {
     if (w < 0.01) return;
     const rIn  = Math.max(0, r - hw);
     const rOut = r + hw;
     const a    = (PEAK * w).toFixed(3);
     const grad = ctx.createRadialGradient(atomCx, cy, rIn, atomCx, cy, rOut);
-    grad.addColorStop(0,   `rgba(255,68,204,0)`);
-    grad.addColorStop(0.5, `rgba(255,68,204,${a})`);
-    grad.addColorStop(1,   `rgba(255,68,204,0)`);
+    grad.addColorStop(0,   `rgba(${rv},${gv},${bv},0)`);
+    grad.addColorStop(0.5, `rgba(${rv},${gv},${bv},${a})`);
+    grad.addColorStop(1,   `rgba(${rv},${gv},${bv},0)`);
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(atomCx, cy, rOut, 0, Math.PI * 2);
     ctx.fill();
   };
 
-  drawRing(cxA, rA, wA);
-  drawRing(cxB, rB, wB);
+  drawRing(cxA, rA, wA, rA_, gA_, bA_);
+  drawRing(cxB, rB, wB, rB_, gB_, bB_);
 
-  // ── Elliptical bridge cloud linking the two atoms ─────────────────────────
-  // Center shifts toward more-EN atom with ionicFraction
+  // ── Elliptical bridge — linear gradient from atom A color to atom B color ─
   const bridgeFrac = gIsB ? 0.5 + ionicFraction * 0.25 : 0.5 - ionicFraction * 0.25;
   const bridgeCx   = cxA + bridgeFrac * sep;
   const alongR     = sep * 0.52;
   const perpR      = Math.min(rA, rB) * 0.5 + hw * 0.4;
   const bridgeA    = (PEAK * 0.5 * (wA + wB)).toFixed(3);
+  const bridgeADim = (PEAK * 0.15 * (wA + wB)).toFixed(3);
 
   ctx.save();
   ctx.translate(bridgeCx, cy);
   ctx.scale(1, perpR / alongR);
-  const bg = ctx.createRadialGradient(0, 0, 0, 0, 0, alongR);
-  bg.addColorStop(0,   `rgba(255,68,204,${bridgeA})`);
-  bg.addColorStop(0.55,`rgba(255,68,204,${(PEAK * 0.15 * (wA + wB)).toFixed(3)})`);
-  bg.addColorStop(1,   `rgba(255,68,204,0)`);
+  // Horizontal gradient: atom A color on left, atom B color on right
+  const bg = ctx.createLinearGradient(-alongR, 0, alongR, 0);
+  bg.addColorStop(0,    `rgba(${rA_},${gA_},${bA_},0)`);
+  bg.addColorStop(0.25, `rgba(${rA_},${gA_},${bA_},${bridgeADim})`);
+  bg.addColorStop(0.5,  `rgba(${Math.round((rA_+rB_)/2)},${Math.round((gA_+gB_)/2)},${Math.round((bA_+bB_)/2)},${bridgeA})`);
+  bg.addColorStop(0.75, `rgba(${rB_},${gB_},${bB_},${bridgeADim})`);
+  bg.addColorStop(1,    `rgba(${rB_},${gB_},${bB_},0)`);
   ctx.fillStyle = bg;
   ctx.beginPath();
   ctx.arc(0, 0, alongR, 0, Math.PI * 2);
@@ -2332,6 +2549,65 @@ function drawBondElectronOrbit(ctx, cxA, cxB, centerY) {
   ctx.restore();
 }
 
+// Two gray bond electron trails for the Trails (orbit3d) tab — replaces single pink path
+function _drawBondElecTrails(ctx, cxA, cxB, centerY) {
+  if (!animParentB) return;
+  const sepScreen = cxB - cxA;
+
+  function _drawOneTrail(fracs, color) {
+    const n = fracs.length;
+    if (n < 2) return;
+    const sx = i => cxA + fracs[i].frac * sepScreen;
+    const sy = i => centerY + fracs[i].perp * sepScreen;
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    const BUCKETS = 16;
+    for (let b = 0; b < BUCKETS; b++) {
+      const i0 = Math.round(b / BUCKETS * (n - 1));
+      const i1 = Math.round((b + 1) / BUCKETS * (n - 1));
+      if (i1 <= i0) continue;
+      ctx.globalAlpha = ((b + 1) / BUCKETS) ** 2 * 0.85;
+      ctx.beginPath();
+      ctx.moveTo(sx(i0), sy(i0));
+      if (i1 > i0 + 1) {
+        ctx.lineTo((sx(i0) + sx(i0 + 1)) / 2, (sy(i0) + sy(i0 + 1)) / 2);
+        for (let i = i0 + 1; i < i1; i++)
+          ctx.quadraticCurveTo(sx(i), sy(i), (sx(i) + sx(i + 1)) / 2, (sy(i) + sy(i + 1)) / 2);
+      }
+      ctx.lineTo(sx(i1), sy(i1));
+      ctx.stroke();
+    }
+    // Glow dot at head
+    const hx = sx(n - 1), hy = sy(n - 1);
+    const glow = _getElectronGlow(color);
+    const gr = E_GLOW_R;
+    ctx.globalAlpha = 1;
+    ctx.drawImage(glow, hx - gr, hy - gr);
+    // Arrowhead pointing in direction of motion
+    if (n >= 2) {
+      const ddx = (fracs[n-1].frac - fracs[n-2].frac) * sepScreen;
+      const ddy = (fracs[n-1].perp - fracs[n-2].perp) * sepScreen;
+      const dlen = Math.sqrt(ddx*ddx + ddy*ddy);
+      if (dlen > 0) {
+        const nx = ddx/dlen, ny = ddy/dlen;
+        const AL = 11, AW = 5;
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(hx + nx*AL, hy + ny*AL);
+        ctx.lineTo(hx - ny*AW, hy + nx*AW);
+        ctx.lineTo(hx + ny*AW, hy - nx*AW);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  _drawOneTrail(bondElecFracs,  '#aaaaaa');
+  _drawOneTrail(bondElecFracs2, '#aaaaaa');
+}
 
 function _growOrb3dShell(s, newCount) {
   const groups = orb3dShellGroups[s];
@@ -2438,7 +2714,10 @@ function syncOrb3dShellSliders() {
   bondTitle.style.cssText = 'font-size:10px;color:#ff44cc;font-weight:600;letter-spacing:0.05em;opacity:0.85';
   bondTitle.textContent = 'bond e⁻';
   bondGrp.appendChild(bondTitle);
-  function _resetBondElec() { bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; _prevBondVisit=-1; _bondTargetRadial=0; _bondTargetWander=0; }
+  function _resetBondElec() {
+    bondElecFracs=[]; bondOrbitPhase=0; bondOrbitVisit=0; bondElecX=0; bondElecY=0; bondElecVX=0; bondElecVY=0; _prevBondVisit=-1; _bondTargetRadial=0; _bondTargetWander=0;
+    bondElecFracs2=[]; bondOrbitPhase2=0; bondOrbitVisit2=0; bondElecX2=0; bondElecY2=0; bondElecVX2=0; bondElecVY2=0; _prevBondVisit2=-1; _bondTargetRadial2=0; _bondTargetWander2=0; _bondEffRadial2=0; _bondEffWander2=0;
+  }
   const _bondDefs = [
     { lbl:'sep',   min:0.5,   max:4,   step:0.01,  val:()=>bondSepMult,      fmt:v=>v.toFixed(2), set:v=>{ bondSepMult=v;        _resetBondElec(); } },
     { lbl:'spd',   min:0.005, max:0.15,step:0.005, val:()=>bondSpeed,         fmt:v=>v.toFixed(3), set:v=>{ bondSpeed=v;           _resetBondElec(); } },
@@ -2446,7 +2725,7 @@ function syncOrb3dShellSliders() {
     { lbl:'slow',  min:0,     max:2,   step:0.05,  val:()=>bondCrossSlowMin,  fmt:v=>v.toFixed(2), set:v=>{ bondCrossSlowMin=v; } },
     { lbl:'steer', min:0.01,  max:1,   step:0.01,  val:()=>bondOrbitSteer,    fmt:v=>v.toFixed(2), set:v=>{ bondOrbitSteer=v; } },
     { lbl:'wander',min:-1,    max:1,   step:0.05,  val:()=>bondOrbitWander,   fmt:v=>v.toFixed(2), set:v=>{ bondOrbitWander=v; } },
-    { lbl:'trail', min:0,     max:300, step:5,     val:()=>bondTrailLen,      fmt:v=>Math.round(v),set:v=>{ bondTrailLen=Math.round(v); const cap=Math.max(bondTrailLen,1); if(bondElecFracs.length>cap)bondElecFracs.splice(0,bondElecFracs.length-cap); } },
+    { lbl:'trail', min:0,     max:300, step:5,     val:()=>bondTrailLen,      fmt:v=>Math.round(v),set:v=>{ bondTrailLen=Math.round(v); const cap=Math.max(bondTrailLen,1); if(bondElecFracs.length>cap)bondElecFracs.splice(0,bondElecFracs.length-cap); if(bondElecFracs2.length>cap)bondElecFracs2.splice(0,bondElecFracs2.length-cap); } },
   ];
   for (const d of _bondDefs) {
     const row = document.createElement('div'); row.className = 'dev-row';
@@ -2496,21 +2775,30 @@ function getShellForNewElectron() {
 
 // Offscreen glow image — built once, reused for all electrons
 const E_GLOW_R = 10;
-let _eGlowImg = null;
-function _buildElectronGlow() {
+let _eGlowImg = null;           // kept for legacy callers that don't pass color
+const _eGlowCache = {};
+function _buildElectronGlowFor(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   const d = E_GLOW_R * 2 + 1;
   const oc = document.createElement('canvas');
   oc.width = oc.height = d;
   const oc2 = oc.getContext('2d');
-  const g = oc2.createRadialGradient(E_GLOW_R, E_GLOW_R, 0, E_GLOW_R, E_GLOW_R, E_GLOW_R);
-  g.addColorStop(0,    'rgba(255,255,220,1)');
-  g.addColorStop(0.13, 'rgba(238,255,0,1)');
-  g.addColorStop(0.40, 'rgba(238,255,0,0.6)');
-  g.addColorStop(0.70, 'rgba(200,230,0,0.18)');
-  g.addColorStop(1,    'rgba(180,220,0,0)');
-  oc2.fillStyle = g;
+  const grd = oc2.createRadialGradient(E_GLOW_R, E_GLOW_R, 0, E_GLOW_R, E_GLOW_R, E_GLOW_R);
+  grd.addColorStop(0,    'rgba(255,255,255,1)');
+  grd.addColorStop(0.13, `rgba(${r},${g},${b},1)`);
+  grd.addColorStop(0.40, `rgba(${r},${g},${b},0.6)`);
+  grd.addColorStop(0.70, `rgba(${r},${g},${b},0.18)`);
+  grd.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+  oc2.fillStyle = grd;
   oc2.fillRect(0, 0, d, d);
-  _eGlowImg = oc;
+  return oc;
+}
+function _getElectronGlow(hex) {
+  if (!_eGlowCache[hex]) _eGlowCache[hex] = _buildElectronGlowFor(hex);
+  return _eGlowCache[hex];
+}
+function _buildElectronGlow() {
+  _eGlowImg = _getElectronGlow('#eeff00');
 }
 
 function removeElectron() {
@@ -2721,6 +3009,8 @@ const SHELL_RADII_PM = {
   34: [ 2,   7,  37, 147],
   35: [ 2,   7,  34, 132],
   36: [ 1,   7,  32, 120],
+  50: [ 1,   5,  20,  72, 200],
+  82: [ 1,   4,  13,  45, 160],
 };
 
 let shellBaseR = 15;  // px per pm — controls visual scale of all shells
@@ -2854,23 +3144,21 @@ function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false) {
   if (!_eGlowImg) _buildElectronGlow();
   const vz = viewZoom;
 
-  // In shells view when bonded, hide the entire outer shell — replaced by the bond cloud
-  let drawElecs = elecs;
-  if (hideOuterShell) {
-    const outerS = Math.max(...elecs.map(e => e.shell));
-    drawElecs = elecs.filter(e => e.shell !== outerS);
-  }
+  const trueOuterS = Math.max(...elecs.map(e => e.shell));
+  // When bonded in shells view, wandering bond dots replace the outer shell electron dots.
+  // We still draw the outer shell BAND (cloud) but skip the individual dot markers.
+  const hasBondDots = _bondDots.length > 0 && animParentB && currentTab === 'shells';
 
   ctx.save();
 
-  // Shaded channel for each occupied shell, colored by SHELL_COLORS
-  const occupied = new Set(drawElecs.map(e => e.shell));
+  const occupied = new Set(elecs.map(e => e.shell));
   for (const s of occupied) {
     const r = getShellRadiusForZ(s, Z);
-    const hw = eShellBandHW + r * 0.1;
+    const hwBase = eShellBandHW + r * 0.1;
+    const hw = s === trueOuterS ? hwBase * 3 : hwBase;
     const rInner = Math.max(0, r - hw);
     const rOuter = r + hw;
-    const hex = SHELL_COLORS[s % SHELL_COLORS.length];
+    const hex = _shellColorForZ(s, Z, trueOuterS);
     const rv = parseInt(hex.slice(1,3),16), gv = parseInt(hex.slice(3,5),16), bv = parseInt(hex.slice(5,7),16);
     const grad = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
     grad.addColorStop(0,   `rgba(${rv},${gv},${bv},0)`);
@@ -2882,22 +3170,24 @@ function drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuterShell = false) {
     ctx.fill();
   }
 
-  // Electrons as glow dots within their shell band
+  // Electron glow dots — skip outer shell when bond dots are taking over
+  const dotElecs = hasBondDots ? elecs.filter(e => e.shell !== trueOuterS) : elecs;
   const worldR = electronDotR / vz;
   ctx.globalAlpha = 1;
   if (electronDotR > 0) {
-    for (const e of drawElecs) {
+    for (const e of dotElecs) {
+      const hex = _shellColorForZ(e.shell, Z, trueOuterS);
       const r = getShellRadiusForZ(e.shell, Z) + (e.radialOffset || 0);
       const ex = cx + Math.cos(e.angle) * r;
       const ey = cy + Math.sin(e.angle) * r;
-      ctx.drawImage(_eGlowImg, ex - worldR, ey - worldR, worldR * 2, worldR * 2);
+      ctx.drawImage(_getElectronGlow(hex), ex - worldR, ey - worldR, worldR * 2, worldR * 2);
     }
   }
 
-  // Bright white core
-  ctx.fillStyle = 'rgba(255,255,220,0.95)';
+  // Bright white cores
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
   const coreR = electronDotR / 6 / vz;
-  for (const e of drawElecs) {
+  for (const e of dotElecs) {
     const r = getShellRadiusForZ(e.shell, Z) + (e.radialOffset || 0);
     ctx.beginPath();
     ctx.arc(cx + Math.cos(e.angle) * r, cy + Math.sin(e.angle) * r, coreR, 0, Math.PI * 2);
@@ -2944,12 +3234,13 @@ function drawElectronsShells(ctx) {
 function drawShellRingsFor(ctx, cx, cy, elecs, Z) {
   if (!elecs.length) return;
   const occupied = [...new Set(elecs.map(e => e.shell))];
+  const outerS = _outerShellOf(elecs);
   ctx.save();
   ctx.setLineDash([6, 10]);
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.35;
   for (const s of occupied) {
-    ctx.strokeStyle = SHELL_COLORS[s % SHELL_COLORS.length];
+    ctx.strokeStyle = _shellColorForZ(s, Z, outerS);
     ctx.beginPath();
     ctx.arc(cx, cy, getShellRadiusForZ(s, Z), 0, Math.PI * 2);
     ctx.stroke();
@@ -2962,12 +3253,13 @@ function drawShellRings(ctx) {
   drawShellRingsFor(ctx, animParent.cx, animParent.cy, electrons, customZ);
 }
 
-function drawElectronsFor(ctx, elecs) {
+function drawElectronsFor(ctx, elecs, Z) {
   if (!elecs.length || !_eGlowImg) return;
+  const outerS = _outerShellOf(elecs);
   const screenElecs = elecs.map(e => ({
     sx: _worldToScreen(ctx, e.x, e.y),
     trail: e.trail.map(p => _worldToScreen(ctx, p.x, p.y)),
-    color: SHELL_COLORS[e.shell % SHELL_COLORS.length],
+    color: Z != null ? _shellColorForZ(e.shell, Z, outerS) : SHELL_COLORS[e.shell % SHELL_COLORS.length],
   }));
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2991,7 +3283,7 @@ function drawElectronsFor(ctx, elecs) {
 }
 
 function drawElectrons(ctx) {
-  drawElectronsFor(ctx, electrons);
+  drawElectronsFor(ctx, electrons, customZ);
 }
 
 // ─── Force viz panel ──────────────────────────────────────────────────────────
@@ -3488,8 +3780,7 @@ function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false) {
   }
   if (!showParticles) drawCloudOutline(cx, cy, ap.sphereR);
   else drawParticles(ap.particles, 1);
-  if (currentTab==='trails') { drawShellRingsFor(ctx, cx, cy, elecs, Z); drawElectronsFor(ctx, elecs); }
-  else drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuter);
+  drawElectronsShellsFor(ctx, elecs, cx, cy, Z, hideOuter);
 }
 
 function draw() {
@@ -3514,24 +3805,63 @@ function draw() {
   const showAR=document.getElementById('showElectric').checked;
   const vz=viewZoom;
 
+  // In shells mode we show all shell electrons (bond electrons are the gray wandering dots)
+  const _hideOuter = currentTab !== 'shells' && !!animParentB;
+
   // ── Atom A ──────────────────────────────────────────────────────────────────
-  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz, !!animParentB);
+  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz, _hideOuter);
 
   // ── Atom B ──────────────────────────────────────────────────────────────────
   if (animParentB) {
     ctx.save();
     ctx.translate(sep, 0);
-    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, true);
+    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, _hideOuter);
     ctx.restore();
   }
 
-  // ── Bond electron ────────────────────────────────────────────────────────────
-  drawBondCloud(ctx);
+  _drawBondDots(ctx);
 
   ctx.restore();
+  drawColorKey();
   drawEnergyGraph();
   updateParticleCounters();
   drawForceViz();
+}
+
+function drawColorKey() {
+  if (!animParent) return;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const W = canvas.width;
+  const symA = ELEMENT_DATA[customZ]?.sym ?? String(customZ);
+  const symB = animParentB ? (ELEMENT_DATA[atomBZ]?.sym ?? String(atomBZ)) : null;
+  const colA = _valenceColorForZ(customZ);
+  const colB = animParentB ? _valenceColorForZ(atomBZ) : null;
+
+  // Deduplicate (e.g. H-H shows only one entry)
+  const entries = [{ sym: symA, col: colA }];
+  if (symB && (symB !== symA || colB !== colA)) entries.push({ sym: symB, col: colB });
+
+  const dotR = 6, rowH = 20, pad = 14;
+  const x = W - pad;
+  const yStart = tbH + pad + dotR;
+
+  ctx.save();
+  ctx.font = 'bold 13px Lexend, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  entries.forEach((e, i) => {
+    const y = yStart + i * rowH;
+    ctx.fillStyle = e.col;
+    ctx.shadowColor = e.col;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(x - 2, y, dotR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = e.col;
+    ctx.fillText(e.sym, x - dotR - 6, y);
+  });
+  ctx.restore();
 }
 
 // ─── Particle counter + mass ───────────────────────────────────────────────────
@@ -3634,10 +3964,11 @@ document.getElementById('energyGraphToggle').addEventListener('click', function(
 let idleParticleRAF = null;
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
-  if (currentTab === 'trails') stepElectrons();
-  else if (currentTab === 'orbit3d') { if (!orb3dPaused) { stepOrbit3D(); stepOrbit3DB(); } }
+  if (currentTab === 'orbit3d') { if (!orb3dPaused) { stepOrbit3D(); stepOrbit3DB(); } }
   else { stepElectronsShells(); if (animParentB && electronsB.length) stepElectronsShellsFor(electronsB, atomBZ); }
   stepBondElectron();
+  _stepBondElecSecond();
+  _stepBondDots();
   if (animParent || currentTab === 'orbit3d') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
@@ -3676,6 +4007,11 @@ function _syncDevSliders() {
   _shellsOnlyHide.forEach(row => { if (row) row.style.display = isShells ? 'none' : ''; });
   const shellDev = document.getElementById('shellDevSliders');
   if (shellDev) shellDev.style.display = isOrbit ? 'none' : '';
+  // Show bond-dot wander sliders only in shells view when a bond pair is active
+  const hasBond = !!animParentB;
+  document.querySelectorAll('.shells-bond-dot-row').forEach(row => {
+    row.style.display = (isShells && hasBond) ? '' : 'none';
+  });
   if (isOrbit) {
     _devSlidersRow.style.display = 'none';
     if (_orbit3dOverlay) _orbit3dOverlay.style.display = devOn ? 'flex' : 'none';
@@ -3689,7 +4025,7 @@ document.getElementById('devToggle').addEventListener('change', _syncDevSliders)
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  const hideForce = currentTab === 'trails' || currentTab === 'orbit3d';
+  const hideForce = currentTab === 'orbit3d';
   document.getElementById('forceModeRow').style.display = hideForce ? 'none' : '';
 }
 
@@ -3823,8 +4159,12 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
   bind('slBondTrail', 'slBondTrailVal', v => {
     bondTrailLen = Math.round(v);
     const cap = Math.max(bondTrailLen, 1);
-    if (bondElecFracs.length > cap) bondElecFracs.splice(0, bondElecFracs.length - cap);
+    if (bondElecFracs.length  > cap) bondElecFracs.splice(0,  bondElecFracs.length  - cap);
+    if (bondElecFracs2.length > cap) bondElecFracs2.splice(0, bondElecFracs2.length - cap);
   }, v => Math.round(v));
+  bind('slBondDotUD',    'slBondDotUDVal',    v => { bondDotUDWander = v; }, v => v.toFixed(4));
+  bind('slBondDotLR',    'slBondDotLRVal',    v => { bondDotLRWander = v; }, v => v.toFixed(4));
+  bind('slBondDotSpeed', 'slBondDotSpeedVal', v => { bondDotDamp = v; },     v => v.toFixed(2));
   // ── Per-shell dev sliders (generated dynamically) ─────────────────────────────────────────
   const SHELL_SLIDER_DEFS = [
     { key: 'k',    label: 'k',         min: 1000,  max: 500000, step: 5000,  fmt: v => Math.round(v),   get: s => shellK[s],        set: (s,v) => { shellK[s] = v; } },
@@ -3874,90 +4214,21 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     syncOrb3dShellSliders();
   };
   syncShellDevSliders();
-  // ─── Element picker grid ─────────────────────────────────────────────────────
-  const elemGrid = document.getElementById('elemGrid');
-  for (const [z, sym, name, cat, col, row] of BOND_ELEM_DATA) {
-    const btn = document.createElement('button');
-    btn.className = `elem-btn ${cat}`;
-    btn.dataset.z = z;
-    btn.style.gridColumn = col;
-    btn.style.gridRow = row;
-    btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
-    btn.addEventListener('click', () => {
-      setNucleusFromZ(z);
-      if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-      applyAutoScale();
-      syncShellDevSliders();
-      syncElemBtnActive();
-    });
-    elemGrid.appendChild(btn);
-  }
-  syncElemBtnActive();
-
-  document.getElementById('addElectronBtn').addEventListener('click', () => {
-    document.getElementById('neutralCheckbox').checked = false;
-    addElectron();
+  // ─── Bond pair dropdown ───────────────────────────────────────────────────
+  function _applyBondCombo(value) {
+    const [zA, zB] = value.split(',').map(Number);
+    setNucleusFromZ(zA);
+    syncNeutralElectrons();
+    setAtomBFromZ(zB);
+    applyAutoScale();
     syncShellDevSliders();
-  });
-  document.getElementById('removeElectronBtn').addEventListener('click', () => {
-    document.getElementById('neutralCheckbox').checked = false;
-    removeElectron();
-    syncShellDevSliders();
-  });
-  document.getElementById('neutralCheckbox').addEventListener('change', function () {
-    if (this.checked) syncNeutralElectrons();
-    syncShellDevSliders();
-  });
-  const _pSlider = document.getElementById('protonSlider');
-  function _stepProton(delta) {
-    const v = Math.max(0, Math.min(82, parseInt(_pSlider.value) + delta));
-    _pSlider.value = v;
-    setNucleusFromZ(v);
-    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-    syncShellDevSliders();
-    syncElemBtnActive();
-  }
-  _pSlider.addEventListener('input', function () {
-    setNucleusFromZ(parseInt(this.value));
-    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-    syncShellDevSliders();
-    syncElemBtnActive();
-  });
-  const _protonDown = document.getElementById('protonDown');
-  const _protonUp = document.getElementById('protonUp');
-  if (_protonDown) _protonDown.addEventListener('click', () => _stepProton(-1));
-  if (_protonUp)   _protonUp.addEventListener('click',   () => _stepProton(+1));
-
-  // ─── Bond tab element pickers ─────────────────────────────────────────────
-  function _buildElemGrid(containerId, clickFn) {
-    const grid = document.getElementById(containerId);
-    if (!grid) return;
-    for (const [z, sym, name, cat, col, row] of BOND_ELEM_DATA) {
-      const btn = document.createElement('button');
-      btn.className = `elem-btn ${cat}`;
-      btn.dataset.z = z;
-      btn.style.gridColumn = col;
-      btn.style.gridRow = row;
-      btn.innerHTML = `<span class="el-num">${z}</span><span class="el-sym">${sym}</span>`;
-      btn.addEventListener('click', () => clickFn(z));
-      grid.appendChild(btn);
-    }
-  }
-
-  _buildElemGrid('elemGridA', (z) => {
-    setNucleusFromZ(z);
-    if (document.getElementById('neutralCheckbox').checked) syncNeutralElectrons();
-    syncShellDevSliders();
-    syncElemBtnActive();
+    _initBondDots();
+    _syncDevSliders();
     draw();
+  }
+  document.getElementById('bondComboSelect').addEventListener('change', function () {
+    _applyBondCombo(this.value);
   });
-
-  _buildElemGrid('elemGridB', (z) => {
-    setAtomBFromZ(z);
-    draw();
-  });
-
-  syncElemBtnActiveB();
 }());
 
 // ─── Editable dev-val spans: click yellow number to type a value ──────────────
@@ -4361,10 +4632,11 @@ initNuclei();
 
 setNucleusFromZ(1);
 syncNeutralElectrons();
-setAtomBFromZ(9);
+setAtomBFromZ(1);
 applyAutoScale();
 syncShellDevSliders();
-syncElemBtnActive();
+_initBondDots();
+_syncDevSliders();
 arrowMode = 0;
 setForceWheelActive(document.querySelector('.awheel-item[data-fmode="0"]'));
 currentTab = 'orbit3d';
