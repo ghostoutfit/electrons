@@ -988,6 +988,7 @@
     <div class="dev-row shells-bond-dot-row"><label>ud wander</label><input type="range" id="slBondDotUD" min="0" max="0.03" step="0.0005" value="0.012"><span class="dev-val" id="slBondDotUDVal">0.0120</span></div>
     <div class="dev-row shells-bond-dot-row"><label>lr wander</label><input type="range" id="slBondDotLR" min="0" max="0.02" step="0.0005" value="0.005"><span class="dev-val" id="slBondDotLRVal">0.0050</span></div>
     <div class="dev-row shells-bond-dot-row"><label>dot speed</label><input type="range" id="slBondDotSpeed" min="0.80" max="0.99" step="0.01" value="0.93"><span class="dev-val" id="slBondDotSpeedVal">0.93</span></div>
+    <div class="dev-row shells-bond-dot-row"><label>lr center</label><input type="range" id="slBondDotCenter" min="0" max="1" step="0.01" value="0.5"><span class="dev-val" id="slBondDotCenterVal">0.50</span></div>
     <div id="shellDevSliders"></div>
   </div>
 </div>
@@ -1624,21 +1625,31 @@ let bondRadial      = -0.5; // amplitude of along-bond radial oscillation (0 = n
 let bondOrbitWander = -0.4; // amplitude of perpendicular wander oscillation (0 = none)
 let bondDotUDWander = 0.012;  // shells-view bond dot vertical jitter strength
 let bondDotLRWander = 0.005;  // shells-view bond dot horizontal jitter strength
-let bondDotDamp     = 0.93;   // velocity damping per frame (higher = more fluid/faster)
+let bondDotDamp       = 0.93;    // velocity damping per frame (higher = more fluid/faster)
+let bondDotCenterFrac = 0.5;    // 0=atom A center, 0.5=midpoint, 1=atom B center
+let bondDotColor0     = '#aaaaaa'; // color of bond dot 0 (from atom A side)
+let bondDotColor1     = '#aaaaaa'; // color of bond dot 1 (from atom B side)
+let bondShellsSubtractA = false; // hide 1 outer electron from atom A shells display
+let bondShellsSubtractB = false; // hide 1 outer electron from atom B shells display
 
 // ─── Per-pair bond config persistence ────────────────────────────────────────
 const _bondPairConfigs = {};
 const _BOND_CFG = [
-  { key:'bondSepMult',      get:()=>bondSepMult,      set:v=>{bondSepMult=v;}                          },
-  { key:'bondSpeed',        get:()=>bondSpeed,         set:v=>{bondSpeed=v;}                            },
-  { key:'bondRadial',       get:()=>bondRadial,        set:v=>{bondRadial=v;}                           },
-  { key:'bondCrossSlowMin', get:()=>bondCrossSlowMin,  set:v=>{bondCrossSlowMin=v;}                     },
-  { key:'bondOrbitSteer',   get:()=>bondOrbitSteer,    set:v=>{bondOrbitSteer=v;}                       },
-  { key:'bondOrbitWander',  get:()=>bondOrbitWander,   set:v=>{bondOrbitWander=v;}                      },
-  { key:'bondTrailLen',     get:()=>bondTrailLen,      set:v=>{bondTrailLen=Math.round(v);}             },
-  { key:'bondDotUDWander',  get:()=>bondDotUDWander,   set:v=>{bondDotUDWander=v;}                      },
-  { key:'bondDotLRWander',  get:()=>bondDotLRWander,   set:v=>{bondDotLRWander=v;}                      },
-  { key:'bondDotDamp',      get:()=>bondDotDamp,       set:v=>{bondDotDamp=v;}                          },
+  { key:'bondSepMult',         get:()=>bondSepMult,         set:v=>{bondSepMult=v;}           },
+  { key:'bondSpeed',           get:()=>bondSpeed,           set:v=>{bondSpeed=v;}             },
+  { key:'bondRadial',          get:()=>bondRadial,          set:v=>{bondRadial=v;}            },
+  { key:'bondCrossSlowMin',    get:()=>bondCrossSlowMin,    set:v=>{bondCrossSlowMin=v;}      },
+  { key:'bondOrbitSteer',      get:()=>bondOrbitSteer,      set:v=>{bondOrbitSteer=v;}        },
+  { key:'bondOrbitWander',     get:()=>bondOrbitWander,     set:v=>{bondOrbitWander=v;}       },
+  { key:'bondTrailLen',        get:()=>bondTrailLen,        set:v=>{bondTrailLen=Math.round(v);} },
+  { key:'bondDotUDWander',     get:()=>bondDotUDWander,     set:v=>{bondDotUDWander=v;}       },
+  { key:'bondDotLRWander',     get:()=>bondDotLRWander,     set:v=>{bondDotLRWander=v;}       },
+  { key:'bondDotDamp',         get:()=>bondDotDamp,         set:v=>{bondDotDamp=v;}           },
+  { key:'bondDotCenterFrac',   get:()=>bondDotCenterFrac,   set:v=>{bondDotCenterFrac=v;}     },
+  { key:'bondDotColor0',       get:()=>bondDotColor0,       set:v=>{bondDotColor0=v;}         },
+  { key:'bondDotColor1',       get:()=>bondDotColor1,       set:v=>{bondDotColor1=v;}         },
+  { key:'bondShellsSubtractA', get:()=>bondShellsSubtractA, set:v=>{bondShellsSubtractA=!!v;} },
+  { key:'bondShellsSubtractB', get:()=>bondShellsSubtractB, set:v=>{bondShellsSubtractB=!!v;} },
 ];
 function _saveBondConfig(key) {
   _bondPairConfigs[key] = {};
@@ -1649,6 +1660,15 @@ function _loadBondConfig(key) {
   if (!cfg) return;
   for (const p of _BOND_CFG) { if (cfg[p.key] !== undefined) p.set(cfg[p.key]); }
 }
+// O-H shells defaults — pre-seeded so first load applies immediately
+_bondPairConfigs['8,1'] = {
+  bondSepMult: 0.77,
+  bondDotCenterFrac: 0.65,
+  bondDotColor0: '#ff5522',  // O's red-orange (from atom A)
+  bondDotColor1: '#ffffff',  // H's white (from atom B)
+  bondShellsSubtractA: true,
+  bondShellsSubtractB: true,
+};
 
 let _prevBondVisit    = -1;   // last bondOrbitVisit — detect visit boundary
 let _bondTargetRadial = 0.0;  // random radial target picked each new visit
@@ -2318,7 +2338,7 @@ function _initBondDots() {
   const outerB = electronsB.length ? Math.max(...electronsB.map(e => e.shell)) : 0;
   const rA = getShellRadius(outerA);
   const rB = getShellRadiusForZ(outerB, atomBZ);
-  const midX = cx + sep / 2;
+  const midX = cx + sep * bondDotCenterFrac;
   const spread = (rA + rB) / 2 * 0.3;
   _bondDots = [
     { x: midX, y: cy - spread, vx: 0, vy: 0 },
@@ -2341,7 +2361,7 @@ function _stepBondDots() {
   const confA = rA + hwA;
   const confB = rB + hwB;
   const avgConf = (confA + confB) / 2;
-  const midX = (cx + cxB) / 2;
+  const midX = cx + sep * bondDotCenterFrac;
   // Fixed vertical spread — one dot always above cy, one always below (fake algorithm)
   const spread = (rA + rB) / 2 * 0.3;
 
@@ -2389,17 +2409,17 @@ function _drawBondDots(ctx) {
   if (!_bondDots.length || currentTab !== 'shells') return;
   const vz = viewZoom;
   const worldR = electronDotR / vz;
-  const glow = _getElectronGlow('#aaaaaa');
-  for (const dot of _bondDots) {
-    ctx.drawImage(glow, dot.x - worldR, dot.y - worldR, worldR * 2, worldR * 2);
-  }
   const coreR = electronDotR / 6 / vz;
-  ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  for (const dot of _bondDots) {
+  const colors = [bondDotColor0, bondDotColor1];
+  _bondDots.forEach((dot, i) => {
+    const color = colors[i] ?? '#aaaaaa';
+    const glow = _getElectronGlow(color);
+    ctx.drawImage(glow, dot.x - worldR, dot.y - worldR, worldR * 2, worldR * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
     ctx.beginPath();
     ctx.arc(dot.x, dot.y, coreR, 0, Math.PI * 2);
     ctx.fill();
-  }
+  });
 }
 
 function drawBondCloud(ctx) {
@@ -3840,13 +3860,18 @@ function draw() {
   const _hideOuter = currentTab !== 'shells' && !!animParentB;
 
   // ── Atom A ──────────────────────────────────────────────────────────────────
-  _drawAtomInCtx(ctx, animParent, electrons, customZ, showAR, vz, _hideOuter);
+  // In shells bond mode, optionally hide 1 outer electron (shown as bond dot instead)
+  const _elecsA = (animParentB && bondShellsSubtractA && electrons.length > 0)
+    ? electrons.slice(0, -1) : electrons;
+  _drawAtomInCtx(ctx, animParent, _elecsA, customZ, showAR, vz, _hideOuter);
 
   // ── Atom B ──────────────────────────────────────────────────────────────────
   if (animParentB) {
+    const _elecsB = (bondShellsSubtractB && electronsB.length > 0)
+      ? electronsB.slice(0, -1) : electronsB;
     ctx.save();
     ctx.translate(sep, 0);
-    _drawAtomInCtx(ctx, animParentB, electronsB, atomBZ, showAR, vz, _hideOuter);
+    _drawAtomInCtx(ctx, animParentB, _elecsB, atomBZ, showAR, vz, _hideOuter);
     ctx.restore();
   }
 
@@ -4193,9 +4218,10 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     if (bondElecFracs.length  > cap) bondElecFracs.splice(0,  bondElecFracs.length  - cap);
     if (bondElecFracs2.length > cap) bondElecFracs2.splice(0, bondElecFracs2.length - cap);
   }, v => Math.round(v));
-  bind('slBondDotUD',    'slBondDotUDVal',    v => { bondDotUDWander = v; }, v => v.toFixed(4));
-  bind('slBondDotLR',    'slBondDotLRVal',    v => { bondDotLRWander = v; }, v => v.toFixed(4));
-  bind('slBondDotSpeed', 'slBondDotSpeedVal', v => { bondDotDamp = v; },     v => v.toFixed(2));
+  bind('slBondDotUD',     'slBondDotUDVal',     v => { bondDotUDWander   = v; }, v => v.toFixed(4));
+  bind('slBondDotLR',     'slBondDotLRVal',     v => { bondDotLRWander   = v; }, v => v.toFixed(4));
+  bind('slBondDotSpeed',  'slBondDotSpeedVal',  v => { bondDotDamp       = v; }, v => v.toFixed(2));
+  bind('slBondDotCenter', 'slBondDotCenterVal', v => { bondDotCenterFrac = v; }, v => v.toFixed(2));
   // ── Per-shell dev sliders (generated dynamically) ─────────────────────────────────────────
   const SHELL_SLIDER_DEFS = [
     { key: 'k',    label: 'k',         min: 1000,  max: 500000, step: 5000,  fmt: v => Math.round(v),   get: s => shellK[s],        set: (s,v) => { shellK[s] = v; } },
@@ -4254,7 +4280,8 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
       { sl:'slBondTrail',    vl:'slBondTrailVal',     fmt:v=>Math.round(v), val:()=>bondTrailLen     },
       { sl:'slBondDotUD',    vl:'slBondDotUDVal',     fmt:v=>v.toFixed(4),  val:()=>bondDotUDWander  },
       { sl:'slBondDotLR',    vl:'slBondDotLRVal',     fmt:v=>v.toFixed(4),  val:()=>bondDotLRWander  },
-      { sl:'slBondDotSpeed', vl:'slBondDotSpeedVal',  fmt:v=>v.toFixed(2),  val:()=>bondDotDamp      },
+      { sl:'slBondDotSpeed',  vl:'slBondDotSpeedVal',  fmt:v=>v.toFixed(2),  val:()=>bondDotDamp        },
+      { sl:'slBondDotCenter', vl:'slBondDotCenterVal', fmt:v=>v.toFixed(2),  val:()=>bondDotCenterFrac  },
     ];
     for (const d of defs) {
       const sl = document.getElementById(d.sl); if (sl) sl.value = d.val();
