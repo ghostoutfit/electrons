@@ -1212,7 +1212,16 @@ window.addEventListener('resize', () => {
       e.x += dx; e.y += dy;
       for (const t of e.trail) { t.x += dx; t.y += dy; }
     }
+    if (animParentB) {
+      animParentB.cx += dx; animParentB.cy += dy;
+      for (const p of animParentB.particles) { p.x += dx; p.y += dy; }
+      for (const e of electronsB) {
+        e.x += dx; e.y += dy;
+        for (const t of e.trail) { t.x += dx; t.y += dy; }
+      }
+    }
   }
+  if (autoScaleZoom) applyAutoScale();
   draw();
 });
 
