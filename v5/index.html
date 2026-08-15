@@ -919,14 +919,17 @@
     <div class="ctrl-box-blue" id="visualsCtrlBox">
       <span class="ctrl-box-label ctrl-box-label-blue">VISUALS</span>
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch">
-        <div class="slider-group" id="zoomSliderRow">
-          <span class="slider-icon" style="visibility:hidden"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
-          <input type="range" id="zoomSlider" min="-1" max="1" step="0.01" value="0">
-          <span class="slider-icon">🔍</span>
-          <div id="forceCtrlBox" style="display:flex;gap:4px;align-items:center;margin-left:8px">
-            <button id="showForcesBtn" class="force-show-btn" style="display:none">Show forces</button>
-            <button id="hideForcesBtn" class="awheel-item">hide forces</button>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div class="slider-group" id="zoomSliderRow">
+            <span class="slider-icon" style="visibility:hidden"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
+            <input type="range" id="zoomSlider" min="-1" max="1" step="0.01" value="0">
+            <span class="slider-icon">🔍</span>
+            <div id="forceCtrlBox" style="display:flex;gap:4px;align-items:center;margin-left:8px">
+              <button id="showForcesBtn" class="force-show-btn" style="display:none">Show forces</button>
+              <button id="hideForcesBtn" class="awheel-item">hide forces</button>
+            </div>
           </div>
+          <div style="font-size:8px;color:rgba(200,190,255,0.32);text-align:center;letter-spacing:0.04em">right-click to drag</div>
         </div>
         <div style="display:flex;justify-content:space-between">
           <label class="toggle-label" id="autoscaleRow">
@@ -1583,6 +1586,7 @@ let selectedNucleusKey = 'u235';
 // ─── Animation state ──────────────────────────────────────────────────────────
 let currentSeed = Math.floor(Math.random() * 1e9);
 let viewZoom = 0.265;
+let panOffsetX = 0, panOffsetY = 0, _panDragState = null;
 let currentTab = 'shells';
 
 // ── Action log (for bug reports) ─────────────────────────────────────────────
@@ -1732,8 +1736,8 @@ function drawOrbit3D(ctx) {
   const tbH = document.getElementById('toolbar').offsetHeight;
   const _sbH = document.getElementById('scrubBar').classList.contains('visible')
     ? document.getElementById('scrubBar').offsetHeight : 0;
-  const cy = (tbH + H - _sbH) / 2;
-  const cx = W * 0.5;
+  const cy = (tbH + H - _sbH) / 2 + panOffsetY;
+  const cx = W * 0.5 + panOffsetX;
 
   // Nucleus — same camera transform as Shells/Trails so it appears at (cx, cy)
   ctx.save();
@@ -3902,8 +3906,8 @@ function draw() {
   const _sbEl = document.getElementById('scrubBar');
   const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
   const _centerY = (_tbH + _H - _sbH) / 2;
-  const _camX = _W / 2 + getCameraShiftX();
-  ctx.translate(_camX, _centerY);
+  const _camX = _W / 2 + getCameraShiftX() + panOffsetX;
+  ctx.translate(_camX, _centerY + panOffsetY);
   ctx.scale(viewZoom, viewZoom);
   ctx.translate(-_W / 2, -_H / 2);
 
@@ -4095,9 +4099,17 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 
 
+let _autoscaleOffAt = 0;
 document.getElementById('autoscaleCheckbox').addEventListener('change', function() {
   autoScaleZoom = this.checked;
-  if (autoScaleZoom) { _lastAutoScalePeriod = -1; applyAutoScale(); }
+  if (autoScaleZoom) {
+    const freshOn = _autoscaleOffAt === 0 || Date.now() - _autoscaleOffAt < 5000;
+    if (freshOn) { panOffsetX = 0; panOffsetY = 0; }
+    _lastAutoScalePeriod = -1;
+    applyAutoScale();
+  } else {
+    _autoscaleOffAt = Date.now();
+  }
 });
 
 document.getElementById('showElectric').addEventListener('change', function() {
@@ -4660,12 +4672,58 @@ function _orb3dRotateX(dTheta) {
   }
 }
 
-canvas.addEventListener('mousedown', e => {
-  if (currentTab !== 'orbit3d') return;
-  orb3dDragState = { lastX: e.clientX, lastY: e.clientY, moved: false };
-  canvas.style.cursor = 'grabbing';
-  e.preventDefault();
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') return;
+  const isPan = e.button === 2 || (e.button === 0 && e.shiftKey);
+  if (isPan) {
+    _panDragState = { lastX: e.clientX, lastY: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+  if (currentTab === 'orbit3d' && e.button === 0) {
+    orb3dDragState = { lastX: e.clientX, lastY: e.clientY, moved: false };
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
 });
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  if (_panDragState) {
+    panOffsetX += e.clientX - _panDragState.lastX;
+    panOffsetY += e.clientY - _panDragState.lastY;
+    _panDragState.lastX = e.clientX;
+    _panDragState.lastY = e.clientY;
+    draw();
+    return;
+  }
+  if (orb3dDragState && currentTab === 'orbit3d') {
+    const dx = e.clientX - orb3dDragState.lastX;
+    const dy = e.clientY - orb3dDragState.lastY;
+    orb3dDragState.lastX = e.clientX;
+    orb3dDragState.lastY = e.clientY;
+    _orb3dApplyDrag(dx, dy);
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  if (e.pointerType === 'touch') return;
+  if (_panDragState) {
+    _panDragState = null;
+    canvas.releasePointerCapture(e.pointerId);
+    canvas.style.cursor = '';
+    return;
+  }
+  if (orb3dDragState) {
+    canvas.releasePointerCapture(e.pointerId);
+    if (orb3dDragState.moved) orb3dPaused = false;
+    else orb3dPaused = !orb3dPaused;
+    orb3dDragState = null;
+    canvas.style.cursor = currentTab === 'orbit3d' ? 'grab' : '';
+  }
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('touchstart', e => {
   if (currentTab !== 'orbit3d') return;
   const t = e.touches[0];
@@ -4685,14 +4743,6 @@ function _orb3dApplyDrag(dx, dy) {
   _orb3dRotateY(dAZ);
   _orb3dRotateX(dEL);
 }
-window.addEventListener('mousemove', e => {
-  if (!orb3dDragState || currentTab !== 'orbit3d') return;
-  const dx = e.clientX - orb3dDragState.lastX;
-  const dy = e.clientY - orb3dDragState.lastY;
-  orb3dDragState.lastX = e.clientX;
-  orb3dDragState.lastY = e.clientY;
-  _orb3dApplyDrag(dx, dy);
-});
 window.addEventListener('touchmove', e => {
   if (!orb3dDragState || currentTab !== 'orbit3d') return;
   const t = e.touches[0];
@@ -4704,13 +4754,6 @@ window.addEventListener('touchmove', e => {
   e.preventDefault();
 }, { passive: false });
 
-window.addEventListener('mouseup', () => {
-  if (!orb3dDragState) return;
-  if (orb3dDragState.moved) orb3dPaused = false;  // drag release → resume
-  else orb3dPaused = !orb3dPaused;                // click → toggle
-  orb3dDragState = null;
-  canvas.style.cursor = currentTab === 'orbit3d' ? 'grab' : '';
-});
 window.addEventListener('touchend', () => {
   if (!orb3dDragState) return;
   if (orb3dDragState.moved) orb3dPaused = false;
@@ -4727,8 +4770,8 @@ function _screenToWorld(clientX, clientY) {
   const _sbEl = document.getElementById('scrubBar');
   const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
   const _centerY = (_tbH + _H - _sbH) / 2;
-  const _camX2 = _W / 2 + getCameraShiftX();
-  return { x: (sx - _camX2) / viewZoom + _W / 2, y: (sy - _centerY) / viewZoom + _H / 2 };
+  const _camX2 = _W / 2 + getCameraShiftX() + panOffsetX;
+  return { x: (sx - _camX2) / viewZoom + _W / 2, y: (sy - (_centerY + panOffsetY)) / viewZoom + _H / 2 };
 }
 
 // ─── Electron drag ────────────────────────────────────────────────────────────

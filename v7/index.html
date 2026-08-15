@@ -439,6 +439,13 @@
   .ctrl-box-blue .toggle-label { font-size: 13px; gap: 6px; }
   .ctrl-box-blue .field-label-electric { font-size: 13px; }
   .ctrl-box-blue .awheel-item { font-size: 14px; padding: 5px 14px; }
+  .ptc {
+    font-size: 8px; font-weight: 600; letter-spacing: 0.03em;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px;
+    color: rgba(200,190,255,0.22);
+    transition: color 0.15s, background 0.15s;
+  }
   .slider-group label {
     font-size: 10px;
     color: var(--text-dim);
@@ -822,6 +829,8 @@
     text-transform: uppercase;
   }
   #forceVizKey span { display: flex; align-items: center; gap: 5px; }
+  #forceVizKeyBond { display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+  #forceVizKeyBond span { display: flex; align-items: center; gap: 5px; }
   #forceVizCanvas { display: block; }
   #fvModeToggle {
     display: flex;
@@ -888,12 +897,12 @@
       <span class="ctrl-box-label ctrl-box-label-pink">BOND PAIR</span>
       <select id="bondComboSelect" style="font-size:13px;font-family:inherit;background:rgba(255,45,120,0.10);color:var(--text-bright);border:1px solid rgba(255,45,120,0.35);border-radius:6px;padding:5px 8px;cursor:pointer;">
         <option value="82,17">Pb–Cl</option>
-        <option value="50,17" selected>Sn–Cl</option>
+        <option value="50,17">Sn–Cl</option>
         <option value="29,17">Cu–Cl</option>
         <option value="11,17">Na–Cl *</option>
         <option value="6,6">C–C *</option>
         <option value="6,1">C–H *</option>
-        <option value="8,1">O–H</option>
+        <option value="8,1" selected>O–H</option>
         <option value="6,8">C–O *</option>
         <option value="1,1">H–H</option>
         <option value="10,10">Ne–Ne</option>
@@ -933,10 +942,13 @@
     <div class="ctrl-box-blue">
       <span class="ctrl-box-label ctrl-box-label-blue">VISUALS</span>
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch">
-        <div class="slider-group" id="zoomSliderRow">
-          <span class="slider-icon" style="visibility:hidden"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
-          <input type="range" id="zoomSlider" min="-1" max="1" step="0.01" value="0">
-          <span class="slider-icon">🔍</span>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div class="slider-group" id="zoomSliderRow">
+            <span class="slider-icon" style="visibility:hidden"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
+            <input type="range" id="zoomSlider" min="-1" max="1" step="0.01" value="0">
+            <span class="slider-icon">🔍</span>
+          </div>
+          <div style="font-size:8px;color:rgba(200,190,255,0.32);text-align:center;letter-spacing:0.04em">right-click to drag</div>
         </div>
         <label class="toggle-label" id="autoscaleRow">
           <input type="checkbox" id="autoscaleCheckbox" checked>
@@ -958,6 +970,48 @@
           <button class="awheel-item" data-fmode="2">Show forces</button>
         </div>
       </div>
+    </div>
+
+    <!-- Mini periodic table: main-group elements up to Pb, no transition metals -->
+    <div id="bondPTable" style="align-self:stretch;display:grid;grid-template-columns:repeat(8,19px);grid-template-rows:repeat(6,1fr);gap:1px;padding:4px 6px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02);">
+      <span class="ptc" data-ptcell="1"  style="grid-column:1;grid-row:1">H</span>
+      <span class="ptc" data-ptcell="2"  style="grid-column:8;grid-row:1">He</span>
+      <span class="ptc" data-ptcell="3"  style="grid-column:1;grid-row:2">Li</span>
+      <span class="ptc" data-ptcell="4"  style="grid-column:2;grid-row:2">Be</span>
+      <span class="ptc" data-ptcell="5"  style="grid-column:3;grid-row:2">B</span>
+      <span class="ptc" data-ptcell="6"  style="grid-column:4;grid-row:2">C</span>
+      <span class="ptc" data-ptcell="7"  style="grid-column:5;grid-row:2">N</span>
+      <span class="ptc" data-ptcell="8"  style="grid-column:6;grid-row:2">O</span>
+      <span class="ptc" data-ptcell="9"  style="grid-column:7;grid-row:2">F</span>
+      <span class="ptc" data-ptcell="10" style="grid-column:8;grid-row:2">Ne</span>
+      <span class="ptc" data-ptcell="11" style="grid-column:1;grid-row:3">Na</span>
+      <span class="ptc" data-ptcell="12" style="grid-column:2;grid-row:3">Mg</span>
+      <span class="ptc" data-ptcell="13" style="grid-column:3;grid-row:3">Al</span>
+      <span class="ptc" data-ptcell="14" style="grid-column:4;grid-row:3">Si</span>
+      <span class="ptc" data-ptcell="15" style="grid-column:5;grid-row:3">P</span>
+      <span class="ptc" data-ptcell="16" style="grid-column:6;grid-row:3">S</span>
+      <span class="ptc" data-ptcell="17" style="grid-column:7;grid-row:3">Cl</span>
+      <span class="ptc" data-ptcell="18" style="grid-column:8;grid-row:3">Ar</span>
+      <span class="ptc" data-ptcell="19" style="grid-column:1;grid-row:4">K</span>
+      <span class="ptc" data-ptcell="20" style="grid-column:2;grid-row:4">Ca</span>
+      <span class="ptc" data-ptcell="31" style="grid-column:3;grid-row:4">Ga</span>
+      <span class="ptc" data-ptcell="32" style="grid-column:4;grid-row:4">Ge</span>
+      <span class="ptc" data-ptcell="33" style="grid-column:5;grid-row:4">As</span>
+      <span class="ptc" data-ptcell="34" style="grid-column:6;grid-row:4">Se</span>
+      <span class="ptc" data-ptcell="35" style="grid-column:7;grid-row:4">Br</span>
+      <span class="ptc" data-ptcell="36" style="grid-column:8;grid-row:4">Kr</span>
+      <span class="ptc" data-ptcell="37" style="grid-column:1;grid-row:5">Rb</span>
+      <span class="ptc" data-ptcell="38" style="grid-column:2;grid-row:5">Sr</span>
+      <span class="ptc" data-ptcell="49" style="grid-column:3;grid-row:5">In</span>
+      <span class="ptc" data-ptcell="50" style="grid-column:4;grid-row:5">Sn</span>
+      <span class="ptc" data-ptcell="51" style="grid-column:5;grid-row:5">Sb</span>
+      <span class="ptc" data-ptcell="52" style="grid-column:6;grid-row:5">Te</span>
+      <span class="ptc" data-ptcell="53" style="grid-column:7;grid-row:5">I</span>
+      <span class="ptc" data-ptcell="54" style="grid-column:8;grid-row:5">Xe</span>
+      <span class="ptc" data-ptcell="55" style="grid-column:1;grid-row:6">Cs</span>
+      <span class="ptc" data-ptcell="56" style="grid-column:2;grid-row:6">Ba</span>
+      <span class="ptc" data-ptcell="81" style="grid-column:3;grid-row:6">Tl</span>
+      <span class="ptc" data-ptcell="82" style="grid-column:4;grid-row:6">Pb</span>
     </div>
 
     <!-- Dev toggle -->
@@ -1016,14 +1070,12 @@
   <div class="fp-rh sw" data-dir="sw"></div><div class="fp-rh se" data-dir="se"></div>
   <div class="fp-rh n"  data-dir="n"></div><div class="fp-rh s"  data-dir="s"></div>
   <div class="fp-rh e"  data-dir="e"></div><div class="fp-rh w"  data-dir="w"></div>
-  <div id="fvModeToggle">
-    <button class="fv-mode-btn active" data-fvmode="electron">Electron</button>
-    <button class="fv-mode-btn" data-fvmode="shell">Shell</button>
-  </div>
+  <div id="fvModeToggle" style="display:none"></div>
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
     <span><span style="color:#00eeff">■</span><span style="color:#00eeff;text-shadow:0 0 4px #00eeff,0 0 10px rgba(0,238,255,0.5)">Repulsion from Electrons (electric)</span></span>
   </div>
+  <div id="forceVizKeyBond" style="display:none"></div>
   <canvas id="forceVizCanvas" width="333" height="180"></canvas>
 </div>
 
@@ -1590,6 +1642,7 @@ let selectedNucleusKey = 'u235';
 let currentSeed = Math.floor(Math.random() * 1e9);
 let viewZoom = 0.265;
 let currentTab = 'shells';
+let panOffsetX = 0, panOffsetY = 0, _panDragState = null;
 
 // ── Action log (for bug reports) ─────────────────────────────────────────────
 const actionLog = [];
@@ -1780,8 +1833,8 @@ const ELEMENT_VALENCE_COLORS = {
    1: '#ffffff',   // H  — white
    2: '#888888',   // He — gray (noble)
    6: '#ffee00',   // C  — yellow
-   8: '#ff5522',   // O  — red-orange
-  10: '#888888',   // Ne — gray (noble)
+   8: '#ff2222',   // O  — red
+  10: '#ffaa22',   // Ne — amber
   11: '#4488ff',   // Na — blue
   17: '#44ff44',   // Cl — green
   18: '#888888',   // Ar — gray (noble)
@@ -2036,11 +2089,11 @@ function drawOrbit3D(ctx) {
   const tbH=document.getElementById('toolbar').offsetHeight;
   const _sbEl=document.getElementById('scrubBar');
   const _sbH=_sbEl.classList.contains('visible')?_sbEl.offsetHeight:0;
-  const centerY=(tbH+H-_sbH)/2;
+  const centerY=(tbH+H-_sbH)/2 + panOffsetY;
 
   const sep = getTwoAtomSep() * orb3dRadScale * viewZoom;
-  const cxA = W/2 - sep/2;
-  const cxB = W/2 + sep/2;
+  const cxA = W/2 - sep/2 + panOffsetX;
+  const cxB = W/2 + sep/2 + panOffsetX;
 
   // Nucleus A
   if (animParent) {
@@ -3147,10 +3200,24 @@ function _sliderFromZoom(z) {
 
 function applyAutoScale() {
   if (!autoScaleZoom || !electrons.length) return;
-  const outerShell = Math.max(...electrons.map(e => e.shell));
-  const outerR = getShellRadius(outerShell);
-  const H = canvas.height;
-  const targetZoom = Math.min((H * 0.34) / outerR, 2.0);
+  const hazeEdge = r => r + (eShellBandHW + r * 0.1) * 3;  // outer shell haze outer radius
+
+  const outerA = Math.max(...electrons.map(e => e.shell));
+  const rA = getShellRadius(outerA);
+  const edgeA = hazeEdge(rA);
+
+  let totalWidth;
+  if (animParentB && electronsB.length) {
+    const outerB = Math.max(...electronsB.map(e => e.shell));
+    const rB = getShellRadiusForZ(outerB, atomBZ);
+    const edgeB = hazeEdge(rB);
+    totalWidth = edgeA + getTwoAtomSep() + edgeB;
+  } else {
+    totalWidth = 2 * edgeA;
+  }
+
+  const W = canvas.width;
+  const targetZoom = Math.min((W * 0.80) / totalWidth, 2.0);
   viewZoom = targetZoom;
   const sl = document.getElementById('zoomSlider');
   if (sl) sl.value = _sliderFromZoom(targetZoom).toFixed(3);
@@ -3457,34 +3524,6 @@ function drawElectronsShells(ctx) {
   if (!animParent || !electrons.length) return;
   drawElectronsShellsFor(ctx, electrons, animParent.cx, animParent.cy, customZ);
 
-  // Highlight selection (wrapper only)
-  if (arrowMode > 0) {
-    const cx = animParent.cx, cy = animParent.cy;
-    const Z = viewZoom;
-    ctx.save();
-    if (fvShellMode && selectedShell >= 0) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.lineWidth = 2 / Z;
-      ctx.setLineDash([6 / Z, 4 / Z]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, getShellRadius(selectedShell), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    } else if (!fvShellMode && selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length) {
-      const se = electrons[selectedElectronIdx];
-      const sr = getShellRadius(se.shell) + (se.radialOffset || 0);
-      const sex = cx + Math.cos(se.angle) * sr;
-      const sey = cy + Math.sin(se.angle) * sr;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.lineWidth = 1.5 / Z;
-      ctx.setLineDash([4 / Z, 3 / Z]);
-      ctx.beginPath();
-      ctx.arc(sex, sey, 14 / Z, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    ctx.restore();
-  }
 }
 
 function drawShellRingsFor(ctx, cx, cy, elecs, Z) {
@@ -3573,10 +3612,6 @@ function fvArrowOnCtx(c, fromX, fromY, nx, ny, len, color, lw, headLen) {
 
 // Horizontal camera shift so nucleus centers in the space left of the force panel.
 function getCameraShiftX() {
-  if (arrowMode > 0 && currentTab === 'shells') {
-    const panelW = forceVizPanelEl.offsetWidth || 424;
-    return -(panelW + 20) / 2;
-  }
   return 0;
 }
 
@@ -3594,9 +3629,7 @@ function syncForceVizCanvasSize() {
 }
 
 function syncForceVizVisibility() {
-  const showFV = arrowMode > 0 && (currentTab === 'shells');
-  forceVizPanelEl.style.display = showFV ? 'block' : 'none';
-  if (showFV) { syncForceVizCanvasSize(); drawForceViz(); }
+  forceVizPanelEl.style.display = 'none';
   draw();
 }
 
@@ -3710,10 +3743,39 @@ function drawForceVizShell() {
 
 function drawForceViz() {
   if (arrowMode === 0 || currentTab !== 'shells') return;
-  if (fvShellMode) { drawForceVizShell(); return; }
   const fvc = forceVizCv.getContext('2d');
   const W = forceVizCv.width, H = forceVizCv.height;
   fvc.clearRect(0, 0, W, H);
+
+  // ── Bond-electron case: two nucleus arrows, one per atom ───────────────────
+  if (selectedBondDotIdx >= 0 && selectedBondDotIdx < _bondDots.length && animParentB) {
+    const dot = _bondDots[selectedBondDotIdx];
+    const bx = dot.x, by = dot.y;
+    const cxA = animParent.cx, cyA = animParent.cy;
+    const sep_v = getTwoAtomSep();
+    const cxB = cxA + sep_v, cyB = cyA;
+
+    const dxA = cxA - bx, dyA = cyA - by, dA = Math.sqrt(dxA*dxA + dyA*dyA) || 1;
+    const dxB = cxB - bx, dyB = cyB - by, dB = Math.sqrt(dxB*dxB + dyB*dyB) || 1;
+    const fA = eK * Math.max(customZ,  1) / (dA * dA);
+    const fB = eK * Math.max(atomBZ, 1) / (dB * dB);
+
+    const colA = _valenceColorForZ(customZ), colB = _valenceColorForZ(atomBZ);
+    const REF = eK / ((sep_v / 2) * (sep_v / 2));
+    const MAX = Math.min(W, H) * 0.36 * 0.3;
+    const aLen = f => MAX * Math.log1p(f / REF * 4) / Math.log1p(4);
+    const panelCx = W / 2, panelCy = H / 2;
+
+    // Bond electron dot at center
+    fvc.fillStyle = '#eeff00'; fvc.shadowColor = '#eeff00'; fvc.shadowBlur = 8;
+    fvc.beginPath(); fvc.arc(panelCx, panelCy, 5, 0, Math.PI*2); fvc.fill();
+    fvc.shadowBlur = 0;
+
+    const fixedHead = MAX * 0.35;
+    fvArrowOnCtx(fvc, panelCx, panelCy, -1, 0, aLen(fA), colA, 3, fixedHead);
+    fvArrowOnCtx(fvc, panelCx, panelCy,  1, 0, aLen(fB), colB, 3, fixedHead);
+    return;
+  }
 
   if (selectedElectronIdx < 0 || selectedElectronIdx >= electrons.length || !animParent) {
     // No selection — show hint text
@@ -3721,7 +3783,7 @@ function drawForceViz() {
     fvc.font = '13px Lexend, sans-serif';
     fvc.textAlign = 'center';
     fvc.textBaseline = 'middle';
-    fvc.fillText('Click an electron to see its forces', W / 2, H / 2);
+    fvc.fillText('Click a valence electron to see its forces', W / 2, H / 2);
     return;
   }
 
@@ -4053,8 +4115,8 @@ function draw() {
   const _centerY=(_tbH+_H-_sbH)/2;
 
   const sep=getTwoAtomSep();
-  const _camX=_W/2+getCameraShiftX()-sep*viewZoom/2;
-  ctx.translate(_camX, _centerY);
+  const _camX=_W/2+getCameraShiftX()-sep*viewZoom/2+panOffsetX;
+  ctx.translate(_camX, _centerY+panOffsetY);
   ctx.scale(viewZoom, viewZoom);
   ctx.translate(-_W/2, -_H/2);
 
@@ -4092,6 +4154,121 @@ function draw() {
 
   _drawBondDots(ctx);
 
+  // ── Force visualization drawn inline on main canvas ──────────────────────
+  if (arrowMode > 0 && currentTab === 'shells') {
+    ctx.save();
+    const lw = 2 / vz;
+
+    // Helper: draw dotted ring + 6 inward arrows for one atom
+    const drawAtomForceRing = (cx, cy, shellR, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2 / vz;
+      ctx.globalAlpha = 0.55;
+      ctx.setLineDash([6 / vz, 5 / vz]);
+      ctx.beginPath(); ctx.arc(cx, cy, shellR, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      const arrowLen = shellR * 0.70;
+      const headLen  = arrowLen * 0.32;
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        fvArrowOnCtx(ctx,
+          cx + Math.cos(angle) * shellR, cy + Math.sin(angle) * shellR,
+          -Math.cos(angle), -Math.sin(angle),
+          arrowLen, color, lw, headLen);
+      }
+    };
+
+    // Atom A shell ring
+    if (animParent && electrons.length) {
+      const outerSA = Math.max(...electrons.map(e => e.shell));
+      drawAtomForceRing(animParent.cx, animParent.cy, getShellRadius(outerSA), _valenceColorForZ(customZ));
+    }
+    // Atom B shell ring (bond mode)
+    if (animParentB && electronsB.length) {
+      const outerSB = Math.max(...electronsB.map(e => e.shell));
+      const shellRB = getShellRadiusForZ(outerSB, atomBZ);
+      drawAtomForceRing(animParent.cx + sep, animParent.cy, shellRB, _valenceColorForZ(atomBZ));
+    }
+
+    // Selection ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.5 / vz;
+    ctx.setLineDash([4 / vz, 3 / vz]);
+    if (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length) {
+      const se = electrons[selectedElectronIdx];
+      const sr = getShellRadius(se.shell) + (se.radialOffset || 0);
+      const sex = animParent.cx + Math.cos(se.angle) * sr;
+      const sey = animParent.cy + Math.sin(se.angle) * sr;
+      ctx.beginPath(); ctx.arc(sex, sey, 14 / vz, 0, Math.PI * 2); ctx.stroke();
+    } else if (selectedBondDotIdx >= 0 && selectedBondDotIdx < _bondDots.length) {
+      const dot = _bondDots[selectedBondDotIdx];
+      ctx.beginPath(); ctx.arc(dot.x, dot.y, 14 / vz, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Selected electron: force arrows from that electron on main canvas
+    if (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length && animParent) {
+      const se = electrons[selectedElectronIdx];
+      const sr = getShellRadius(se.shell) + (se.radialOffset || 0);
+      const sex = animParent.cx + Math.cos(se.angle) * sr;
+      const sey = animParent.cy + Math.sin(se.angle) * sr;
+      const cx = animParent.cx, cy = animParent.cy;
+
+      const REF_F = eK * Math.max(customZ, 1) / (sr * sr);
+      const MAX_ARR = sr * 1.25;
+      const aLen = f => MAX_ARR * Math.log1p(f / REF_F * 4) / Math.log1p(4);
+
+      // Nuclear attraction
+      const dxN = cx - sex, dyN = cy - sey;
+      const distN = Math.sqrt(dxN * dxN + dyN * dyN) || 1;
+      const fNuc = eK * Math.max(customZ, 1) / (distN * distN);
+      const arLen = aLen(fNuc);
+      fvArrowOnCtx(ctx, sex, sey, dxN / distN, dyN / distN, arLen, FV_NUC_COLOR, lw, arLen * 0.28);
+
+      // Net electron repulsion from same atom's electrons
+      let frex = 0, frey = 0;
+      for (let i = 0; i < electrons.length; i++) {
+        if (i === selectedElectronIdx) continue;
+        const oe = electrons[i];
+        const oer = getShellRadius(oe.shell) + (oe.radialOffset || 0);
+        const oex = cx + Math.cos(oe.angle) * oer;
+        const oey = cy + Math.sin(oe.angle) * oer;
+        const ddx = sex - oex, ddy = sey - oey;
+        const d2 = Math.max(ddx * ddx + ddy * ddy, 400);
+        const d = Math.sqrt(d2);
+        frex += eK / d2 * ddx / d;
+        frey += eK / d2 * ddy / d;
+      }
+      const fRep = Math.sqrt(frex * frex + frey * frey);
+      if (fRep > 0.001) {
+        const repLen = aLen(fRep);
+        fvArrowOnCtx(ctx, sex, sey, frex / fRep, frey / fRep, repLen, FV_REP_COLOR, lw, repLen * 0.28);
+      }
+    }
+
+    // Selected bond dot: arrows toward each nucleus
+    if (selectedBondDotIdx >= 0 && selectedBondDotIdx < _bondDots.length && animParent && animParentB) {
+      const dot = _bondDots[selectedBondDotIdx];
+      const bx = dot.x, by = dot.y;
+      const cxA = animParent.cx, cyA = animParent.cy;
+      const cxB = cxA + sep, cyB = cyA;
+      const dxA = cxA - bx, dyA = cyA - by, dA = Math.sqrt(dxA * dxA + dyA * dyA) || 1;
+      const dxB = cxB - bx, dyB = cyB - by, dB = Math.sqrt(dxB * dxB + dyB * dyB) || 1;
+      const fA = eK * Math.max(customZ, 1) / (dA * dA);
+      const fB = eK * Math.max(atomBZ, 1) / (dB * dB);
+      const colA = _valenceColorForZ(customZ), colB = _valenceColorForZ(atomBZ);
+      const REF = eK / ((sep / 2) * (sep / 2));
+      const MAX_ARR = sep * 0.5;
+      const bLen = f => MAX_ARR * Math.log1p(f / REF * 4) / Math.log1p(4);
+      const aLA = bLen(fA), aLB = bLen(fB);
+      fvArrowOnCtx(ctx, bx, by, dxA / dA, dyA / dA, aLA, colA, lw, aLA * 0.28);
+      fvArrowOnCtx(ctx, bx, by, dxB / dB, dyB / dB, aLB, colB, lw, aLB * 0.28);
+    }
+
+    ctx.restore();
+  }
+
   ctx.restore();
   drawColorKey();
   drawEnergyGraph();
@@ -4109,10 +4286,11 @@ function drawColorKey() {
   const colB = animParentB ? _valenceColorForZ(atomBZ) : null;
 
   // Deduplicate (e.g. H-H shows only one entry)
-  const entries = [{ sym: symA, col: colA }];
-  if (symB && (symB !== symA || colB !== colA)) entries.push({ sym: symB, col: colB });
+  const entries = [{ sym: symA, col: colA, Z: customZ }];
+  if (symB && (symB !== symA || colB !== colA)) entries.push({ sym: symB, col: colB, Z: atomBZ });
 
-  const dotR = 6, rowH = 20, pad = 14;
+  const dotR = 6, pad = 14, rowH = 20;
+  const showEN = arrowMode > 0 && currentTab === 'shells';
   const x = W - pad;
   const yStart = tbH + pad + dotR;
 
@@ -4131,6 +4309,12 @@ function drawColorKey() {
     ctx.shadowBlur = 0;
     ctx.fillStyle = e.col;
     ctx.fillText(e.sym, x - dotR - 6, y);
+    if (showEN) {
+      const en = ELECTRONEGATIVITY[e.Z];
+      const enStr = en != null ? `EN = ${en.toFixed(2)}` : 'EN = —';
+      const symW = ctx.measureText(e.sym).width;
+      ctx.fillText(enStr, x - dotR - 6 - symW - 10, y);
+    }
   });
   ctx.restore();
 }
@@ -4183,9 +4367,16 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 
 
+let _autoscaleOffAt = 0;
 document.getElementById('autoscaleCheckbox').addEventListener('change', function() {
   autoScaleZoom = this.checked;
-  if (autoScaleZoom) applyAutoScale();
+  if (autoScaleZoom) {
+    const freshOn = _autoscaleOffAt === 0 || Date.now() - _autoscaleOffAt < 5000;
+    if (freshOn) { panOffsetX = 0; panOffsetY = 0; }
+    applyAutoScale();
+  } else {
+    _autoscaleOffAt = Date.now();
+  }
 });
 
 document.getElementById('showElectric').addEventListener('change', function() {
@@ -4261,7 +4452,6 @@ function setForceWheelActive(targetBtn) {
 }
 
 let arrowMode = 0;
-let fvShellMode = false;
 
 function syncElemBtnActive() {
   document.querySelectorAll('#elemGrid .elem-btn, #elemGridA .elem-btn').forEach(b => {
@@ -4274,7 +4464,7 @@ function syncElemBtnActiveB() {
   });
 }
 let selectedElectronIdx = -1;
-let selectedShell = -1;
+let selectedBondDotIdx  = -1;
 let fvArrowExp = 0.13;  // exponent for shell-mode arrow length curve (lower = small forces bigger)
 
 // ─── Tab switching ────────────────────────────────────────────────────────────
@@ -4315,6 +4505,10 @@ function syncTabButtons() {
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
     currentTab = btn.dataset.tab;
+    if (currentTab === 'shells' && arrowMode === 0) {
+      arrowMode = 2;
+      setForceWheelActive(document.querySelector('.awheel-item[data-fmode="2"]'));
+    }
     syncTabButtons();
     _syncDevSliders();
     syncForceVizVisibility();
@@ -4328,7 +4522,7 @@ document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
 document.querySelectorAll('.awheel-item[data-fmode]').forEach(btn => {
   btn.addEventListener('click', () => {
     arrowMode = parseInt(btn.dataset.fmode);
-    if (arrowMode === 0) selectedElectronIdx = -1;
+    if (arrowMode === 0) { selectedElectronIdx = -1; selectedBondDotIdx = -1; }
     logAction('Forces: ' + (arrowMode === 0 ? 'off' : 'on'));
     setForceWheelActive(btn);
     syncForceVizVisibility();
@@ -4337,18 +4531,6 @@ document.querySelectorAll('.awheel-item[data-fmode]').forEach(btn => {
 });
 
 // syncOrb3dShellSliders is called by the patched syncShellDevSliders below
-
-document.querySelectorAll('.fv-mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    fvShellMode = btn.dataset.fvmode === 'shell';
-    if (fvShellMode && selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length) {
-      selectedShell = electrons[selectedElectronIdx].shell;
-    }
-    document.querySelectorAll('.fv-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
-    draw();
-    drawForceViz();
-  });
-});
 
 // ─── Force viz panel drag + resize ───────────────────────────────────────────
 let _fvResize = null;
@@ -4585,6 +4767,18 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     _initBondDots();
     _syncBondConfigSliders();                 // sync HTML panel sliders to loaded values
     _syncDevSliders();
+    // Highlight the two atoms in the mini periodic table
+    document.querySelectorAll('[data-ptcell]').forEach(el => {
+      el.style.color = 'rgba(200,190,255,0.22)';
+      el.style.background = 'transparent';
+    });
+    [zA, zB].forEach(Z => {
+      const el = document.querySelector(`[data-ptcell="${Z}"]`);
+      if (!el) return;
+      const c = _valenceColorForZ(Z);
+      el.style.color = c;
+      el.style.background = c + '28';
+    });
     draw();
   }
   _reapplyCurrentBond = () => _applyBondCombo(document.getElementById('bondComboSelect').value, true, false);
@@ -4773,12 +4967,61 @@ function _orb3dRotateX(dTheta) {
   }
 }
 
-canvas.addEventListener('mousedown', e => {
-  if (currentTab !== 'orbit3d') return;
-  orb3dDragState = { lastX: e.clientX, lastY: e.clientY, moved: false };
-  canvas.style.cursor = 'grabbing';
-  e.preventDefault();
+// ─── Unified pointer-event drag: pan (right-click / shift-left) + orbit3d rotation ──
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch') return;  // touch handled separately below
+  const isPan = e.button === 2 || (e.button === 0 && e.shiftKey);
+  if (isPan) {
+    _panDragState = { lastX: e.clientX, lastY: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+  if (currentTab === 'orbit3d' && e.button === 0) {
+    orb3dDragState = { lastX: e.clientX, lastY: e.clientY, moved: false };
+    canvas.setPointerCapture(e.pointerId);
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
 });
+canvas.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  if (_panDragState) {
+    panOffsetX += e.clientX - _panDragState.lastX;
+    panOffsetY += e.clientY - _panDragState.lastY;
+    _panDragState.lastX = e.clientX;
+    _panDragState.lastY = e.clientY;
+    draw();
+    return;
+  }
+  if (orb3dDragState && currentTab === 'orbit3d') {
+    const dx = e.clientX - orb3dDragState.lastX;
+    const dy = e.clientY - orb3dDragState.lastY;
+    orb3dDragState.lastX = e.clientX;
+    orb3dDragState.lastY = e.clientY;
+    _orb3dApplyDrag(dx, dy);
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  if (e.pointerType === 'touch') return;
+  if (_panDragState) {
+    _panDragState = null;
+    canvas.releasePointerCapture(e.pointerId);
+    canvas.style.cursor = '';
+    return;
+  }
+  if (orb3dDragState) {
+    canvas.releasePointerCapture(e.pointerId);
+    if (orb3dDragState.moved) orb3dPaused = false;
+    else orb3dPaused = !orb3dPaused;
+    orb3dDragState = null;
+    canvas.style.cursor = currentTab === 'orbit3d' ? 'grab' : '';
+  }
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch support for orbit3d rotation
 canvas.addEventListener('touchstart', e => {
   if (currentTab !== 'orbit3d') return;
   const t = e.touches[0];
@@ -4798,32 +5041,6 @@ function _orb3dApplyDrag(dx, dy) {
   _orb3dRotateY(dAZ);
   _orb3dRotateX(dEL);
 }
-window.addEventListener('mousemove', e => {
-  if (!orb3dDragState || currentTab !== 'orbit3d') return;
-  const dx = e.clientX - orb3dDragState.lastX;
-  const dy = e.clientY - orb3dDragState.lastY;
-  orb3dDragState.lastX = e.clientX;
-  orb3dDragState.lastY = e.clientY;
-  _orb3dApplyDrag(dx, dy);
-});
-window.addEventListener('touchmove', e => {
-  if (!orb3dDragState || currentTab !== 'orbit3d') return;
-  const t = e.touches[0];
-  const dx = t.clientX - orb3dDragState.lastX;
-  const dy = t.clientY - orb3dDragState.lastY;
-  orb3dDragState.lastX = t.clientX;
-  orb3dDragState.lastY = t.clientY;
-  _orb3dApplyDrag(dx, dy);
-  e.preventDefault();
-}, { passive: false });
-
-window.addEventListener('mouseup', () => {
-  if (!orb3dDragState) return;
-  if (orb3dDragState.moved) orb3dPaused = false;  // drag release → resume
-  else orb3dPaused = !orb3dPaused;                // click → toggle
-  orb3dDragState = null;
-  canvas.style.cursor = currentTab === 'orbit3d' ? 'grab' : '';
-});
 window.addEventListener('touchend', () => {
   if (!orb3dDragState) return;
   if (orb3dDragState.moved) orb3dPaused = false;
@@ -4831,49 +5048,48 @@ window.addEventListener('touchend', () => {
   orb3dDragState = null;
 });
 
-// ─── Canvas click: select electron or shell for force display ────────────────
+// ─── Canvas click: select valence electron or bond dot for force display ─────
 canvas.addEventListener('click', e => {
-  if (arrowMode === 0 || currentTab !== 'shells' || !animParent || !electrons.length) return;
+  if (arrowMode === 0 || currentTab !== 'shells' || !animParent) return;
   const rect = canvas.getBoundingClientRect();
   const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
 
-  // Convert screen → world
+  // Convert screen → world using the same transform as drawScene
   const _W = canvas.width, _H = canvas.height;
   const _tbH = document.getElementById('toolbar').offsetHeight;
   const _sbEl = document.getElementById('scrubBar');
   const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
   const _centerY = (_tbH + _H - _sbH) / 2;
-  const _camX2 = _W / 2 + getCameraShiftX();
-  const wx = (sx - _camX2) / viewZoom + _W / 2;
-  const wy = (sy - _centerY) / viewZoom + _H / 2;
+  const _sep = getTwoAtomSep();
+  const _camX = _W / 2 + getCameraShiftX() - _sep * viewZoom / 2 + panOffsetX;
+  const wx = (sx - _camX) / viewZoom + _W / 2;
+  const wy = (sy - (_centerY + panOffsetY)) / viewZoom + _H / 2;
 
   const cx = animParent.cx, cy = animParent.cy;
+  const HIT_R2 = (20 / viewZoom) ** 2;
+  let bestD2 = HIT_R2, bestElec = -1, bestBond = -1;
 
-  if (fvShellMode) {
-    // Hit test: distance from nucleus vs each occupied shell's radius
-    const distFromNucleus = Math.sqrt((wx - cx) ** 2 + (wy - cy) ** 2);
-    const HIT_R = 28 / viewZoom;
-    const occupied = [...new Set(electrons.map(e => e.shell))];
-    let best = -1, bestD = HIT_R;
-    for (const s of occupied) {
-      const d = Math.abs(distFromNucleus - getShellRadius(s));
-      if (d < bestD) { bestD = d; best = s; }
-    }
-    selectedShell = best;
-  } else {
-    const HIT_R = 20 / viewZoom;
-    let best = -1, bestD2 = HIT_R * HIT_R;
+  // Atom A: outer-shell electrons only
+  if (electrons.length) {
+    const outerS = Math.max(...electrons.map(e => e.shell));
     for (let i = 0; i < electrons.length; i++) {
       const ei = electrons[i];
+      if (ei.shell !== outerS) continue;
       const r = getShellRadius(ei.shell);
-      const ex = cx + Math.cos(ei.angle) * r;
-      const ey = cy + Math.sin(ei.angle) * r;
-      const d2 = (wx - ex) ** 2 + (wy - ey) ** 2;
-      if (d2 < bestD2) { bestD2 = d2; best = i; }
+      const d2 = (wx - (cx + Math.cos(ei.angle) * r)) ** 2 + (wy - (cy + Math.sin(ei.angle) * r)) ** 2;
+      if (d2 < bestD2) { bestD2 = d2; bestElec = i; bestBond = -1; }
     }
-    selectedElectronIdx = best;
   }
 
+  // Bond dots (already in corrected world coords)
+  for (let i = 0; i < _bondDots.length; i++) {
+    const dot = _bondDots[i];
+    const d2 = (wx - dot.x) ** 2 + (wy - dot.y) ** 2;
+    if (d2 < bestD2) { bestD2 = d2; bestElec = -1; bestBond = i; }
+  }
+
+  selectedElectronIdx = bestElec;
+  selectedBondDotIdx  = bestBond;
   syncForceVizVisibility();
   draw();
 });
@@ -4998,7 +5214,7 @@ arrowMode = 0;
 setForceWheelActive(document.querySelector('.awheel-item[data-fmode="0"]'));
 currentTab = 'orbit3d';
 syncTabButtons();
-document.getElementById('showElectric').checked = true;
+document.getElementById('showElectric').checked = false;
 document.getElementById('showElectric').dispatchEvent(new Event('change'));
 syncForceVizVisibility();
 draw();
