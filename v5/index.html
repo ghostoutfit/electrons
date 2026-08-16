@@ -881,6 +881,7 @@
     <div id="tabBar">
       <button class="tab-btn active" data-gwmode="grab">Grab</button>
       <button class="tab-btn" data-gwmode="wire">Wire</button>
+      <button class="tab-btn" data-gwmode="molecules">Molecules</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
@@ -960,6 +961,18 @@
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch;align-items:center">
         <canvas id="wireDialCanvas" width="80" height="80" style="cursor:pointer;touch-action:none;display:block"></canvas>
         <div style="font-size:16px;font-weight:600;color:rgba(255,60,60,0.95);text-align:center;letter-spacing:0.03em;font-variant-numeric:tabular-nums;margin-top:-20px" id="wireChargeLabel">0.0 V</div>
+      </div>
+    </div>
+
+    <!-- Molecules control box -->
+    <div class="ctrl-box-blue" id="molCtrlBox" style="display:none">
+      <span class="ctrl-box-label ctrl-box-label-blue">MOLECULE</span>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;align-self:stretch;justify-content:center">
+        <select id="molSelect" style="margin-top:4px;padding:4px 8px;background:rgba(20,15,40,0.85);color:rgba(220,210,255,0.92);border:1px solid rgba(100,80,200,0.4);border-radius:6px;font-family:Lexend,sans-serif;font-size:13px;">
+          <option value="co2">CO&#x2082;</option>
+          <option value="h2o">H&#x2082;O</option>
+          <option value="nacl">NaCl lattice</option>
+        </select>
       </div>
     </div>
 
@@ -3907,6 +3920,7 @@ function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (currentTab === 'orbit3d') { drawOrbit3D(ctx); drawEnergyBarPanel(); return; }
+  if (grabWireMode === 'molecules') { drawMolecule(ctx); return; }
   if (!animParent) { drawEnergyGraph(); drawEnergyBarPanel(); return; }
 
   ctx.save();
@@ -4175,12 +4189,217 @@ document.getElementById('energyGraphToggle').addEventListener('click', function(
   updateGraphBtn();
 });
 
+// ─── Molecule mode functions ──────────────────────────────────────────────────
+
+// Returns the shell radius for a given shell index and atomic number Z
+// by temporarily swapping the globals that getShellRadius() relies on.
+function _getShellRadiusForZ(shell, Z, ap, elecs) {
+  const _savedAP = animParent, _savedE = electrons, _savedZ = customZ;
+  animParent = ap; electrons = elecs; customZ = Z;
+  const r = getShellRadius(shell);
+  animParent = _savedAP; electrons = _savedE; customZ = _savedZ;
+  return r;
+}
+
+// Build an electron array for a site given its atomic number and nucleus object.
+function _molCreateElecs(Z, ap) {
+  // Electron shell filling: shell counts per element
+  const shellFill = {
+    1:  [1],
+    6:  [2, 4],
+    8:  [2, 6],
+    11: [2, 8, 1],
+    17: [2, 8, 7],
+  };
+  const counts = shellFill[Z] || [];
+  const elecs = [];
+  for (let s = 0; s < counts.length; s++) {
+    const n = counts[s];
+    // Need a temporary electron array to compute shell radius correctly
+    const tempElecs = elecs.slice();
+    for (let k = 0; k < (s === 0 ? 2 : s === 1 ? 10 : 18); k++) tempElecs.push({ shell: s, angle: 0, dAngle: 0.018, radialOffset: 0, dRadial: 0, trail: [] });
+    const sr = _getShellRadiusForZ(s, Z, ap, tempElecs);
+    for (let k = 0; k < n; k++) {
+      const angle = (k / n) * Math.PI * 2 + (s * 0.37);
+      elecs.push({
+        x: ap.cx + Math.cos(angle) * sr,
+        y: ap.cy + Math.sin(angle) * sr,
+        vx: 0, vy: 0,
+        trail: [],
+        shell: s,
+        angle,
+        dAngle: 0.018 + s * 0.003,
+        radialOffset: 0,
+        dRadial: 0,
+      });
+    }
+  }
+  return elecs;
+}
+
+// Set up molSites and molBonds for the current molPreset.
+function initMolecule() {
+  const W = canvas.width, H = canvas.height;
+  const baseSep = 280;
+  const naclSep = 200;
+
+  let layout = []; // { Z, cx_rel, cy_rel }
+  let bonds  = [];
+
+  if (molPreset === 'co2') {
+    layout = [
+      { Z: 8, cx_rel: -baseSep, cy_rel: 0 },
+      { Z: 6, cx_rel: 0,        cy_rel: 0 },
+      { Z: 8, cx_rel: +baseSep, cy_rel: 0 },
+    ];
+    bonds = [[0, 1], [1, 2]];
+  } else if (molPreset === 'h2o') {
+    const ha = (104.5 / 2) * Math.PI / 180;
+    layout = [
+      { Z: 8, cx_rel: 0,                        cy_rel: 0 },
+      { Z: 1, cx_rel: -Math.sin(ha) * baseSep,   cy_rel: Math.cos(ha) * baseSep },
+      { Z: 1, cx_rel: +Math.sin(ha) * baseSep,   cy_rel: Math.cos(ha) * baseSep },
+    ];
+    bonds = [[0, 1], [0, 2]];
+  } else { // nacl
+    const sep = naclSep;
+    layout = [];
+    bonds = [];
+    for (let gy = -1; gy <= 1; gy++) {
+      for (let gx = -1; gx <= 1; gx++) {
+        layout.push({ Z: (gx + gy) % 2 === 0 ? 17 : 11, cx_rel: gx * sep, cy_rel: gy * sep });
+      }
+    }
+    for (let i = 0; i < layout.length; i++) {
+      const ai = layout[i];
+      for (let j = i + 1; j < layout.length; j++) {
+        const aj = layout[j];
+        const dgx = Math.round((aj.cx_rel - ai.cx_rel) / sep);
+        const dgy = Math.round((aj.cy_rel - ai.cy_rel) / sep);
+        if (Math.abs(dgx) + Math.abs(dgy) === 1) bonds.push([i, j]);
+      }
+    }
+  }
+
+  molBonds = bonds;
+  molSites = layout.map((s, idx) => {
+    const cx = W / 2 + s.cx_rel;
+    const cy = H / 2 + s.cy_rel;
+    const N = autoNeutrons(s.Z);
+    const ap = generateNucleus(s.Z, N, cx, cy, 42 + idx * 7);
+    const elecs = _molCreateElecs(s.Z, ap);
+    return { Z: s.Z, ap, elecs, cx_rel: s.cx_rel, cy_rel: s.cy_rel };
+  });
+}
+
+// Simplified orbital step for molecule electrons.
+function stepMoleculeElectrons() {
+  if (!molSites.length) return;
+  for (const site of molSites) {
+    const elecs = site.elecs;
+    // Same-shell repulsion (mild)
+    for (let i = 0; i < elecs.length; i++) {
+      for (let j = i + 1; j < elecs.length; j++) {
+        const ei = elecs[i], ej = elecs[j];
+        if (ei.shell !== ej.shell) continue;
+        let dA = ei.angle - ej.angle;
+        dA = ((dA + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+        const absDA = Math.abs(dA);
+        if (absDA < 0.001) continue;
+        const sign = dA > 0 ? 1 : -1;
+        const F = (SHELL_REPULSE_K * 0.3) / Math.max(absDA, SHELL_MIN_SEP);
+        ei.dAngle += sign * F;
+        ej.dAngle -= sign * F;
+      }
+    }
+    // Advance each electron angle
+    for (const e of elecs) {
+      e.dAngle += (Math.random() - 0.5) * SHELL_JITTER * 0.5;
+      e.dAngle *= SHELL_ANGULAR_DAMP;
+      e.dAngle = Math.max(-SHELL_MAX_DA, Math.min(SHELL_MAX_DA, e.dAngle));
+      if (Math.abs(e.dAngle) < SHELL_BASE_DA) {
+        const dir = e.dAngle >= 0 ? 1 : -1;
+        e.dAngle += dir * (SHELL_BASE_DA - Math.abs(e.dAngle)) * 0.12;
+      }
+      e.angle = (e.angle + e.dAngle + Math.PI * 2) % (Math.PI * 2);
+      // Update trail
+      const sr = _getShellRadiusForZ(e.shell, site.Z, site.ap, site.elecs);
+      const px = site.ap.cx + Math.cos(e.angle) * sr;
+      const py = site.ap.cy + Math.sin(e.angle) * sr;
+      e.trail.push({ x: px, y: py });
+      if (e.trail.length > 8) e.trail.shift();
+    }
+  }
+}
+
+// Compute a zoom level that fits all molecule sites into 75% of the canvas.
+function _molComputeZoom() {
+  if (!molSites.length) return 1;
+  const maxExtent = Math.max(...molSites.map(s => {
+    const outerShell = s.elecs.length ? Math.max(...s.elecs.map(e => e.shell)) : 0;
+    const outerR = _getShellRadiusForZ(outerShell, s.Z, s.ap, s.elecs);
+    return Math.max(Math.abs(s.cx_rel), Math.abs(s.cy_rel)) + outerR * 1.5;
+  }));
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const minDim = Math.min(canvas.width, canvas.height - tbH);
+  return Math.min((minDim * 0.38) / maxExtent, 2.0);
+}
+
+// Draw a single molecule site (atom with shells and electrons) by temporarily
+// swapping the globals that drawing functions rely on.
+function _molDrawAtom(ctx, site, molZoom) {
+  const _savedAP = animParent, _savedE = electrons, _savedZ = customZ, _savedVZ = viewZoom;
+  animParent = site.ap; electrons = site.elecs; customZ = site.Z; viewZoom = molZoom;
+  if (!_eGlowImg) _buildElectronGlow();
+  drawShellRings(ctx);
+  drawElectronsShells(ctx);
+  animParent = _savedAP; electrons = _savedE; customZ = _savedZ; viewZoom = _savedVZ;
+}
+
+// Main molecule draw — replaces the normal draw() when in molecules mode.
+function drawMolecule(ctx) {
+  const W = canvas.width, H = canvas.height;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const centerX = W / 2 + panOffsetX;
+  const centerY = (tbH + H) / 2 + panOffsetY;
+  const molZoom = _molComputeZoom();
+
+  // Update site nucleus positions so shell rings use the right center
+  for (const site of molSites) {
+    site.ap.cx = W / 2 + site.cx_rel;
+    site.ap.cy = H / 2 + site.cy_rel;
+  }
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.scale(molZoom, molZoom);
+  ctx.translate(-W / 2, -H / 2);
+
+  // Bond lines (behind atoms)
+  for (const [i, j] of molBonds) {
+    const a = molSites[i], b = molSites[j];
+    const x1 = W / 2 + a.cx_rel, y1 = H / 2 + a.cy_rel;
+    const x2 = W / 2 + b.cx_rel, y2 = H / 2 + b.cy_rel;
+    ctx.strokeStyle = 'rgba(200,200,255,0.35)';
+    ctx.lineWidth = 2 / molZoom;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+
+  // Draw each atom
+  for (const site of molSites) _molDrawAtom(ctx, site, molZoom);
+
+  ctx.restore();
+}
+
+// ─── End molecule mode functions ──────────────────────────────────────────────
+
 let idleParticleRAF = null;
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
   if (currentTab === 'orbit3d') { if (!orb3dPaused) stepOrbit3D(); }
   else { stepElectronsShells(); stepWireEjecting(); }
-  if (animParent || currentTab === 'orbit3d') draw();
+  if (grabWireMode === 'molecules') stepMoleculeElectrons();
+  if (animParent || currentTab === 'orbit3d' || grabWireMode === 'molecules') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
 
@@ -4198,7 +4417,11 @@ const FV_LABEL_LAG = 0.03;
 let _draggedElectronIdx = -1;
 let _draggedPos = null;
 let _eDragMoved = false;
-let grabWireMode = 'grab'; // 'grab' | 'wire'
+let grabWireMode = 'grab'; // 'grab' | 'wire' | 'molecules'
+// ─── Molecule mode state ──────────────────────────────────────────────────────
+let molPreset = 'co2'; // 'co2' | 'h2o' | 'nacl'
+let molSites = [];     // array of { Z, ap, elecs, cx_rel, cy_rel }
+let molBonds = [];     // array of [i, j]
 // Free-electron pull normalized by shellR² so return time is consistent across all atom sizes
 const FREE_PULL_NORM = 0.55; // produces ~80 frame return from 2× shell radius for H
 
@@ -4302,8 +4525,11 @@ document.getElementById('showForceValuesCheckbox').addEventListener('change', fu
 
 function _syncGrabWireMode() {
   const isWire = grabWireMode === 'wire';
+  const isMol  = grabWireMode === 'molecules';
   document.getElementById('wireCtrlBox').style.display = isWire ? 'flex' : 'none';
+  document.getElementById('molCtrlBox').style.display  = isMol  ? 'flex' : 'none';
   if (!isWire) { _wireEjectFired = 0; _wireLockedShell = -1; _wireEjecting = []; }
+  if (isMol && molSites.length === 0) initMolecule();
   fvShellMode = false;
   document.querySelectorAll('[data-gwmode]').forEach(b => b.classList.toggle('active', b.dataset.gwmode === grabWireMode));
   forceVizPanelEl.style.left  = 'auto';
@@ -4317,6 +4543,13 @@ document.querySelectorAll('[data-gwmode]').forEach(btn => {
     grabWireMode = btn.dataset.gwmode;
     _syncGrabWireMode();
   });
+});
+
+document.getElementById('molSelect').addEventListener('change', function() {
+  molPreset = this.value;
+  molSites = [];
+  initMolecule();
+  draw();
 });
 
 // syncOrb3dShellSliders is called by the patched syncShellDevSliders below
