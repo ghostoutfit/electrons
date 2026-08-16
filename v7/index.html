@@ -871,7 +871,10 @@
 
 <div id="toolbar">
   <div class="toolbar-row">
-    <div id="tabBar"></div>
+    <div id="tabBar">
+      <button class="tab-btn active" data-mode="bonds">Bonds</button>
+      <button class="tab-btn" data-mode="molecules">Molecules</button>
+    </div>
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <select id="qualitySelect">
         <option value="hi-res">Hi-res</option>
@@ -964,7 +967,6 @@
         <div style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-tab="shells">Shells</button>
           <button class="awheel-item" data-tab="orbit3d">Trails</button>
-          <button class="awheel-item" data-tab="molecules">Molecules</button>
         </div>
         <div id="forceModeRow" style="display:flex;flex-direction:column;gap:4px">
           <button class="awheel-item active" data-fmode="0">Forces off</button>
@@ -1659,7 +1661,8 @@ let selectedNucleusKey = 'u235';
 // ─── Animation state ──────────────────────────────────────────────────────────
 let currentSeed = Math.floor(Math.random() * 1e9);
 let viewZoom = 0.265;
-let currentTab = 'shells';
+let currentTab  = 'shells';
+let currentMode = 'bonds'; // 'bonds' | 'molecules'
 let panOffsetX = 0, panOffsetY = 0, _panDragState = null;
 
 // ── Action log (for bug reports) ─────────────────────────────────────────────
@@ -4125,8 +4128,8 @@ function _drawAtomInCtx(ctx, ap, elecs, Z, showAR, vz, hideOuter = false, bondSu
 function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (currentMode === 'molecules') { drawMolecule(ctx); return; }
   if (currentTab === 'orbit3d') { drawOrbit3D(ctx); return; }
-  if (currentTab === 'molecules') { drawMolecule(ctx); return; }
   if (!animParent) { drawEnergyGraph(); return; }
 
   ctx.save();
@@ -4539,7 +4542,10 @@ function stepMoleculeElectrons() {
     stepElectronsShellsFor(site.elecs, site.Z, false, false);
     for (const e of site.elecs) {
       const sr = getShellRadiusForZ(e.shell, site.Z) + (e.radialOffset || 0);
-      e.trail.push({ x: site.ap.cx + Math.cos(e.angle) * sr, y: site.ap.cy + Math.sin(e.angle) * sr });
+      const px = site.ap.cx + Math.cos(e.angle) * sr;
+      const py = site.ap.cy + Math.sin(e.angle) * sr;
+      e.x = px; e.y = py;
+      e.trail.push({ x: px, y: py });
       if (e.trail.length > eTrailLen) e.trail.shift();
     }
   }
@@ -4577,11 +4583,17 @@ function drawMolecule(ctx) {
     ctx.stroke();
   }
 
-  // Draw each atom: nucleus + shell hazes + electron dots
+  // Draw each atom: nucleus + visualization matching current Shells/Trails selection
   for (const site of molSites) {
     drawCloudOutline(site.ap.cx, site.ap.cy, site.ap.sphereR, ctx);
-    drawShellRingsFor(ctx, site.ap.cx, site.ap.cy, site.elecs, site.Z);
-    drawElectronsShellsFor(ctx, site.elecs, site.ap.cx, site.ap.cy, site.Z);
+    if (currentTab === 'orbit3d') {
+      // Trails view: draw electron trail curves
+      drawElectronsFor(ctx, site.elecs, site.Z);
+    } else {
+      // Shells view: shell haze rings + orbiting dots
+      drawShellRingsFor(ctx, site.ap.cx, site.ap.cy, site.elecs, site.Z);
+      drawElectronsShellsFor(ctx, site.elecs, site.ap.cx, site.ap.cy, site.Z);
+    }
   }
 
   viewZoom = _savedVZ;
@@ -4603,8 +4615,8 @@ function idleParticleLoop() {
   stepBondElectron();
   _stepBondElecSecond();
   _stepBondDots();
-  if (currentTab === 'molecules') stepMoleculeElectrons();
-  if (animParent || currentTab === 'orbit3d' || currentTab === 'molecules') draw();
+  if (currentMode === 'molecules') stepMoleculeElectrons();
+  if (animParent || currentTab === 'orbit3d' || currentMode === 'molecules') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
 
@@ -4659,12 +4671,26 @@ _syncDevSliders();
 document.getElementById('devToggle').addEventListener('change', _syncDevSliders);
 document.getElementById('dev2Toggle').addEventListener('change', _syncDevSliders);
 
+function syncModeButtons() {
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+}
+
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  const isMol = currentTab === 'molecules';
+  const isMol = currentMode === 'molecules';
   document.getElementById('forceModeRow').style.display = (currentTab === 'orbit3d' || isMol) ? 'none' : '';
   document.getElementById('molCtrlBox').style.display   = isMol ? 'flex' : 'none';
 }
+
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentMode = btn.dataset.mode;
+    if (currentMode === 'molecules' && !molSites.length) initMolecule();
+    syncModeButtons();
+    syncTabButtons();
+    draw();
+  });
+});
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -4673,7 +4699,6 @@ document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
       arrowMode = 2;
       setForceWheelActive(document.querySelector('.awheel-item[data-fmode="2"]'));
     }
-    if (currentTab === 'molecules' && !molSites.length) initMolecule();
     syncTabButtons();
     _syncDevSliders();
     syncForceVizVisibility();
@@ -5353,6 +5378,7 @@ document.getElementById('themeLight').addEventListener('click', () => {
 applyTheme('A');
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+syncModeButtons();
 syncTabButtons();
 initNuclei();
 
