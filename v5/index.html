@@ -437,6 +437,14 @@
   .ctrl-box-blue .toggle-label { font-size: 13px; gap: 6px; }
   .ctrl-box-blue .field-label-electric { font-size: 13px; }
   .ctrl-box-blue .awheel-item { font-size: 14px; padding: 5px 14px; }
+  .ptc {
+    font-size: 8px; font-weight: 600; letter-spacing: 0.03em;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 2px; cursor: pointer;
+    color: rgba(200,190,255,0.22);
+    transition: color 0.15s, background 0.15s;
+  }
+  .ptc:hover { color: rgba(200,190,255,0.7) !important; background: rgba(255,255,255,0.07) !important; }
   .slider-group label {
     font-size: 10px;
     color: var(--text-dim);
@@ -913,6 +921,52 @@
       <!-- Hidden slider kept in DOM for setNucleusFromZ compatibility -->
       <input type="range" id="protonSlider" min="0" max="36" step="1" value="16" style="display:none">
       <span id="protonSliderVal" style="display:none">16</span>
+    </div>
+
+    <!-- Mini periodic table -->
+    <div id="ptTable" style="align-self:stretch;display:grid;grid-template-columns:repeat(8,19px);grid-template-rows:repeat(6,1fr);gap:1px;padding:4px 6px;border-radius:10px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.02);">
+      <span class="ptc" data-ptcell="1"  style="grid-column:1;grid-row:1">H</span>
+      <span class="ptc" data-ptcell="2"  style="grid-column:8;grid-row:1">He</span>
+      <span class="ptc" data-ptcell="3"  style="grid-column:1;grid-row:2">Li</span>
+      <span class="ptc" data-ptcell="4"  style="grid-column:2;grid-row:2">Be</span>
+      <span class="ptc" data-ptcell="5"  style="grid-column:3;grid-row:2">B</span>
+      <span class="ptc" data-ptcell="6"  style="grid-column:4;grid-row:2">C</span>
+      <span class="ptc" data-ptcell="7"  style="grid-column:5;grid-row:2">N</span>
+      <span class="ptc" data-ptcell="8"  style="grid-column:6;grid-row:2">O</span>
+      <span class="ptc" data-ptcell="9"  style="grid-column:7;grid-row:2">F</span>
+      <span class="ptc" data-ptcell="10" style="grid-column:8;grid-row:2">Ne</span>
+      <span class="ptc" data-ptcell="11" style="grid-column:1;grid-row:3">Na</span>
+      <span class="ptc" data-ptcell="12" style="grid-column:2;grid-row:3">Mg</span>
+      <span class="ptc" data-ptcell="13" style="grid-column:3;grid-row:3">Al</span>
+      <span class="ptc" data-ptcell="14" style="grid-column:4;grid-row:3">Si</span>
+      <span class="ptc" data-ptcell="15" style="grid-column:5;grid-row:3">P</span>
+      <span class="ptc" data-ptcell="16" style="grid-column:6;grid-row:3">S</span>
+      <span class="ptc" data-ptcell="17" style="grid-column:7;grid-row:3">Cl</span>
+      <span class="ptc" data-ptcell="18" style="grid-column:8;grid-row:3">Ar</span>
+      <span class="ptc" data-ptcell="19" style="grid-column:1;grid-row:4">K</span>
+      <span class="ptc" data-ptcell="20" style="grid-column:2;grid-row:4">Ca</span>
+      <span class="ptc" data-ptcell="31" style="grid-column:3;grid-row:4">Ga</span>
+      <span class="ptc" data-ptcell="32" style="grid-column:4;grid-row:4">Ge</span>
+      <span class="ptc" data-ptcell="33" style="grid-column:5;grid-row:4">As</span>
+      <span class="ptc" data-ptcell="34" style="grid-column:6;grid-row:4">Se</span>
+      <span class="ptc" data-ptcell="35" style="grid-column:7;grid-row:4">Br</span>
+      <span class="ptc" data-ptcell="36" style="grid-column:8;grid-row:4">Kr</span>
+      <span class="ptc" data-ptcell="37" style="grid-column:1;grid-row:5">Rb</span>
+      <span class="ptc" data-ptcell="38" style="grid-column:2;grid-row:5">Sr</span>
+      <span class="ptc" data-ptcell="49" style="grid-column:3;grid-row:5">In</span>
+      <span class="ptc" data-ptcell="50" style="grid-column:4;grid-row:5">Sn</span>
+      <span class="ptc" data-ptcell="51" style="grid-column:5;grid-row:5">Sb</span>
+      <span class="ptc" data-ptcell="52" style="grid-column:6;grid-row:5">Te</span>
+      <span class="ptc" data-ptcell="53" style="grid-column:7;grid-row:5">I</span>
+      <span class="ptc" data-ptcell="54" style="grid-column:8;grid-row:5">Xe</span>
+      <span class="ptc" data-ptcell="55" style="grid-column:1;grid-row:6">Cs</span>
+      <span class="ptc" data-ptcell="56" style="grid-column:2;grid-row:6">Ba</span>
+      <span class="ptc" data-ptcell="81" style="grid-column:3;grid-row:6">Tl</span>
+      <span class="ptc" data-ptcell="82" style="grid-column:4;grid-row:6">Pb</span>
+      <span class="ptc" data-ptcell="83" style="grid-column:5;grid-row:6">Bi</span>
+      <span class="ptc" data-ptcell="84" style="grid-column:6;grid-row:6">Po</span>
+      <span class="ptc" data-ptcell="85" style="grid-column:7;grid-row:6">At</span>
+      <span class="ptc" data-ptcell="86" style="grid-column:8;grid-row:6">Rn</span>
     </div>
 
     <!-- VISUALS box (grab mode) -->
@@ -2374,6 +2428,7 @@ function setNucleusFromZ(Z) {
   for (const e of electrons) e.trail = [];
   document.getElementById('protonSliderVal').textContent = Z;
   document.getElementById('protonSlider').value = Z;
+  _syncPTHighlight();
   draw();
 }
 
@@ -3961,6 +4016,24 @@ function draw() {
   updateParticleCounters();
   drawForceViz();
   drawEnergyBarPanel();
+  _drawModeHint();
+}
+
+function _drawModeHint() {
+  const isGrab = grabWireMode === 'grab';
+  if (isGrab && _grabHintDismissed) return;
+  if (!isGrab && _wireHintDismissed) return;
+  const msg = isGrab
+    ? 'click and drag an outer electron to put energy into the system'
+    : 'turn up voltage on the electrode to put energy into the system';
+  const W = canvas.width, H = canvas.height;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  ctx.save();
+  ctx.font = '500 13px Lexend, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(200,190,255,0.40)';
+  ctx.fillText(msg, W / 2, tbH + (H - tbH) * 0.84);
+  ctx.restore();
 }
 
 // ─── Particle counter + mass ───────────────────────────────────────────────────
@@ -4077,12 +4150,14 @@ _wireDialCv.addEventListener('mousedown', function (e) {
 _wireDialCv.addEventListener('wheel', function (e) {
   e.preventDefault();
   wireCharge = Math.max(0, Math.min(1, wireCharge - e.deltaY / 1500));
+  if (wireCharge > 0) _wireHintDismissed = true;
   _applyWireCharge();
 }, { passive: false });
 window.addEventListener('mousemove', function (e) {
   if (!_wireDialDragging) return;
   const dy = _wireDialStartY - e.clientY;
   wireCharge = Math.max(0, Math.min(1, _wireDialStartCharge + dy / 120));
+  if (wireCharge > 0) _wireHintDismissed = true;
   _applyWireCharge();
 });
 window.addEventListener('mouseup', function () { _wireDialDragging = false; });
@@ -4199,6 +4274,8 @@ let _draggedElectronIdx = -1;
 let _draggedPos = null;
 let _eDragMoved = false;
 let grabWireMode = 'grab'; // 'grab' | 'wire'
+let _grabHintDismissed = false;
+let _wireHintDismissed = false;
 // Free-electron pull normalized by shellR² so return time is consistent across all atom sizes
 const FREE_PULL_NORM = 0.55; // produces ~80 frame return from 2× shell radius for H
 
@@ -4512,6 +4589,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
 
   _populateElemSelect('');
   syncElemBtnActive();
+  window._ptApplyElem = _applyElem;
 
   document.getElementById('addElectronBtn')?.addEventListener('click', () => {
     document.getElementById('neutralCheckbox').checked = false;
@@ -4803,6 +4881,7 @@ canvas.addEventListener('mousedown', e => {
     if (d2 < bestD2) { bestD2 = d2; best = i; }
   }
   if (best < 0) return;
+  _grabHintDismissed = true;
   _draggedElectronIdx = best;
   _draggedPos = { x: wx, y: wy };
   _eDragMoved = false;
@@ -5026,6 +5105,24 @@ initNuclei();
   }
   // else stays 'hi-res' (default)
 }());
+
+// ─── Periodic table highlight + click ────────────────────────────────────────
+function _syncPTHighlight() {
+  document.querySelectorAll('[data-ptcell]').forEach(el => {
+    el.style.color = 'rgba(200,190,255,0.22)';
+    el.style.background = 'transparent';
+  });
+  const active = document.querySelector(`[data-ptcell="${customZ}"]`);
+  if (active) {
+    active.style.color = 'var(--accent1)';
+    active.style.background = 'rgba(255,45,120,0.18)';
+  }
+}
+document.getElementById('ptTable').addEventListener('click', e => {
+  const cell = e.target.closest('[data-ptcell]');
+  if (!cell || !window._ptApplyElem) return;
+  window._ptApplyElem(parseInt(cell.dataset.ptcell));
+});
 
 setNucleusFromZ(16);
 syncNeutralElectrons();
