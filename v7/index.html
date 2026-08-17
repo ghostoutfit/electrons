@@ -4516,7 +4516,8 @@ function initMolecule() {
   molBonds = bonds;
   molSites = layout.map((s, i) => {
     const ap = generateNucleus(s.Z, autoNeutrons(s.Z), W/2 + s.cx_rel, H/2 + s.cy_rel, 100 + i * 7);
-    return { Z: s.Z, ap, elecs: _makeMolElecs(s.Z, ap), cx_rel: s.cx_rel, cy_rel: s.cy_rel };
+    const elecs = _makeMolElecs(s.Z, ap);
+    return { Z: s.Z, ap, elecs, shellGroups: _buildMolShellGroups(elecs), cx_rel: s.cx_rel, cy_rel: s.cy_rel };
   });
 }
 
@@ -4553,6 +4554,7 @@ function stepMoleculeElectrons() {
 
 function drawMolecule(ctx) {
   if (!molSites.length) { initMolecule(); return; }
+  if (currentTab === 'orbit3d') { drawMolTrails(ctx); return; }
   const W = canvas.width, H = canvas.height;
   const tbH = document.getElementById('toolbar').offsetHeight;
   const centerX = W / 2 + panOffsetX;
@@ -4583,39 +4585,126 @@ function drawMolecule(ctx) {
     ctx.stroke();
   }
 
-  // Draw each atom: nucleus + visualization matching current Shells/Trails selection
+  // Shells view: shell haze rings + orbiting dots
   for (const site of molSites) {
     drawCloudOutline(site.ap.cx, site.ap.cy, site.ap.sphereR, ctx);
-    if (currentTab === 'orbit3d') {
-      // Trails view: draw electron trail curves
-      drawElectronsFor(ctx, site.elecs, site.Z);
-    } else {
-      // Shells view: shell haze rings + orbiting dots
-      drawShellRingsFor(ctx, site.ap.cx, site.ap.cy, site.elecs, site.Z);
-      drawElectronsShellsFor(ctx, site.elecs, site.ap.cx, site.ap.cy, site.Z);
-    }
+    drawShellRingsFor(ctx, site.ap.cx, site.ap.cy, site.elecs, site.Z);
+    drawElectronsShellsFor(ctx, site.elecs, site.ap.cx, site.ap.cy, site.Z);
   }
 
   viewZoom = _savedVZ;
   ctx.restore();
 }
 
+// Build orb3d shell groups for a set of electrons (same structure as orb3dShellGroups).
+function _buildMolShellGroups(elecs) {
+  const groups = Array.from({length: ORB3D_N}, () => []);
+  const countPerShell = {};
+  for (const e of elecs) countPerShell[e.shell] = (countPerShell[e.shell] || 0) + 1;
+  for (let s = 0; s < ORB3D_N; s++) {
+    const n = countPerShell[s] || 0;
+    for (let k = 0; k < n; k++) {
+      const g = groups[s], last = g[g.length - 1];
+      if (last && last.count === 1 && g.length - 1 >= 2) {
+        last.count = 2; last.phOff.push(Math.random() * Math.PI * 2); last.trails.push([]);
+      } else {
+        const ax = _o3RandAxis(), ref = Math.abs(ax[0]) < 0.9 ? [1,0,0] : [0,1,0];
+        g.push({ count:1, phase:Math.random()*Math.PI*2, phOff:[0],
+          radPh:Math.random()*Math.PI*2, ax, e1:_o3Norm(_o3Cross(ax,ref)), rot:_o3RandAxis(), trails:[[]] });
+      }
+    }
+  }
+  return groups;
+}
+
+// Advance orbit3D physics for all molecule sites (same physics as stepOrbit3D).
+function stepMolOrbit3D() {
+  for (const site of molSites) {
+    if (!site.shellGroups) continue;
+    const occupied = [...new Set(site.elecs.map(e => e.shell))];
+    for (const s of occupied) {
+      const sp = orbShellSpeed[s] ?? 8, radAmp = orbShellRadAmp[s] ?? 0.2;
+      const wandDeg = orbShellWander[s] ?? 45, maxLen = orbShellTrailLen[s] ?? 140;
+      const phStep = 0.05 * sp;
+      for (const grp of site.shellGroups[s]) {
+        grp.radPh += 0.036 * sp;
+        const r = 1 + radAmp * Math.sin(grp.radPh);
+        const precSpeed = 0.006 * sp * (wandDeg / 45);
+        grp.ax = _o3Precess(grp.ax, grp.rot, precSpeed);
+        grp.e1 = _o3Precess(grp.e1, grp.rot, precSpeed);
+        const e1 = grp.e1, e2 = _o3Cross(grp.ax, e1);
+        grp.phase += phStep;
+        for (let ei = 0; ei < grp.count; ei++) {
+          const ph = grp.phase + (grp.phOff?.[ei] ?? ei * Math.PI);
+          const c = Math.cos(ph), ss = Math.sin(ph);
+          const trail = grp.trails[ei];
+          trail.push([r*(c*e1[0]+ss*e2[0]), r*(c*e1[1]+ss*e2[1]), r*(c*e1[2]+ss*e2[2])]);
+          if (trail.length > maxLen) trail.splice(0, trail.length - maxLen);
+        }
+      }
+    }
+  }
+}
+
+// Trails view for molecules: same 3D spherical orbits as the Bonds Trails tab.
+function drawMolTrails(ctx) {
+  if (!molSites.length) return;
+  const W = canvas.width, H = canvas.height;
+  const tbH = document.getElementById('toolbar').offsetHeight;
+  const centerX = W/2 + panOffsetX;
+  const centerY = (tbH + H)/2 + panOffsetY;
+  const molZoom = _molComputeZoom();
+  const _savedVZ = viewZoom;
+  viewZoom = molZoom;
+
+  // Bond lines in screen space
+  for (const [i, j] of molBonds) {
+    const a = molSites[i], b = molSites[j];
+    ctx.strokeStyle = 'rgba(200,200,255,0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(centerX + a.cx_rel * molZoom, centerY + a.cy_rel * molZoom);
+    ctx.lineTo(centerX + b.cx_rel * molZoom, centerY + b.cy_rel * molZoom);
+    ctx.stroke();
+  }
+
+  for (const site of molSites) {
+    const sx = centerX + site.cx_rel * molZoom;
+    const sy = centerY + site.cy_rel * molZoom;
+    site.ap.cx = W/2 + site.cx_rel;
+    site.ap.cy = H/2 + site.cy_rel;
+    // Nucleus drawn through a per-site canvas transform so drawCloudOutline's world coords work
+    ctx.save();
+    ctx.translate(sx, sy); ctx.scale(molZoom, molZoom); ctx.translate(-W/2, -H/2);
+    drawCloudOutline(site.ap.cx, site.ap.cy, site.ap.sphereR, ctx);
+    ctx.restore();
+    // Orbit trails — _drawOrbit3DCore works in screen space, uses viewZoom for shell radii
+    if (site.shellGroups) _drawOrbit3DCore(ctx, sx, sy, site.elecs, site.shellGroups, site.Z, false);
+  }
+
+  viewZoom = _savedVZ;
+}
+
 // ─── End molecule mode ────────────────────────────────────────────────────────
 
 function idleParticleLoop() {
   if (animParent && showParticles) updateParticleJitter(animParent.particles.length, 1, true);
-  if (currentTab === 'orbit3d') { if (!orb3dPaused) { stepOrbit3D(); stepOrbit3DB(); } }
-  else {
-    stepElectronsShells();
-    if (animParentB && electronsB.length) {
-      const _confineB = currentTab === 'shells' && bondShellsSubtractB;
-      stepElectronsShellsFor(electronsB, atomBZ, _confineB, true);
+  if (currentMode === 'molecules') {
+    if (currentTab === 'orbit3d') { if (!orb3dPaused) stepMolOrbit3D(); }
+    else stepMoleculeElectrons();
+  } else {
+    if (currentTab === 'orbit3d') { if (!orb3dPaused) { stepOrbit3D(); stepOrbit3DB(); } }
+    else {
+      stepElectronsShells();
+      if (animParentB && electronsB.length) {
+        const _confineB = currentTab === 'shells' && bondShellsSubtractB;
+        stepElectronsShellsFor(electronsB, atomBZ, _confineB, true);
+      }
     }
+    stepBondElectron();
+    _stepBondElecSecond();
+    _stepBondDots();
   }
-  stepBondElectron();
-  _stepBondElecSecond();
-  _stepBondDots();
-  if (currentMode === 'molecules') stepMoleculeElectrons();
   if (animParent || currentTab === 'orbit3d' || currentMode === 'molecules') draw();
   idleParticleRAF = requestAnimationFrame(idleParticleLoop);
 }
