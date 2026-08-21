@@ -780,6 +780,7 @@
   .dev-row label { white-space: nowrap; flex-shrink: 0; }
   .dev-row input[type=range] { flex: 1; accent-color: #eeff00; }
   .dev-val { width: 56px; text-align: right; color: #eeff00; font-variant-numeric: tabular-nums; }
+  body.dev-hidden .dev-ui { display: none !important; }
 
   /* ── Energy bar panel (left side) ──────────────────────────────────────── */
   #energyBarPanel {
@@ -876,7 +877,7 @@
 </style>
 
 </head>
-<body data-tab="builder">
+<body data-tab="builder" class="dev-hidden">
 
 <canvas id="canvas"></canvas>
 <div id="energyBarPanel"><canvas id="energyBarCanvas"></canvas></div>
@@ -983,7 +984,6 @@
               <button id="hideForcesBtn" class="awheel-item">hide forces</button>
             </div>
           </div>
-          <div style="font-size:8px;color:rgba(200,190,255,0.32);text-align:center;letter-spacing:0.04em">right-click to drag</div>
         </div>
         <div style="display:flex;justify-content:space-between">
           <label class="toggle-label" id="autoscaleRow">
@@ -1018,7 +1018,25 @@
     </div>
 
     <!-- Radius mode toggle -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;margin-left:6px;">
+    <div class="dev-ui" style="display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;margin-left:6px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;width:100%">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+          <input type="checkbox" id="inlineForceToggle" style="accent-color:#eeff00;width:10px;height:10px;">
+          <span style="font-size:9px;letter-spacing:0.06em;color:rgba(255,255,255,0.55);font-weight:600;white-space:nowrap;">force overlay</span>
+        </label>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:8px;color:rgba(238,255,0,0.6);font-weight:600;white-space:nowrap;width:14px;">T</span>
+            <input type="range" id="ylblTSlider" min="0" max="1" step="0.05" value="0.3" style="width:56px;accent-color:#eeff00;cursor:pointer;">
+            <span id="ylblTVal" style="font-size:8px;color:rgba(238,255,0,0.8);font-weight:700;width:24px;">0.30</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:8px;color:rgba(238,255,0,0.6);font-weight:600;white-space:nowrap;width:14px;">⊥</span>
+            <input type="range" id="ylblPerpSlider" min="0" max="40" step="1" value="30" style="width:56px;accent-color:#eeff00;cursor:pointer;">
+            <span id="ylblPerpVal" style="font-size:8px;color:rgba(238,255,0,0.8);font-weight:700;width:24px;">30</span>
+          </div>
+        </div>
+      </div>
       <span style="font-size:9px;letter-spacing:0.08em;color:rgba(255,255,255,0.35);font-weight:600;">radius</span>
       <select id="radiusModeSelect" style="font-size:9px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 3px;cursor:pointer;">
         <option value="covalent">Half a pair</option>
@@ -1036,12 +1054,12 @@
     </div>
 
     <!-- Dev toggle -->
-    <label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
+    <label class="dev-ui" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
       <input type="checkbox" id="devToggle" style="accent-color:#eeff00;width:12px;height:12px;">
       <span style="font-size:9px;letter-spacing:0.08em;color:rgba(238,255,0,0.45);font-weight:600;">dev</span>
     </label>
   </div>
-  <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
+  <div id="devSlidersRow" class="toolbar-row dev-ui" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
     <div class="dev-row" style="display:none"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="140000"><span class="dev-val" id="slKVal">140000</span></div>
     <div class="dev-row" style="display:none"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
     <div class="dev-row" style="display:none"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
@@ -1059,7 +1077,7 @@
     <div id="shellDevSliders"></div>
   </div>
 </div>
-<div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
+<div id="orbit3dOverlay" class="dev-ui" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
   <div id="orbit3dDevSliders" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"></div>
 </div>
 <div id="forceVizPanel">
@@ -1070,6 +1088,7 @@
   <div id="forceVizKey">
     <span><span style="color:#ff44cc">■</span><span style="color:#ff44cc;text-shadow:0 0 4px #ff44cc,0 0 10px rgba(255,68,204,0.5)">Attraction to Protons (electric)</span></span>
     <span><span style="color:#00eeff">■</span><span style="color:#00eeff;text-shadow:0 0 4px #00eeff,0 0 10px rgba(0,238,255,0.5)">Repulsion from Electrons (electric)</span></span>
+    <span><span style="color:#eeff00">■</span><span style="color:#eeff00;text-shadow:0 0 4px #eeff00,0 0 10px rgba(238,255,0,0.5)">Total Forces (ELECTRIC)</span></span>
   </div>
   <canvas id="forceVizCanvas" width="333" height="180"></canvas>
 </div>
@@ -2429,6 +2448,7 @@ function setNucleusFromZ(Z) {
   document.getElementById('protonSliderVal').textContent = Z;
   document.getElementById('protonSlider').value = Z;
   _syncPTHighlight();
+  wireCharge = 0; _applyWireCharge();
   draw();
 }
 
@@ -2631,9 +2651,7 @@ const IE_EV = {
 
 function fmtNNLabel(nN) {
   if (!isFinite(nN) || nN <= 0) return null;
-  if (nN >= 100) return Math.round(nN) + ' nN';
-  if (nN >= 10)  return nN.toFixed(1) + ' nN';
-  return nN.toFixed(2) + ' nN';
+  return Math.round(nN) + ' nN';
 }
 
 let shellBaseR = 15;  // px per pm — controls visual scale of all shells
@@ -3008,6 +3026,9 @@ function drawShellRings(ctx) {
 // ─── Force viz panel ──────────────────────────────────────────────────────────
 const FV_NUC_COLOR  = 'rgba(255,68,204,0.88)';   // magenta — nuclear attraction
 const FV_REP_COLOR  = 'rgba(0,238,255,0.88)';    // cyan    — electron repulsion
+// TUNING: yellow label position along arrow (0=dot, 1=tip) and CCW perpendicular offset (px)
+let _YLBL_T    = 0.3;
+let _YLBL_PERP = 30;
 
 // Sequential ionization energies in eV to 1 decimal (NIST, elements 1–36)
 // Index 0 = 1st IE, index 1 = 2nd IE, etc.
@@ -3115,6 +3136,11 @@ function syncForceVizCanvasSize() {
 }
 
 function syncForceVizVisibility() {
+  if (inlineForceMode) {
+    forceVizPanelEl.style.display = 'none';
+    draw();
+    return;
+  }
   const isWire = grabWireMode === 'wire';
   const showFV = isWire || (arrowMode > 0 && currentTab === 'shells');
   forceVizPanelEl.style.display = showFV ? 'block' : 'none';
@@ -3222,11 +3248,11 @@ function drawForceVizShell() {
 
   // Disclaimer — always shown
   fvc.save();
-  fvc.font = '8px Lexend, sans-serif';
+  fvc.font = '12px Lexend, sans-serif';
   fvc.fillStyle = 'rgba(255,255,255,0.22)';
   fvc.textAlign = 'center'; fvc.textBaseline = 'bottom';
-  fvc.fillText('All arrows show relative force per electron.', W / 2, H - 10);
-  fvc.fillText('Arrow lengths are scaled so all forces stay visible.', W / 2, H - 1);
+  fvc.fillText('Arrows show force per electron, not to scale.', W / 2, H - 14);
+  fvc.fillText('Arrow lengths are scaled so forces stay visible.', W / 2, H - 1);
   fvc.restore();
 
   // Don't draw force arrows until the zoom animation has finished
@@ -3287,18 +3313,30 @@ function drawForceVizShell() {
       fvArrowOnCtx(fvc, px, py, cosA, sinA, repLen, FV_REP_COLOR, 2, repLen * 0.35);
     }
 
+    // Net force arrow — yellow (half length)
+    const _netFx = -cosA * fNuc + frex, _netFy = -sinA * fNuc + frey;
+    const _netMag = Math.sqrt(_netFx * _netFx + _netFy * _netFy);
+    const _netNx = _netMag > 0.001 ? _netFx / _netMag : 0, _netNy = _netMag > 0.001 ? _netFy / _netMag : 0;
+    const _netScale = electrons.length <= 1 ? 1 : 0.5;
+    const netLen = _netMag > 0.001 ? shellArrowLen(_netMag, _FieNN, _FcVal) * _netScale : 0;
+    if (netLen > 0) {
+      fvArrowOnCtx(fvc, px, py, _netNx, _netNy, netLen, 'rgba(238,255,0,0.90)', 2, netLen * 0.35);
+    }
+
     // Labels on upper-left sample point only (i=4)
     if (showForceValues && _FieNN && i === 4) {
       fvc.save();
       fvc.font = 'bold 9px Lexend, sans-serif';
       fvc.textBaseline = 'middle';
       const nlx = -cosA, nly = -sinA;
+      const _dNuc = Math.round(fNuc / _FcVal * _FieNN);
       const nucLabel = fmtNNLabel(fNuc / _FcVal * _FieNN);
       if (nucLabel) {
         fvc.fillStyle = FV_NUC_COLOR;
         fvc.textAlign = nlx > 0.3 ? 'left' : nlx < -0.3 ? 'right' : 'center';
         fvc.fillText(nucLabel, px + nlx * (nucLen + 4), py + nly * (nucLen + 4));
       }
+      const _dRep = fRep > 0.001 ? Math.round(fRep / _FcVal * _FieNN) : 0;
       if (fRep > 0.001) {
         const repLabel = fmtNNLabel(fRep / _FcVal * _FieNN);
         if (repLabel) {
@@ -3307,6 +3345,16 @@ function drawForceVizShell() {
           fvc.textAlign = cosA > 0.3 ? 'left' : cosA < -0.3 ? 'right' : 'center';
           fvc.fillText(repLabel, px + cosA * (repLen + 4), py + sinA * (repLen + 4));
         }
+      }
+      if (netLen > 0) {
+        const _dNet = Math.abs(_dNuc - _dRep);
+        const _netLabel = _dNet > 0 ? _dNet + ' nN' : '< 1 nN';
+        const _pxCCW = -_netNy, _pyCCW = _netNx;
+        const _lx = px + _netNx * netLen * _YLBL_T + _pxCCW * _YLBL_PERP;
+        const _ly = py + _netNy * netLen * _YLBL_T + _pyCCW * _YLBL_PERP;
+        fvc.fillStyle = 'rgba(238,255,0,0.90)';
+        fvc.textAlign = _pxCCW > 0.3 ? 'left' : _pxCCW < -0.3 ? 'right' : 'center';
+        fvc.fillText(_netLabel, _lx, _ly);
       }
       fvc.restore();
     }
@@ -3483,13 +3531,49 @@ function drawForceVizElectron() {
     }
   }
 
+  // Net force arrow — yellow, half length (sum of nuclear + repulsion + wire)
+  {
+    let _netFx = nxN * fNuc + frex;
+    let _netFy = nyN * fNuc + frey;
+    if (grabWireMode === 'wire' && wireCharge > 0.005) _netFx += wireCharge * wireCharge * F_MAX * 0.6;
+    const _netMag = Math.sqrt(_netFx * _netFx + _netFy * _netFy);
+    if (_netMag <= 0.001) _fvLabelNetSmooth = null;
+    if (_netMag > 0.001) {
+      const _netNx = _netFx / _netMag, _netNy = _netFy / _netMag;
+      const netArrowLen = arrowLen(_netMag) * (electrons.length <= 1 ? 1 : 0.5);
+      fvArrowOnCtx(fvc, ePx, ePy, _netNx, _netNy, netArrowLen, 'rgba(238,255,0,0.90)', 3, Math.min(maxHead, netArrowLen * 0.4));
+      if (showForceValues && _FieNN && distFade > 0) {
+        const _fontSize = Math.max(1, Math.round(20 * Math.min(1, distFade / 0.1)));
+        // Yellow value = integer difference of displayed nuc and rep (guarantees consistency)
+        const _dNuc = Math.round(_fvValueNucSmooth > 0 ? _fvValueNucSmooth : 0);
+        const _dRep = (_fvValueRepSmooth != null && _fvValueRepSmooth > 0) ? Math.round(_fvValueRepSmooth) : 0;
+        const _dNet = Math.abs(_dNuc - _dRep);
+        {
+          fvc.save();
+          fvc.font = `bold ${_fontSize}px Lexend, sans-serif`;
+          fvc.textBaseline = 'middle';
+          const _pxCCW = -_netNy, _pyCCW = _netNx;
+          const _tlx = ePx + _netNx * netArrowLen * _YLBL_T + _pxCCW * _YLBL_PERP;
+          const _tly = ePy + _netNy * netArrowLen * _YLBL_T + _pyCCW * _YLBL_PERP;
+          if (!_fvLabelNetSmooth) _fvLabelNetSmooth = { x: _tlx, y: _tly };
+          else { _fvLabelNetSmooth.x += (_tlx - _fvLabelNetSmooth.x) * FV_LABEL_LAG;
+                 _fvLabelNetSmooth.y += (_tly - _fvLabelNetSmooth.y) * FV_LABEL_LAG; }
+          fvc.fillStyle = 'rgba(238,255,0,0.90)';
+          fvc.textAlign = _pxCCW > 0.3 ? 'left' : _pxCCW < -0.3 ? 'right' : 'center';
+          fvc.fillText(_dNet > 0 ? _dNet + ' nN' : '< 1 nN', _fvLabelNetSmooth.x, _fvLabelNetSmooth.y);
+          fvc.restore();
+        }
+      }
+    }
+  }
+
   // Disclaimer
   fvc.save();
-  fvc.font = '8px Lexend, sans-serif';
+  fvc.font = '12px Lexend, sans-serif';
   fvc.fillStyle = 'rgba(255,255,255,0.22)';
   fvc.textAlign = 'center'; fvc.textBaseline = 'bottom';
-  fvc.fillText('All arrows show relative force per electron.', W / 2, H - 10);
-  fvc.fillText('Arrow lengths are scaled so all forces stay visible.', W / 2, H - 1);
+  fvc.fillText('Arrows show force per electron, not to scale.', W / 2, H - 14);
+  fvc.fillText('Arrow lengths are scaled so forces stay visible.', W / 2, H - 1);
   fvc.restore();
 
 }
@@ -3626,6 +3710,7 @@ function drawEnergyBarPanel() {
 
 
 function drawForceViz() {
+  if (inlineForceMode) return;
   if (currentTab !== 'shells') return;
   if (fvShellMode) { drawForceVizShell(); return; }
   drawForceVizElectron();
@@ -3958,6 +4043,191 @@ function drawWire(ctx) {
 }
 
 // ─── Main draw function ─────────────────────────────────────────────────────
+function drawInlineForces(ctx) {
+  if (!inlineForceMode || !animParent || currentTab !== 'shells' || !electrons.length) return;
+  const cx = animParent.cx, cy = animParent.cy;
+  const outerS = Math.max(...electrons.map(e => e.shell));
+  const outerR = getShellRadius(Math.max(0, outerS));
+  const MAX_LEN = outerR * 0.9;
+  const refR = getShellRadius(0);
+  const F_MAX = eK * Math.max(customZ, 1) / (refR * refR * 0.59);
+  const lw = 2 / viewZoom;
+  const maxHead = MAX_LEN * 0.12;
+
+  if (fvShellMode && selectedShell >= 0 && electrons.some(e => e.shell === selectedShell)) {
+    const sr = getShellRadius(selectedShell);
+    const shellCounts = {};
+    for (const e of electrons) {
+      if (e.shell >= selectedShell) continue;
+      shellCounts[e.shell] = (shellCounts[e.shell] || 0) + 1;
+    }
+    const staticPts = [];
+    for (const [s, n] of Object.entries(shellCounts)) {
+      const r = getShellRadius(parseInt(s));
+      for (let k = 0; k < n; k++) {
+        const a = k * Math.PI * 2 / n;
+        staticPts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+      }
+    }
+    const _rValPxS = getShellRadius(outerS);
+    const _FcValS  = eK * Math.max(customZ,1) / (_rValPxS*_rValPxS);
+    const _ieS     = IE_EV[customZ];
+    const _FieNNS  = _ieS ? _ieS / (_rValPxS/shellBaseR) * 160.2 : null;
+    function _alen(f) { return Math.min(MAX_LEN, MAX_LEN * Math.pow(f / F_MAX, fvArrowExp)); }
+    for (let i = 0; i < 6; i++) {
+      const angle = i * Math.PI / 3;
+      const cosA = Math.cos(angle), sinA = Math.sin(angle);
+      const simX = cx + cosA * sr, simY = cy + sinA * sr;
+      const fNuc = eK * Math.max(customZ, 1) / (sr * sr);
+      let frex = 0, frey = 0;
+      for (const pt of staticPts) {
+        const ddx = simX - pt.x, ddy = simY - pt.y;
+        const d2 = Math.max(ddx*ddx + ddy*ddy, 625), d = Math.sqrt(d2);
+        frex += eK / d2 * ddx / d; frey += eK / d2 * ddy / d;
+      }
+      const fRep = Math.sqrt(frex*frex + frey*frey);
+      fvArrowOnCtx(ctx, simX, simY, -cosA, -sinA, _alen(fNuc), FV_NUC_COLOR, lw, _alen(fNuc)*0.35);
+      if (fRep > 0.001) {
+        const rL = _alen(fRep);
+        fvArrowOnCtx(ctx, simX, simY, frex/fRep, frey/fRep, rL, FV_REP_COLOR, lw, rL*0.35);
+      }
+      const nfx = -cosA*fNuc + frex, nfy = -sinA*fNuc + frey;
+      const nm = Math.sqrt(nfx*nfx + nfy*nfy);
+      if (nm > 0.001) {
+        const nnx = nfx/nm, nny = nfy/nm;
+        const nL = _alen(nm) * (electrons.length <= 1 ? 1 : 0.5);
+        fvArrowOnCtx(ctx, simX, simY, nnx, nny, nL, 'rgba(238,255,0,0.90)', lw, nL*0.35);
+        if (i === 4 && _FieNNS && _FcValS) {
+          const _dNucS = Math.round(fNuc / _FcValS * _FieNNS);
+          const _dRepS = fRep > 0.001 ? Math.round(fRep / _FcValS * _FieNNS) : 0;
+          const _dNetS = Math.abs(_dNucS - _dRepS);
+          {
+            ctx.save();
+            ctx.font = `bold ${10/viewZoom}px Lexend, sans-serif`;
+            ctx.fillStyle = 'rgba(238,255,0,0.90)';
+            ctx.textBaseline = 'middle';
+            const _pxSCCW = -nny, _pySCCW = nnx;
+            const _perpS = _YLBL_PERP / viewZoom;
+            ctx.textAlign = _pxSCCW > 0.3 ? 'left' : _pxSCCW < -0.3 ? 'right' : 'center';
+            ctx.fillText(_dNetS > 0 ? _dNetS + ' nN' : '< 1 nN', simX + nnx*nL*_YLBL_T + _pxSCCW*_perpS, simY + nny*nL*_YLBL_T + _pySCCW*_perpS);
+            ctx.restore();
+          }
+        }
+      }
+    }
+  } else if (!fvShellMode) {
+    const activeIdx = _draggedElectronIdx >= 0 ? _draggedElectronIdx : selectedElectronIdx;
+    if (activeIdx < 0 || activeIdx >= electrons.length) return;
+    const se = electrons[activeIdx];
+    const shellR = getShellRadius(se.shell);
+    let sex, sey;
+    if (activeIdx === _draggedElectronIdx && _draggedPos) { sex = _draggedPos.x; sey = _draggedPos.y; }
+    else if (se.free) { sex = se.freeX; sey = se.freeY; }
+    else { const r = getShellRadius(se.shell) + (se.radialOffset||0); sex = cx+Math.cos(se.angle)*r; sey = cy+Math.sin(se.angle)*r; }
+    const dxN = cx-sex, dyN = cy-sey;
+    const distN = Math.max(Math.sqrt(dxN*dxN + dyN*dyN), 1);
+    const fNuc = eK * Math.max(customZ,1) / (distN*distN);
+    const nxN = dxN/distN, nyN = dyN/distN;
+    let frex = 0, frey = 0;
+    for (let i = 0; i < electrons.length; i++) {
+      if (i === activeIdx) continue;
+      const oe = electrons[i];
+      let oex, oey;
+      if (oe.free) { oex = oe.freeX; oey = oe.freeY; }
+      else { const or = getShellRadius(oe.shell)+(oe.radialOffset||0); oex = cx+Math.cos(oe.angle)*or; oey = cy+Math.sin(oe.angle)*or; }
+      const ddx = sex-oex, ddy = sey-oey;
+      const d2 = Math.max(ddx*ddx+ddy*ddy, 625), d = Math.sqrt(d2);
+      frex += eK/d2*ddx/d; frey += eK/d2*ddy/d;
+    }
+    const fRep = Math.sqrt(frex*frex + frey*frey);
+    const _ionDist = shellR*8*eIonDistMult;
+    const _rValPx  = getShellRadius(outerS);
+    const _FcVal   = eK * Math.max(customZ,1) / (_rValPx*_rValPx);
+    const _ie      = IE_EV[customZ];
+    const _FieNN   = _ie ? _ie / (_rValPx/shellBaseR) * 160.2 : null;
+    const _fAtIon  = eK * Math.max(customZ,1) / (_ionDist*_ionDist);
+    const _fAtIonNN = (_FieNN && _FcVal) ? _fAtIon/_FcVal*_FieNN : 0;
+    const _fNN      = (_FieNN && _FcVal) ? fNuc/_FcVal*_FieNN : Infinity;
+    const distFade = (_fAtIonNN > 0 && _FieNN > _fAtIonNN)
+      ? (_fNN >= _FieNN ? 1 : _fNN <= _fAtIonNN ? 0 : (_fNN-_fAtIonNN)/(_FieNN-_fAtIonNN))
+      : Math.max(0, 1 - Math.max(0, distN-shellR) / Math.max(1, _ionDist-shellR));
+    function _alen(f) { return Math.min(MAX_LEN, MAX_LEN * Math.pow(f/F_MAX, fvArrowExp)) * distFade; }
+    const nucLen = _alen(fNuc);
+    fvArrowOnCtx(ctx, sex, sey, nxN, nyN, nucLen, FV_NUC_COLOR, lw, Math.min(maxHead, nucLen*0.4));
+    if (fRep > 0.001) {
+      const nxR = frex/fRep, nyR = frey/fRep, rL = _alen(fRep);
+      fvArrowOnCtx(ctx, sex, sey, nxR, nyR, rL, FV_REP_COLOR, lw, Math.min(maxHead, rL*0.4));
+    }
+    if (grabWireMode === 'wire' && wireCharge > 0.005) {
+      const wL = _alen(wireCharge*wireCharge*F_MAX*0.6);
+      if (wL > 1/viewZoom) fvArrowOnCtx(ctx, sex, sey, 1, 0, wL, 'rgba(255,55,55,0.92)', lw, Math.min(maxHead, wL*0.4));
+    }
+    let nfx = nxN*fNuc + frex, nfy = nyN*fNuc + frey;
+    if (grabWireMode === 'wire' && wireCharge > 0.005) nfx += wireCharge*wireCharge*F_MAX*0.6;
+    const nm = Math.sqrt(nfx*nfx + nfy*nfy);
+    if (nm > 0.001) {
+      const nnx = nfx/nm, nny = nfy/nm;
+      const nL = _alen(nm) * (electrons.length <= 1 ? 1 : 0.5);
+      fvArrowOnCtx(ctx, sex, sey, nnx, nny, nL, 'rgba(238,255,0,0.90)', lw, Math.min(maxHead, nL*0.4));
+      if (_FieNN && _FcVal && distFade > 0) {
+        const _dNucI = Math.round(fNuc / _FcVal * _FieNN);
+        const _dRepI = fRep > 0.001 ? Math.round(fRep / _FcVal * _FieNN) : 0;
+        const _dNetI = Math.abs(_dNucI - _dRepI);
+        {
+          ctx.save();
+          ctx.font = `bold ${10/viewZoom}px Lexend, sans-serif`;
+          ctx.fillStyle = 'rgba(238,255,0,0.90)';
+          ctx.textBaseline = 'middle';
+          const _pxICCW = -nny, _pyICCW = nnx;
+          const _perpI = _YLBL_PERP / viewZoom;
+          ctx.textAlign = _pxICCW > 0.3 ? 'left' : _pxICCW < -0.3 ? 'right' : 'center';
+          ctx.fillText(_dNetI > 0 ? _dNetI + ' nN' : '< 1 nN', sex + nnx*nL*_YLBL_T + _pxICCW*_perpI, sey + nny*nL*_YLBL_T + _pyICCW*_perpI);
+          ctx.restore();
+        }
+      }
+    }
+  }
+}
+
+function drawInlineForceKey(ctx) {
+  if (!inlineForceMode || currentTab !== 'shells' || !animParent) return;
+  const W = canvas.width;
+  const tbH = document.getElementById('toolbar').offsetHeight || 48;
+  ctx.save();
+  ctx.font = '11px Lexend, sans-serif';
+  ctx.textBaseline = 'middle';
+  const pad = 12, lineH = 19, dotR = 5;
+  const entries = [
+    { color: FV_NUC_COLOR,           label: 'Attraction to Protons (electric)' },
+    { color: FV_REP_COLOR,           label: 'Repulsion from Electrons (electric)' },
+    { color: 'rgba(238,255,0,0.90)', label: 'Total Forces (ELECTRIC)' },
+  ];
+  let maxW = 0;
+  for (const c of entries) maxW = Math.max(maxW, ctx.measureText(c.label).width);
+  const boxW = dotR*2 + 8 + maxW + pad*2;
+  const boxH = entries.length * lineH + pad;
+  const bx = W - boxW - 14, by = tbH + 14;
+  ctx.fillStyle = 'rgba(0,0,0,0.52)';
+  ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, 8); ctx.fill();
+  for (let i = 0; i < entries.length; i++) {
+    const { color, label } = entries[i];
+    const ey = by + pad/2 + lineH*i + lineH/2;
+    ctx.shadowColor = color; ctx.shadowBlur = 5;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(bx + pad + dotR, ey, dotR, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = color; ctx.textAlign = 'left';
+    ctx.fillText(label, bx + pad + dotR*2 + 6, ey);
+  }
+  ctx.shadowBlur = 0;
+  ctx.font = '12px Lexend, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.textAlign = 'left';
+  ctx.fillText('Arrows show force per electron, not to scale.', bx + pad, by + boxH + 11);
+  ctx.fillText('Arrow lengths are scaled so forces stay visible.', bx + pad, by + boxH + 25);
+  ctx.restore();
+}
+
 function draw() {
   ctx.fillStyle = document.body.classList.contains('screenshot-mode') ? getBgColor() : '#05040f';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -4009,6 +4279,7 @@ function draw() {
   if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
   if (showParticles) drawParticles(animParent.particles, 1);
   drawElectronsShells(ctx);
+  drawInlineForces(ctx);
 
   ctx.restore();
   drawWire(ctx);
@@ -4016,6 +4287,7 @@ function draw() {
   updateParticleCounters();
   drawForceViz();
   drawEnergyBarPanel();
+  drawInlineForceKey(ctx);
   _drawModeHint();
 }
 
@@ -4169,6 +4441,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   logAction('Pressed Reset');
   heatmapDirty = true;
   currentSeed = Math.floor(Math.random() * 1e9);
+  wireCharge = 0; _applyWireCharge();
   if (customZ > 0 && animParent) {
     // Reset electrons for current atom, preserving element
     clearElectrons();
@@ -4262,11 +4535,13 @@ function idleParticleLoop() {
 
 function setForceWheelActive() {} // no-op, kept for call-site compatibility
 
+let inlineForceMode = false;
 let arrowMode = 2;
 let fvShellMode = false;
 let selectedElectronIdx = -1;
 let _fvLabelNucSmooth = null;
 let _fvLabelRepSmooth = null;
+let _fvLabelNetSmooth = null;
 let _fvValueNucSmooth = null;
 let _fvValueRepSmooth = null;
 const FV_LABEL_LAG = 0.03;
@@ -4315,6 +4590,39 @@ function _syncDevSliders() {
 _syncDevSliders();
 document.getElementById('devToggle').addEventListener('change', _syncDevSliders);
 
+function syncInlineForceMode() {
+  const on = inlineForceMode;
+  document.getElementById('forceCtrlBox').style.display = (currentTab === 'orbit3d' || on) ? 'none' : '';
+  const sl = document.getElementById('zoomSlider');
+  sl.style.flex  = on ? '1' : '';
+  sl.style.width = on ? 'auto' : '';
+  if (on) {
+    forceVizPanelEl.style.display = 'none';
+    arrowMode = 2; fvShellMode = false;
+    if (electrons.length && selectedElectronIdx < 0)
+      selectedElectronIdx = _rightmostInShell(Math.max(...electrons.map(e => e.shell)));
+  } else {
+    syncForceVizVisibility();
+  }
+  draw();
+}
+document.getElementById('inlineForceToggle').addEventListener('change', function() {
+  inlineForceMode = this.checked;
+  syncInlineForceMode();
+});
+document.getElementById('ylblTSlider').addEventListener('input', function() { _YLBL_T = +this.value; document.getElementById('ylblTVal').textContent = (+this.value).toFixed(2); draw(); });
+document.getElementById('ylblPerpSlider').addEventListener('input', function() { _YLBL_PERP = +this.value; document.getElementById('ylblPerpVal').textContent = this.value; draw(); });
+
+// Type "dev" anywhere (outside inputs) to toggle dev mode
+(function() {
+  let _seq = '';
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    _seq = (_seq + e.key.toLowerCase()).slice(-3);
+    if (_seq === 'dev') { document.body.classList.toggle('dev-hidden'); }
+  });
+}());
+
 document.getElementById('radiusModeSelect').addEventListener('change', function () {
   radiusMode = this.value;
   _lastAutoScalePeriod = -1;
@@ -4324,7 +4632,7 @@ document.getElementById('radiusModeSelect').addEventListener('change', function 
 
 function syncTabButtons() {
   document.querySelectorAll('.awheel-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
-  document.getElementById('forceCtrlBox').style.display = (currentTab === 'orbit3d') ? 'none' : '';
+  document.getElementById('forceCtrlBox').style.display = (currentTab === 'orbit3d' || inlineForceMode) ? 'none' : '';
 }
 
 document.querySelectorAll('.awheel-item[data-tab]').forEach(btn => {
@@ -4565,7 +4873,7 @@ var syncShellDevSliders = function() {}; // populated by _wireDevSliders once sh
     const _prevSr = _fvEffectiveSr;
     const _prevAngle = (selectedElectronIdx >= 0 && selectedElectronIdx < electrons.length)
       ? electrons[selectedElectronIdx].angle : null;
-    _fvLabelNucSmooth = null; _fvLabelRepSmooth = null;
+    _fvLabelNucSmooth = null; _fvLabelRepSmooth = null; _fvLabelNetSmooth = null;
     _fvValueNucSmooth = null; _fvValueRepSmooth = null;
     selectedElectronIdx = -1;
     _clearFreeElectrons();
@@ -4761,7 +5069,7 @@ function _orb3dRotateX(dTheta) {
 
 canvas.addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') return;
-  const isPan = e.button === 2 || (e.button === 0 && e.shiftKey);
+  const isPan = e.button === 0 && e.shiftKey;
   if (isPan) {
     _panDragState = { lastX: e.clientX, lastY: e.clientY };
     canvas.setPointerCapture(e.pointerId);
@@ -4987,6 +5295,7 @@ canvas.addEventListener('click', e => {
     }
   }
 
+  if (inlineForceMode) { arrowMode = 2; fvShellMode = false; }
   syncForceVizVisibility();
   draw();
 });

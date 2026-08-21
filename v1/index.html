@@ -801,6 +801,7 @@
   .dev-row label { white-space: nowrap; flex-shrink: 0; }
   .dev-row input[type=range] { flex: 1; accent-color: #eeff00; }
   .dev-val { width: 56px; text-align: right; color: #eeff00; font-variant-numeric: tabular-nums; }
+  body.dev-hidden .dev-ui { display: none !important; }
 
   /* ── Force viz panel (draggable, resizable) ────────────────────────────── */
   #forceVizPanel {
@@ -850,7 +851,7 @@
 </style>
 
 </head>
-<body data-tab="builder">
+<body data-tab="builder" class="dev-hidden">
 
 <canvas id="canvas"></canvas>
 
@@ -952,7 +953,7 @@
     </div>
 
     <!-- Radius mode toggle -->
-    <div style="display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;margin-left:6px;">
+    <div class="dev-ui" style="display:flex;flex-direction:column;align-items:center;gap:3px;align-self:center;margin-left:6px;">
       <span style="font-size:9px;letter-spacing:0.08em;color:rgba(255,255,255,0.35);font-weight:600;">radius</span>
       <select id="radiusModeSelect" style="font-size:9px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 3px;cursor:pointer;">
         <option value="covalent">Half a pair</option>
@@ -965,12 +966,12 @@
     </div>
 
     <!-- Dev toggle -->
-    <label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
+    <label class="dev-ui" style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;align-self:center;margin-left:4px;">
       <input type="checkbox" id="devToggle" style="accent-color:#eeff00;width:12px;height:12px;">
       <span style="font-size:9px;letter-spacing:0.08em;color:rgba(238,255,0,0.45);font-weight:600;">dev</span>
     </label>
   </div>
-  <div id="devSlidersRow" class="toolbar-row" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
+  <div id="devSlidersRow" class="toolbar-row dev-ui" style="display:none;gap:18px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--ui-border)">
     <div class="dev-row" style="display:none"><label>k</label><input type="range" id="slK" min="1000" max="500000" step="5000" value="140000"><span class="dev-val" id="slKVal">140000</span></div>
     <div class="dev-row" style="display:none"><label>e⁻ rep</label><input type="range" id="slRepulse" min="0" max="200000" step="2000" value="50000"><span class="dev-val" id="slRepulseVal">50000</span></div>
     <div class="dev-row" style="display:none"><label>Damp</label><input type="range" id="slDamp" min="0.990" max="1.000" step="0.0001" value="1.000"><span class="dev-val" id="slDampVal">1.0000</span></div>
@@ -988,7 +989,7 @@
     <div id="shellDevSliders"></div>
   </div>
 </div>
-<div id="orbit3dOverlay" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
+<div id="orbit3dOverlay" class="dev-ui" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(5,4,15,0.92);backdrop-filter:blur(8px);border-top:1px solid rgba(26,110,255,0.18);padding:10px 18px 12px">
   <div id="orbit3dDevSliders" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"></div>
 </div>
 <div id="forceVizPanel">
@@ -2991,11 +2992,11 @@ function drawForceVizShell() {
 
   // Disclaimer — always shown
   fvc.save();
-  fvc.font = '8px Lexend, sans-serif';
+  fvc.font = '12px Lexend, sans-serif';
   fvc.fillStyle = 'rgba(255,255,255,0.22)';
   fvc.textAlign = 'center'; fvc.textBaseline = 'bottom';
-  fvc.fillText('All arrows show relative force per electron.', W / 2, H - 10);
-  fvc.fillText('Arrow lengths are scaled so all forces stay visible.', W / 2, H - 1);
+  fvc.fillText('Arrows show force per electron, not to scale.', W / 2, H - 14);
+  fvc.fillText('Arrow lengths are scaled so forces stay visible.', W / 2, H - 1);
   fvc.restore();
 
   // Don't draw force arrows until the zoom animation has finished
@@ -3238,11 +3239,11 @@ function drawForceViz() {
 
   // Disclaimer
   fvc.save();
-  fvc.font = '8px Lexend, sans-serif';
+  fvc.font = '12px Lexend, sans-serif';
   fvc.fillStyle = 'rgba(255,255,255,0.22)';
   fvc.textAlign = 'center'; fvc.textBaseline = 'bottom';
-  fvc.fillText('All arrows show relative force per electron.', W / 2, H - 10);
-  fvc.fillText('Arrow lengths are scaled so all forces stay visible.', W / 2, H - 1);
+  fvc.fillText('Arrows show force per electron, not to scale.', W / 2, H - 14);
+  fvc.fillText('Arrow lengths are scaled so forces stay visible.', W / 2, H - 1);
   fvc.restore();
 }
 
@@ -3685,6 +3686,16 @@ function _syncDevSliders() {
 }
 _syncDevSliders();
 document.getElementById('devToggle').addEventListener('change', _syncDevSliders);
+
+// Type "dev" anywhere (outside inputs) to toggle dev mode
+(function() {
+  let _seq = '';
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    _seq = (_seq + e.key.toLowerCase()).slice(-3);
+    if (_seq === 'dev') { document.body.classList.toggle('dev-hidden'); }
+  });
+}());
 
 document.getElementById('radiusModeSelect').addEventListener('change', function () {
   radiusMode = this.value;
